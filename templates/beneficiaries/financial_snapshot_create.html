@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if is_update %}
+    Modifier la Photo Instantanée Financière - {{ beneficiary.full_name }}
+{% else %}
+    Nouvelle Photo Instantanée Financière - {{ beneficiary.full_name }}
+{% endif %}
+- ONA
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with back button -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{% url 'beneficiaries:detail' beneficiary.pk %}" 
+                   class="flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour au profil de {{ beneficiary.full_name }}
+                </a>
+            </div>
+        </div>
+        <div class="mt-4">
+            <h1 class="text-3xl font-bold text-gray-900">
+                {% if is_update %}
+                    Modifier la Photo Instantanée Financière
+                {% else %}
+                    Nouvelle Photo Instantanée Financière
+                {% endif %}
+            </h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Pour {{ beneficiary.full_name }} - 
+                {% if is_update %}
+                    Mise à jour des informations financières du mois en cours
+                {% else %}
+                    Enregistrement de la situation financière actuelle
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        
+        <!-- Revenus Section -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                        Revenus
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Renseignez tous les revenus mensuels du bénéficiaire
+                    </p>
+                </div>
+                
+                {% for category_name, fields in form.get_revenue_categories %}
+                    <div class="mb-8">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                            {{ category_name }}
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {% for field_name, field in fields %}
+                                <div>
+                                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                        {{ field.label }}
+                                    </label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        {{ field }}
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                            <span class="text-gray-500 sm:text-sm">€</span>
+                                        </div>
+                                    </div>
+                                    {% if field.errors %}
+                                        <div class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Charges Section -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-minus-circle text-red-600 mr-2"></i>
+                        Charges
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Renseignez toutes les charges mensuelles du bénéficiaire
+                    </p>
+                </div>
+                
+                {% for category_name, fields in form.get_charge_categories %}
+                    <div class="mb-8">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                            {{ category_name }}
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {% for field_name, field in fields %}
+                                <div>
+                                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                        {{ field.label }}
+                                    </label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        {{ field }}
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                            <span class="text-gray-500 sm:text-sm">€</span>
+                                        </div>
+                                    </div>
+                                    {% if field.errors %}
+                                        <div class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-calculator text-blue-600 mr-2"></i>
+                    Résumé Financier
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-arrow-up text-green-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-green-800">Total Revenus</p>
+                                <p class="text-lg font-semibold text-green-900" id="total-revenus">0,00 €</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-arrow-down text-red-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-red-800">Total Charges</p>
+                                <p class="text-lg font-semibold text-red-900" id="total-charges">0,00 €</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-equals text-blue-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-blue-800">Solde Net</p>
+                                <p class="text-lg font-semibold text-blue-900" id="solde-net">0,00 €</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'beneficiaries:detail' beneficiary.pk %}" 
+               class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Annuler
+            </a>
+            <button type="submit" 
+                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fas fa-save mr-2"></i>
+                {% if is_update %}
+                    Mettre à jour la photo instantanée
+                {% else %}
+                    Enregistrer la photo instantanée
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fonction pour calculer les totaux en temps réel
+    function updateTotals() {
+        let totalRevenus = 0;
+        let totalCharges = 0;
+        
+        // Calculer les revenus
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            const fieldName = input.name;
+            
+            // Liste des champs de revenus (basée sur le modèle FinancialSnapshot)
+            const revenueFields = [
+                'rsa_prime_activite', 'aah_pension_invalidite', 'apl', 'paje', 'af', 'cf', 'asf', 
+                'ape_conge_parental', 'ij_cpam_msa', 'france_travail', 'retraite_aspa', 'salaire', 
+                'ada', 'stage_formation_bourses', 'autres_revenus', 'aide_conseil_departemental', 
+                'pension_alimentaire', 'travail_non_declare', 'soutien_familial_amical', 
+                'contrat_garantie_jeunes', 'contrat_apprentissage', 'tickets_service', 'bons_alimentation'
+            ];
+            
+            if (revenueFields.includes(fieldName)) {
+                totalRevenus += value;
+            } else {
+                totalCharges += value;
+            }
+        });
+        
+        const soldeNet = totalRevenus - totalCharges;
+        
+        // Mettre à jour l'affichage
+        document.getElementById('total-revenus').textContent = totalRevenus.toLocaleString('fr-FR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' €';
+        
+        document.getElementById('total-charges').textContent = totalCharges.toLocaleString('fr-FR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' €';
+        
+        const soldeElement = document.getElementById('solde-net');
+        soldeElement.textContent = soldeNet.toLocaleString('fr-FR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' €';
+        
+        // Changer la couleur selon le solde
+        const parentDiv = soldeElement.closest('.bg-blue-50');
+        if (soldeNet < 0) {
+            parentDiv.className = parentDiv.className.replace('bg-blue-50 border-blue-200', 'bg-red-50 border-red-200');
+            soldeElement.className = soldeElement.className.replace('text-blue-900', 'text-red-900');
+        } else {
+            parentDiv.className = parentDiv.className.replace('bg-red-50 border-red-200', 'bg-blue-50 border-blue-200');
+            soldeElement.className = soldeElement.className.replace('text-red-900', 'text-blue-900');
+        }
+    }
+    
+    // Écouter les changements sur tous les champs numériques
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', updateTotals);
+        input.addEventListener('change', updateTotals);
+    });
+    
+    // Calculer les totaux initiaux
+    updateTotals();
+});
+</script>
+{% endblock %}

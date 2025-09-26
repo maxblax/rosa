@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ONA - Open Network Aid{% endblock %}</title>
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        .form-input {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .form-select {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .form-textarea {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .btn-secondary {
+            @apply bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500;
+        }
+        .btn-success {
+            @apply bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500;
+        }
+        .sidebar-collapsed {
+            width: 64px;
+        }
+        .sidebar-collapsed .sidebar-text {
+            display: none;
+        }
+        .field-changed {
+            border-color: #f59e0b !important;
+            background-color: #fef3c7 !important;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+        }
+    </style>
+</head>
+<body class="h-full bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar" class="bg-slate-800 text-white w-64 min-h-screen flex-shrink-0 transition-all duration-300 relative">
+            <div class="p-4 h-full flex flex-col">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-xl font-bold sidebar-text">Association APA30</h1>
+                    <button id="sidebar-toggle" class="text-white hover:bg-slate-700 p-2 rounded">
+                        <i class="fas fa-chevron-left" id="toggle-icon"></i>
+                    </button>
+                </div>
+                
+                <nav class="flex-1 space-y-2">
+                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                        <i class="fas fa-home mr-3"></i>
+                        <span class="sidebar-text">Home</span>
+                    </a>
+                    <a href="{% url 'beneficiaries:list' %}" 
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'beneficiaries' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors">
+                        <i class="fas fa-users mr-3"></i>
+                        <span class="sidebar-text">Bénéficiaires</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                        <i class="fas fa-hands-helping mr-3"></i>
+                        <span class="sidebar-text">Bénévoles</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                        <i class="fas fa-handshake mr-3"></i>
+                        <span class="sidebar-text">Partenaires</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                        <i class="fas fa-calendar mr-3"></i>
+                        <span class="sidebar-text">Calendrier</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        <span class="sidebar-text">Analyses</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                        <i class="fas fa-box mr-3"></i>
+                        <span class="sidebar-text">Stock</span>
+                    </a>
+                </nav>
+                
+                <div class="mt-auto">
+                    <div class="flex items-center p-3 bg-slate-700 rounded-lg mb-2">
+                        <i class="fas fa-user-circle text-2xl mr-3 text-blue-400"></i>
+                        <div class="flex-1 min-w-0 sidebar-text">
+                            <div class="text-sm font-medium truncate">Marie Orcel</div>
+                            <div class="text-xs text-slate-300 truncate">Assistante Sociale</div>
+                        </div>
+                    </div>
+                    <button class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                        <i class="fas fa-cog mr-2"></i>
+                        <span class="sidebar-text">Paramètres</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content area -->
+        <div class="flex-1 flex flex-col min-h-screen">
+            <!-- Top header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            {% block page_header %}
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main content -->
+            <main class="flex-1 bg-gray-50">
+                <div class="p-6">
+                    {% if messages %}
+                        <div id="messages-container" class="mb-6">
+                            {% for message in messages %}
+                                <div class="mb-4 p-4 rounded-md flex items-center justify-between {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %} message-alert">
+                                    <span>{{ message }}</span>
+                                    <button class="text-lg leading-none ml-4 hover:opacity-75" onclick="this.parentElement.remove()">&times;</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="financial-modal"></div>
+
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // HTMX configuration
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+
+        // Sidebar toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('sidebar-toggle');
+            const toggleIcon = document.getElementById('toggle-icon');
+            
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('sidebar-collapsed');
+                if (sidebar.classList.contains('sidebar-collapsed')) {
+                    toggleIcon.classList.remove('fa-chevron-left');
+                    toggleIcon.classList.add('fa-chevron-right');
+                } else {
+                    toggleIcon.classList.remove('fa-chevron-right');
+                    toggleIcon.classList.add('fa-chevron-left');
+                }
+            });
+
+            // Auto-hide messages after 5 seconds
+            const messages = document.querySelectorAll('.message-alert');
+            messages.forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        message.remove();
+                    }, 300);
+                }, 5000);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html> 

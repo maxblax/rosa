@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouvelle Interaction - {{ beneficiary.full_name }} - ONA{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with back button -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{% url 'beneficiaries:detail' beneficiary.pk %}" 
+                   class="flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour au profil de {{ beneficiary.full_name }}
+                </a>
+            </div>
+        </div>
+        <div class="mt-4">
+            <h1 class="text-3xl font-bold text-gray-900">Nouvelle Interaction</h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Enregistrer une nouvelle interaction avec {{ beneficiary.full_name }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        
+        <!-- Détails de l'interaction -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-comments text-blue-600 mr-2"></i>
+                        Détails de l'Interaction
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Renseignez les informations sur cette interaction
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.interaction_type.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.interaction_type.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.interaction_type }}
+                        </div>
+                        {% if form.interaction_type.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.interaction_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.title.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.title }}
+                        </div>
+                        {% if form.title.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.description.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.description }}
+                        </div>
+                        {% if form.description.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="{{ form.changes_made.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.changes_made.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.changes_made }}
+                        </div>
+                        {% if form.changes_made.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.changes_made.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suivi -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-calendar-check text-green-600 mr-2"></i>
+                        Suivi
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Planifiez un éventuel suivi de cette interaction
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <div class="flex items-center">
+                            {{ form.follow_up_required }}
+                            <label for="{{ form.follow_up_required.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700">
+                                {{ form.follow_up_required.label }}
+                            </label>
+                        </div>
+                        {% if form.follow_up_required.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.follow_up_required.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div id="follow-up-fields" style="display: none;" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.follow_up_date.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.follow_up_date.label }}
+                            </label>
+                            <div class="mt-1">
+                                {{ form.follow_up_date }}
+                            </div>
+                            {% if form.follow_up_date.errors %}
+                                <div class="mt-1 text-sm text-red-600">{{ form.follow_up_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="{{ form.follow_up_notes.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ form.follow_up_notes.label }}
+                            </label>
+                            <div class="mt-1">
+                                {{ form.follow_up_notes }}
+                            </div>
+                            {% if form.follow_up_notes.errors %}
+                                <div class="mt-1 text-sm text-red-600">{{ form.follow_up_notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mise à jour financière (optionnelle) -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                        Photo Instantanée Financière (Optionnelle)
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Si cette interaction implique des changements financiers, vous pouvez les renseigner ici
+                    </p>
+                    <div class="mt-4">
+                        <button type="button" id="toggle-financial" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter des informations financières
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="financial-section" style="display: none;" class="space-y-8">
+                    <!-- Revenus Section -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">
+                            <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                            Revenus
+                        </h4>
+                        
+                        {% for category_name, fields in financial_form.get_revenue_categories %}
+                            <div class="mb-6">
+                                <h5 class="font-medium text-gray-700 mb-3">{{ category_name }}</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for field_name, field in fields %}
+                                        <div>
+                                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                                {{ field.label }}
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                {{ field }}
+                                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <span class="text-gray-500 sm:text-sm">€</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Charges Section -->
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">
+                            <i class="fas fa-minus-circle text-red-600 mr-2"></i>
+                            Charges
+                        </h4>
+                        
+                        {% for category_name, fields in financial_form.get_charge_categories %}
+                            <div class="mb-6">
+                                <h5 class="font-medium text-gray-700 mb-3">{{ category_name }}</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for field_name, field in fields %}
+                                        <div>
+                                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                                {{ field.label }}
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                {{ field }}
+                                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <span class="text-gray-500 sm:text-sm">€</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'beneficiaries:detail' beneficiary.pk %}" 
+               class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Annuler
+            </a>
+            <button type="submit" 
+                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fas fa-save mr-2"></i>
+                Enregistrer l'interaction
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // S'assurer que tous les champs financiers ne sont pas requis
+    const financialInputs = document.querySelectorAll('#financial-section input[type="number"]');
+    financialInputs.forEach(input => {
+        input.removeAttribute('required');
+    });
+    // Gestion du suivi
+    const followUpCheckbox = document.getElementById('{{ form.follow_up_required.id_for_label }}');
+    const followUpFields = document.getElementById('follow-up-fields');
+    
+    function toggleFollowUpFields() {
+        if (followUpCheckbox.checked) {
+            followUpFields.style.display = 'block';
+        } else {
+            followUpFields.style.display = 'none';
+        }
+    }
+    
+    followUpCheckbox.addEventListener('change', toggleFollowUpFields);
+    toggleFollowUpFields(); // Initialiser l'état
+    
+    // Gestion de la section financière
+    const toggleFinancialBtn = document.getElementById('toggle-financial');
+    const financialSection = document.getElementById('financial-section');
+    let financialVisible = false;
+    
+    toggleFinancialBtn.addEventListener('click', function() {
+        financialVisible = !financialVisible;
+        if (financialVisible) {
+            financialSection.style.display = 'block';
+            this.innerHTML = '<i class="fas fa-minus mr-2"></i>Masquer les informations financières';
+            this.className = this.className.replace('text-gray-700 bg-white hover:bg-gray-50', 'text-purple-700 bg-purple-50 hover:bg-purple-100');
+        } else {
+            financialSection.style.display = 'none';
+            this.innerHTML = '<i class="fas fa-plus mr-2"></i>Ajouter des informations financières';
+            this.className = this.className.replace('text-purple-700 bg-purple-50 hover:bg-purple-100', 'text-gray-700 bg-white hover:bg-gray-50');
+        }
+    });
+});
+</script>
+{% endblock %}

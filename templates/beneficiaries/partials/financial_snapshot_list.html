@@ -1,0 +1,262 @@
+<!-- This partial gets updated via HTMX after adding a new financial snapshot -->
+<div id="financial-snapshot-list">
+    <!-- Financial Tracking Section -->
+    {% if latest_snapshot %}
+    <div class="bg-white shadow-lg sm:rounded-lg">
+        <div class="px-6 py-6 sm:p-8">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                    Suivi Financier
+                </h3>
+                <a href="{% url 'beneficiaries:financial_snapshot_create' beneficiary.pk %}"
+                   class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>
+                    Nouvelle Photo Instantanée Financière
+
+                </a>
+            </div>
+            
+            <!-- Financial Chart -->
+            <div class="mb-6">
+                <div class="bg-white p-4 rounded-lg border">
+                    <div style="height: 400px; position: relative;">
+                    <canvas id="financialChart"></canvas>
+                </div>
+                    <div class="mt-4 text-center">
+                        <p class="text-lg font-semibold {% if latest_snapshot.solde_net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            Solde net: {{ latest_snapshot.solde_net|floatformat:2 }}€
+                        </p>
+                        <p class="text-xs text-gray-500">Dernière photo instantanée: {{ latest_snapshot.date|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">Revenus Mensuels</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-blue-600">● RSA</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.rsa_prime_activite }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-green-600">● Prime d'activité</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.rsa_prime_activite }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-orange-600">● APL</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.apl }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-blue-600">● Salaire</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.salaire }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-purple-600">● Aide familiale</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.af }}€</span>
+                        </div>
+                        <div class="border-t pt-2 mt-2">
+                            <div class="flex justify-between font-medium">
+                                <span class="text-sm text-gray-900">Total Net:</span>
+                                <span class="text-sm text-gray-900">{{ latest_snapshot.total_revenus }}€</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">Charges Mensuelles</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-red-600">● Loyer</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.loyer_residuel }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-orange-600">● Énergie</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.energie }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-red-600">● Assurance habitation</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.assurance_habitation }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-pink-600">● Mutuelle santé</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.mutuelle_privee }}€</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-green-600">● Transport</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.transport_commun }}€</span>
+                        </div>
+                        <div class="border-t pt-2 mt-2">
+                            <div class="flex justify-between font-medium">
+                                <span class="text-sm text-gray-900">Total Net:</span>
+                                <span class="text-sm text-gray-900">{{ latest_snapshot.total_charges }}€</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Historical snapshots -->
+            {% if financial_snapshots|length > 1 %}
+            <div class="mt-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Historique des photos instantanées</h4>
+                <div class="space-y-2">
+                    {% for snapshot in financial_snapshots %}
+                        {% if not forloop.first %}
+                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
+                            <span class="text-sm text-gray-600">{{ snapshot.date|date:"d/m/Y H:i" }}</span>
+                            <div class="flex space-x-4">
+                                <span class="text-sm text-green-600">{{ snapshot.total_revenus }}€</span>
+                                <span class="text-sm text-red-600">-{{ snapshot.total_charges }}€</span>
+                                <span class="text-sm font-medium {% if snapshot.solde_net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ snapshot.solde_net }}€
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+                {% endif %}
+</div>
+
+<script>
+// Fonction pour initialiser le graphique
+function initializeFinancialChart() {
+    const ctx = document.getElementById('financialChart');
+    if (ctx) {
+        // Détruire le graphique existant s'il existe
+        if (window.financialChart && typeof window.financialChart.destroy === 'function') {
+            window.financialChart.destroy();
+        }
+        // Données pour le graphique
+        const snapshots = [
+            {% for snapshot in financial_snapshots %}
+            {
+                date: '{{ snapshot.date|date:"M Y" }}',
+                revenus: parseFloat('{{ snapshot.total_revenus|default:"0" }}'.replace(',', '.')),
+                charges: parseFloat('{{ snapshot.total_charges|default:"0" }}'.replace(',', '.')),
+                solde: parseFloat('{{ snapshot.solde_net|default:"0" }}'.replace(',', '.'))
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+                // Trier par date
+        snapshots.reverse();
+
+        // Stocker le graphique globalement pour pouvoir le détruire plus tard
+        window.financialChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: snapshots.map(s => s.date),
+                datasets: [
+                    {
+                        label: 'Revenus',
+                        data: snapshots.map(s => s.revenus),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        stack: 'stack1'
+                    },
+                    {
+                        label: 'Charges',
+                        data: snapshots.map(s => -s.charges),
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1,
+                        stack: 'stack1'
+                    },
+                    {
+                        label: 'Solde Net',
+                        data: snapshots.map(s => s.solde),
+                        type: 'line',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Évolution Financière'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Montant (€)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Solde Net (€)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    }
+}
+
+// Initialiser au chargement de la page
+document.addEventListener('DOMContentLoaded', initializeFinancialChart);
+
+// Réinitialiser après mise à jour HTMX
+document.addEventListener('htmx:afterSwap', function(event) {
+    if (event.target.id === 'financial-snapshot-list') {
+        console.log('Reinitializing chart after HTMX swap');
+        setTimeout(initializeFinancialChart, 100); // Petit délai pour s'assurer que le DOM est prêt
+    }
+});
+</script>
+    </div>
+    {% else %}
+    <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <div class="text-center">
+                <i class="fas fa-chart-line text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune photo instantanée financière</h3>
+                <p class="text-gray-500 mb-4">Créez une première photo instantanée pour commencer le suivi financier</p>
+                <a href="{% url 'beneficiaries:financial_snapshot_create' beneficiary.pk %}"
+                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-plus mr-2"></i>
+                    Première Photo Instantanée
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div> 

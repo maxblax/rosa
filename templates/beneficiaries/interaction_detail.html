@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ interaction.title }} - {{ interaction.beneficiary.full_name }} - ONA{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with back button -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{% url 'beneficiaries:detail' interaction.beneficiary.pk %}" 
+                   class="flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour au profil de {{ interaction.beneficiary.full_name }}
+                </a>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'beneficiaries:interaction_edit' interaction.beneficiary.pk interaction.pk %}" 
+                   class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-edit mr-2"></i>
+                    Modifier
+                </a>
+            </div>
+        </div>
+        <div class="mt-4">
+            <h1 class="text-3xl font-bold text-gray-900">{{ interaction.title }}</h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Interaction avec {{ interaction.beneficiary.full_name }} - {{ interaction.created_at|date:"d/m/Y à H:i" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left column: Main interaction details -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Détails de l'interaction -->
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-8">
+                        <i class="{{ interaction.interaction_type_icon }} text-blue-600 mr-2"></i>
+                        Détails de l'Interaction
+                    </h3>
+                    
+                    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Type d'interaction</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.get_interaction_type_display }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Date</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.created_at|date:"d/m/Y à H:i" }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Intervenant</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                {% if interaction.user %}{{ interaction.user.get_full_name|default:interaction.user.username }}{% else %}Utilisateur non défini{% endif %}
+                            </dd>
+                        </div>
+                        
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Description</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ interaction.description }}</dd>
+                        </div>
+                        
+                        {% if interaction.changes_made %}
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Changements apportés</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line bg-green-50 p-3 rounded-md border border-green-200">{{ interaction.changes_made }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Snapshot financier associé -->
+            {% if interaction.financial_snapshot %}
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-8">
+                        <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                        Photo Instantanée Financière Associée
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-arrow-up text-green-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-800">Total Revenus</p>
+                                    <p class="text-lg font-semibold text-green-900">{{ interaction.financial_snapshot.total_revenus|floatformat:2 }} €</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-arrow-down text-red-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-red-800">Total Charges</p>
+                                    <p class="text-lg font-semibold text-red-900">{{ interaction.financial_snapshot.total_charges|floatformat:2 }} €</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-equals text-blue-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-blue-800">Solde Net</p>
+                                    <p class="text-lg font-semibold {% if interaction.financial_snapshot.solde_net < 0 %}text-red-900{% else %}text-blue-900{% endif %}">
+                                        {{ interaction.financial_snapshot.solde_net|floatformat:2 }} €
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'beneficiaries:financial_snapshot_create' interaction.beneficiary.pk %}" 
+                           class="inline-flex items-center px-3 py-2 border border-purple-300 shadow-sm text-sm leading-4 font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                            <i class="fas fa-eye mr-2"></i>
+                            Voir le détail financier
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right column: Follow-up and metadata -->
+        <div class="space-y-8">
+            <!-- Suivi -->
+            {% if interaction.follow_up_required %}
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-6">
+                        <i class="fas fa-calendar-check text-orange-600 mr-2"></i>
+                        Suivi Requis
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        {% if interaction.follow_up_date %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Date prévue</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.follow_up_date|date:"d/m/Y" }}</dd>
+                        </div>
+                        {% endif %}
+                        
+                        {% if interaction.follow_up_notes %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Notes de suivi</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line bg-orange-50 p-3 rounded-md border border-orange-200">{{ interaction.follow_up_notes }}</dd>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Métadonnées -->
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-6">
+                        <i class="fas fa-info-circle text-gray-600 mr-2"></i>
+                        Informations
+                    </h3>
+                    
+                    <dl class="space-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Créé le</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.created_at|date:"d/m/Y à H:i" }}</dd>
+                        </div>
+                        
+                        {% if interaction.updated_at != interaction.created_at %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Modifié le</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.updated_at|date:"d/m/Y à H:i" }}</dd>
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Intervenant</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                {% if interaction.user %}{{ interaction.user.get_full_name|default:interaction.user.username }}{% else %}Utilisateur non défini{% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-6">
+                        <i class="fas fa-bolt text-yellow-600 mr-2"></i>
+                        Actions Rapides
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <a href="{% url 'beneficiaries:interaction_create' interaction.beneficiary.pk %}" 
+                           class="block w-full text-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-plus mr-2"></i>
+                            Nouvelle Interaction
+                        </a>
+                        
+                        <a href="{% url 'beneficiaries:financial_snapshot_create' interaction.beneficiary.pk %}" 
+                           class="block w-full text-center px-4 py-2 border border-purple-300 rounded-md text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Photo Instantanée Financière
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

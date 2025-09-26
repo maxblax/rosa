@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ beneficiary.full_name }} - ONA{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with back button -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{% url 'beneficiaries:list' %}" 
+                   class="flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour
+                </a>
+            </div>
+            <div class="flex space-x-3">
+                <button type="button" 
+                        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-edit mr-2"></i>
+                    Modifier
+                </button>
+                <a href="{% url 'beneficiaries:financial_snapshot_create' beneficiary.pk %}"
+                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Nouvelle Photo Instantanée Financière
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left column: Personal info and financial tracking -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Personal Information -->
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                            Informations Personnelles
+                        </h3>
+                                    <a href="{% url 'beneficiaries:edit' beneficiary.pk %}" 
+               class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                <i class="fas fa-edit mr-2"></i>
+                Modifier
+            </a>
+                    </div>
+                    
+                    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Civilité</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.get_civility_display }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Nom Complet</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.full_name }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Métier / Savoir-faire</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.occupation|default:"Non renseigné" }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Date de Naissance</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.birth_date|date:"d/m/Y" }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Téléphone</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.phone|default:"Non renseigné" }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Adresse de Domiciliation</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.address|default:"Non renseignée" }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Lieu de Résidence</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.residence_address|default:"Non renseigné" }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Hébergement</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                {% if beneficiary.housing_status %}
+                                    {{ beneficiary.get_housing_status_display }}
+                                {% else %}
+                                    Non renseigné
+                                {% endif %}
+                            </dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Situation Familiale</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.get_family_status_display }}</dd>
+                        </div>
+                        
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Nombre d'Enfants à Charge</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ beneficiary.dependents_count }}</dd>
+                        </div>
+                    </dl>
+                    
+                    <!-- Children cards -->
+                    {% if children %}
+                    <div class="mt-8">
+                        <h4 class="text-md font-medium text-gray-900 mb-4">Enfants à Charge</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for child in children %}
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 class="font-medium text-blue-900">{{ child.full_name }}</h5>
+                                    <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">{{ child.age }} ans</span>
+                                </div>
+                                <p class="text-sm text-blue-700 mb-2">Né(e) le {{ child.birth_date|date:"d/m/Y" }}</p>
+                                {% if child.observations %}
+                                    <p class="text-xs text-blue-600 italic bg-blue-100 p-2 rounded">{{ child.observations|truncatewords:20 }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% elif beneficiary.dependents_count > 0 %}
+                    <div class="mt-8">
+                        <h4 class="text-md font-medium text-gray-900 mb-4">Enfants à Charge</h4>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                                <p class="text-sm text-yellow-800">
+                                    {{ beneficiary.dependents_count }} enfant{{ beneficiary.dependents_count|pluralize }} déclaré{{ beneficiary.dependents_count|pluralize }}, 
+                                    mais aucune information détaillée renseignée. 
+                                    <a href="{% url 'beneficiaries:edit' beneficiary.pk %}" class="underline font-medium">Modifier le profil</a> pour ajouter les détails.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Financial Tracking -->
+            {% include 'beneficiaries/partials/financial_snapshot_list.html' %}
+        </div>
+
+        <!-- Right column: Interaction history -->
+        <div class="space-y-8">
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                            Dernières Interactions
+                        </h3>
+                        <a href="{% url 'beneficiaries:interaction_create' beneficiary.pk %}"
+                           class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Nouvelle Interaction
+                        </a>
+                    </div>
+                    
+                    <!-- Interaction timeline -->
+                    <div class="space-y-4" id="interaction-history">
+                        {% if interactions %}
+                            {% for interaction in interactions %}
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="{{ interaction.interaction_type_icon }} text-blue-600 text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <a href="{% url 'beneficiaries:interaction_detail' beneficiary.pk interaction.pk %}" 
+                                           class="text-sm font-medium text-gray-900 hover:text-blue-600">
+                                            {{ interaction.title }}
+                                        </a>
+                                        <span class="text-xs text-gray-500">{{ interaction.created_at|date:"d/m/Y" }}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mt-1">{{ interaction.get_interaction_type_display }}</p>
+                                    {% if interaction.short_description %}
+                                        <p class="text-xs text-gray-500 mt-2">{{ interaction.short_description }}</p>
+                                    {% endif %}
+                                    {% if interaction.changes_made %}
+                                        <div class="mt-2">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-check mr-1"></i>
+                                                Actions réalisées
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                    {% if interaction.follow_up_required %}
+                                        <div class="mt-2">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                Suivi requis
+                                                {% if interaction.follow_up_date %}
+                                                    le {{ interaction.follow_up_date|date:"d/m/Y" }}
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                    <div class="mt-2 text-xs text-gray-400">
+                                        Par {% if interaction.user %}{{ interaction.user.get_full_name|default:interaction.user.username }}{% else %}Utilisateur non défini{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-8">
+                                <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-comments text-gray-400 text-xl"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-4">Aucune interaction enregistrée pour ce bénéficiaire</p>
+                                <a href="{% url 'beneficiaries:interaction_create' beneficiary.pk %}"
+                                   class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Créer la première interaction
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Services Éligibles -->
+            {% if latest_snapshot %}
+            <div class="bg-white shadow-lg sm:rounded-lg">
+                <div class="px-6 py-6 sm:p-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-8">
+                        Services Éligibles
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Distribution Alimentaire</p>
+                                <p class="text-xs text-gray-500">Aide Alimentaire - Banque Alimentaire</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Actif
+                                </span>
+                                <button class="text-red-600 hover:text-red-900 text-xs">
+                                    Désactiver
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Vestiaire Social</p>
+                                <p class="text-xs text-gray-500">Vêtements - Croix Rouge</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    Inactif
+                                </span>
+                                <button class="text-green-600 hover:text-green-900 text-xs">
+                                    Activer
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Aide au Logement</p>
+                                <p class="text-xs text-gray-500">Logement - CCAS</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    Inactif
+                                </span>
+                                <button class="text-green-600 hover:text-green-900 text-xs">
+                                    Activer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %} 
