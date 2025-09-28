@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # Local apps
     'users',
     'beneficiaries',
+    'volunteers',
 ]
 
 MIDDLEWARE = [
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ona.middleware.AuthenticationMiddleware',  # Notre middleware d'auth
 ]
 
 ROOT_URLCONF = 'ona.urls'
@@ -130,3 +132,11 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/beneficiaires/'
+LOGOUT_REDIRECT_URL = '/auth/login/'
+
+# Mode développement (bypass authentication)
+DEV_MODE = DEBUG  # En mode debug, pas besoin d'authentification

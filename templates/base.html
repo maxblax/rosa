@@ -69,7 +69,8 @@
                         <i class="fas fa-users mr-3"></i>
                         <span class="sidebar-text">Bénéficiaires</span>
                     </a>
-                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
+                    <a href="{% url 'volunteers:list' %}"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'volunteers' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors">
                         <i class="fas fa-hands-helping mr-3"></i>
                         <span class="sidebar-text">Bénévoles</span>
                     </a>
@@ -92,17 +93,34 @@
                 </nav>
                 
                 <div class="mt-auto">
-                    <div class="flex items-center p-3 bg-slate-700 rounded-lg mb-2">
-                        <i class="fas fa-user-circle text-2xl mr-3 text-blue-400"></i>
-                        <div class="flex-1 min-w-0 sidebar-text">
-                            <div class="text-sm font-medium truncate">Marie Orcel</div>
-                            <div class="text-xs text-slate-300 truncate">Assistante Sociale</div>
+                    {% if user.is_authenticated %}
+                        <div class="flex items-center p-3 bg-slate-700 rounded-lg mb-2">
+                            <i class="fas fa-user-circle text-2xl mr-3 text-blue-400"></i>
+                            <div class="flex-1 min-w-0 sidebar-text">
+                                <div class="text-sm font-medium truncate">
+                                    {{ user.get_full_name|default:user.username }}
+                                </div>
+                                <div class="text-xs text-slate-300 truncate">
+                                    {% if user.volunteer_profile %}
+                                        {{ user.volunteer_profile.get_role_display }}
+                                    {% elif user.is_superuser %}
+                                        Administrateur
+                                    {% else %}
+                                        Utilisateur
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <button class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
-                        <i class="fas fa-cog mr-2"></i>
-                        <span class="sidebar-text">Paramètres</span>
-                    </button>
+                        <a href="{% url 'auth:logout' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            <span class="sidebar-text">Déconnexion</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'auth:login' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            <span class="sidebar-text">Connexion</span>
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

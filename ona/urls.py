@@ -22,7 +22,9 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('auth/', include('ona.auth_urls')),
     path('beneficiaires/', include('beneficiaries.urls')),
+    path('benevoles/', include('volunteers.urls')),
     # TODO: Add home page redirect
     path('', lambda request: redirect('beneficiaries:list')),  # Temporary redirect
 ]
