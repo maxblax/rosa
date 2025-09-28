@@ -14,18 +14,53 @@ class BeneficiaryForm(ModelForm):
             'family_status', 'dependents_count'
         ]
         widgets = {
-            'birth_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-input'}),
-            'civility': forms.Select(attrs={'class': 'form-select'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Prénom'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Nom'}),
-            'phone': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Téléphone'}),
-            'email': forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email'}),
-            'occupation': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Métier / Savoir-faire'}),
-            'address': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'Adresse de domiciliation'}),
-            'residence_address': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'Lieu de résidence'}),
-            'housing_status': forms.Select(attrs={'class': 'form-select'}),
-            'family_status': forms.RadioSelect(attrs={'class': 'form-radio'}),
-            'dependents_count': forms.NumberInput(attrs={'class': 'form-input', 'min': '0'}),
+            'birth_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'civility': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Prénom'
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Nom'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Téléphone'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Email'
+            }),
+            'occupation': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Métier / Savoir-faire'
+            }),
+            'address': forms.Textarea(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 4,
+                'placeholder': 'Adresse de domiciliation'
+            }),
+            'residence_address': forms.Textarea(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 4,
+                'placeholder': 'Lieu de résidence'
+            }),
+            'housing_status': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'family_status': forms.RadioSelect(attrs={
+                'class': 'space-y-2'
+            }),
+            'dependents_count': forms.NumberInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'min': '0'
+            }),
         }
     
     def __init__(self, *args, **kwargs):
@@ -157,23 +192,33 @@ class InteractionForm(ModelForm):
             'follow_up_required', 'follow_up_date', 'follow_up_notes'
         ]
         widgets = {
-            'interaction_type': forms.Select(attrs={'class': 'form-select'}),
-            'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ex: Demande d\'aide alimentaire'}),
+            'interaction_type': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Ex: Demande d\'aide alimentaire'
+            }),
             'description': forms.Textarea(attrs={
-                'class': 'form-textarea', 
-                'rows': 4, 
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 6,
                 'placeholder': 'Décrivez la situation, les besoins exprimés, les observations...'
             }),
             'changes_made': forms.Textarea(attrs={
-                'class': 'form-textarea', 
-                'rows': 3, 
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 5,
                 'placeholder': 'Services activés, modifications apportées, actions entreprises...'
             }),
-            'follow_up_required': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
-            'follow_up_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-input'}),
+            'follow_up_required': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            }),
+            'follow_up_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
             'follow_up_notes': forms.Textarea(attrs={
-                'class': 'form-textarea', 
-                'rows': 2, 
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 3,
                 'placeholder': 'Notes concernant le suivi à effectuer...'
             }),
         }

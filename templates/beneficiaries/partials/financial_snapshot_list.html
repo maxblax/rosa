@@ -19,9 +19,16 @@
             <!-- Financial Chart -->
             <div class="mb-6">
                 <div class="bg-white p-4 rounded-lg border">
-                    <div style="height: 400px; position: relative;">
-                    <canvas id="financialChart"></canvas>
-                </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-semibold text-gray-900">Évolution Financière</h4>
+                        <button id="expandChart" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-expand mr-2"></i>
+                            Agrandir
+                        </button>
+                    </div>
+                    <div id="chartContainer" style="height: 500px; position: relative;">
+                        <canvas id="financialChart"></canvas>
+                    </div>
                     <div class="mt-4 text-center">
                         <p class="text-lg font-semibold {% if latest_snapshot.solde_net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
                             Solde net: {{ latest_snapshot.solde_net|floatformat:2 }}€
@@ -42,7 +49,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-green-600">● Prime d'activité</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.rsa_prime_activite }}€</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.rsa_prime_activite|default:"0" }}€</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-orange-600">● APL</span>
@@ -54,7 +61,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-purple-600">● Aide familiale</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.af }}€</span>
+                            <span class="text-sm text-gray-900">{{ latest_snapshot.soutien_familial_amical|default:"0" }}€</span>
                         </div>
                         <div class="border-t pt-2 mt-2">
                             <div class="flex justify-between font-medium">
@@ -70,28 +77,28 @@
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-sm text-red-600">● Loyer</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.loyer_residuel }}€</span>
+                            <span class="text-sm text-gray-900">-{{ latest_snapshot.loyer_residuel|default:"0" }}€</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-orange-600">● Énergie</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.energie }}€</span>
+                            <span class="text-sm text-gray-900">-{{ latest_snapshot.energie|default:"0" }}€</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-red-600">● Assurance habitation</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.assurance_habitation }}€</span>
+                            <span class="text-sm text-gray-900">-{{ latest_snapshot.assurance_habitation|default:"0" }}€</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-pink-600">● Mutuelle santé</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.mutuelle_privee }}€</span>
+                            <span class="text-sm text-gray-900">-{{ latest_snapshot.mutuelle_privee|default:"0" }}€</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-sm text-green-600">● Transport</span>
-                            <span class="text-sm text-gray-900">{{ latest_snapshot.transport_commun }}€</span>
+                            <span class="text-sm text-gray-900">-{{ latest_snapshot.transport_commun|default:"0" }}€</span>
                         </div>
                         <div class="border-t pt-2 mt-2">
                             <div class="flex justify-between font-medium">
                                 <span class="text-sm text-gray-900">Total Net:</span>
-                                <span class="text-sm text-gray-900">{{ latest_snapshot.total_charges }}€</span>
+                                <span class="text-sm text-red-600">-{{ latest_snapshot.total_charges }}€</span>
                             </div>
                         </div>
                     </div>
@@ -123,22 +130,59 @@
 </div>
 
 <script>
-// Fonction pour initialiser le graphique
-function initializeFinancialChart() {
-    const ctx = document.getElementById('financialChart');
-    if (ctx) {
-        // Détruire le graphique existant s'il existe
-        if (window.financialChart && typeof window.financialChart.destroy === 'function') {
-            window.financialChart.destroy();
-        }
-        // Données pour le graphique
+// Fonction pour afficher les détails d'un snapshot
+function showSnapshotDetails(snapshot) {
+    alert(`Détails pour ${snapshot.date}:\n\nRevenus: ${snapshot.revenus}€\nCharges: ${snapshot.charges}€\nSolde Net: ${snapshot.solde}€`);
+}
+
+// Fonction pour créer un graphique financier (réutilisable)
+function createFinancialChart(ctx, isModal = false) {
+    if (!ctx) return null;
+        // Données pour le graphique avec tous les champs du modèle
         const snapshots = [
             {% for snapshot in financial_snapshots %}
             {
                 date: '{{ snapshot.date|date:"M Y" }}',
-                revenus: parseFloat('{{ snapshot.total_revenus|default:"0" }}'.replace(',', '.')),
-                charges: parseFloat('{{ snapshot.total_charges|default:"0" }}'.replace(',', '.')),
-                solde: parseFloat('{{ snapshot.solde_net|default:"0" }}'.replace(',', '.'))
+                // Revenus (tous les champs du modèle)
+                rsa_prime_activite: parseFloat('{{ snapshot.rsa_prime_activite|default:"0" }}'.replace(',', '.')),
+                aah_pension_invalidite: parseFloat('{{ snapshot.aah_pension_invalidite|default:"0" }}'.replace(',', '.')),
+                apl: parseFloat('{{ snapshot.apl|default:"0" }}'.replace(',', '.')),
+                paje: parseFloat('{{ snapshot.paje|default:"0" }}'.replace(',', '.')),
+                af: parseFloat('{{ snapshot.af|default:"0" }}'.replace(',', '.')),
+                cf: parseFloat('{{ snapshot.cf|default:"0" }}'.replace(',', '.')),
+                asf: parseFloat('{{ snapshot.asf|default:"0" }}'.replace(',', '.')),
+                ape_conge_parental: parseFloat('{{ snapshot.ape_conge_parental|default:"0" }}'.replace(',', '.')),
+                ij_cpam_msa: parseFloat('{{ snapshot.ij_cpam_msa|default:"0" }}'.replace(',', '.')),
+                france_travail: parseFloat('{{ snapshot.france_travail|default:"0" }}'.replace(',', '.')),
+                retraite_aspa: parseFloat('{{ snapshot.retraite_aspa|default:"0" }}'.replace(',', '.')),
+                salaire: parseFloat('{{ snapshot.salaire|default:"0" }}'.replace(',', '.')),
+                ada: parseFloat('{{ snapshot.ada|default:"0" }}'.replace(',', '.')),
+                stage_formation_bourses: parseFloat('{{ snapshot.stage_formation_bourses|default:"0" }}'.replace(',', '.')),
+                autres_revenus: parseFloat('{{ snapshot.autres_revenus|default:"0" }}'.replace(',', '.')),
+                aide_conseil_departemental: parseFloat('{{ snapshot.aide_conseil_departemental|default:"0" }}'.replace(',', '.')),
+                pension_alimentaire: parseFloat('{{ snapshot.pension_alimentaire|default:"0" }}'.replace(',', '.')),
+                travail_non_declare: parseFloat('{{ snapshot.travail_non_declare|default:"0" }}'.replace(',', '.')),
+                soutien_familial_amical: parseFloat('{{ snapshot.soutien_familial_amical|default:"0" }}'.replace(',', '.')),
+                contrat_garantie_jeunes: parseFloat('{{ snapshot.contrat_garantie_jeunes|default:"0" }}'.replace(',', '.')),
+                contrat_apprentissage: parseFloat('{{ snapshot.contrat_apprentissage|default:"0" }}'.replace(',', '.')),
+                tickets_service: parseFloat('{{ snapshot.tickets_service|default:"0" }}'.replace(',', '.')),
+                bons_alimentation: parseFloat('{{ snapshot.bons_alimentation|default:"0" }}'.replace(',', '.')),
+                // Charges (négatives)
+                loyer_residuel: -parseFloat('{{ snapshot.loyer_residuel|default:"0" }}'.replace(',', '.')),
+                energie: -parseFloat('{{ snapshot.energie|default:"0" }}'.replace(',', '.')),
+                eau: -parseFloat('{{ snapshot.eau|default:"0" }}'.replace(',', '.')),
+                assurance_habitation: -parseFloat('{{ snapshot.assurance_habitation|default:"0" }}'.replace(',', '.')),
+                mutuelle_privee: -parseFloat('{{ snapshot.mutuelle_privee|default:"0" }}'.replace(',', '.')),
+                css: -parseFloat('{{ snapshot.css|default:"0" }}'.replace(',', '.')),
+                frais_scolaires: -parseFloat('{{ snapshot.frais_scolaires|default:"0" }}'.replace(',', '.')),
+                frais_sante_non_rembourses: -parseFloat('{{ snapshot.frais_sante_non_rembourses|default:"0" }}'.replace(',', '.')),
+                transport_commun: -parseFloat('{{ snapshot.transport_commun|default:"0" }}'.replace(',', '.')),
+                carburant: -parseFloat('{{ snapshot.carburant|default:"0" }}'.replace(',', '.')),
+                credit_consommation: -parseFloat('{{ snapshot.credit_consommation|default:"0" }}'.replace(',', '.')),
+                dettes_diverses: -parseFloat('{{ snapshot.dettes_diverses|default:"0" }}'.replace(',', '.')),
+                abonnements_sport_culture: -parseFloat('{{ snapshot.abonnements_sport_culture|default:"0" }}'.replace(',', '.')),
+                // Total net
+                total_net: parseFloat('{{ snapshot.solde_net|default:"0" }}'.replace(',', '.'))
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ];
@@ -146,93 +190,303 @@ function initializeFinancialChart() {
                 // Trier par date
         snapshots.reverse();
 
-        // Stocker le graphique globalement pour pouvoir le détruire plus tard
-        window.financialChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: snapshots.map(s => s.date),
-                datasets: [
-                    {
-                        label: 'Revenus',
-                        data: snapshots.map(s => s.revenus),
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1,
-                        stack: 'stack1'
-                    },
-                    {
-                        label: 'Charges',
-                        data: snapshots.map(s => -s.charges),
-                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1,
-                        stack: 'stack1'
-                    },
-                    {
-                        label: 'Solde Net',
-                        data: snapshots.map(s => s.solde),
-                        type: 'line',
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderColor: 'rgba(16, 185, 129, 1)',
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.4,
-                        yAxisID: 'y1'
+        // Couleurs D3 schemeObservable10
+        const D3_COLORS = [
+            '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
+            '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+        ];
+
+        // Fonction pour obtenir une couleur cyclique
+        function getColor(index) {
+            return D3_COLORS[index % D3_COLORS.length];
+        }
+
+        // Définition des champs avec couleurs D3
+        const FIELD_DEFINITIONS = {
+            // Revenus
+            rsa_prime_activite: { label: 'RSA/Prime d\'activité', color: getColor(0), type: 'income' },
+            aah_pension_invalidite: { label: 'AAH, PI', color: getColor(1), type: 'income' },
+            apl: { label: 'APL', color: getColor(2), type: 'income' },
+            paje: { label: 'PAJE', color: getColor(3), type: 'income' },
+            af: { label: 'AF', color: getColor(4), type: 'income' },
+            cf: { label: 'CF', color: getColor(5), type: 'income' },
+            asf: { label: 'ASF', color: getColor(6), type: 'income' },
+            ape_conge_parental: { label: 'APE Congé Parental', color: getColor(7), type: 'income' },
+            ij_cpam_msa: { label: 'IJ CPAM/MSA', color: getColor(8), type: 'income' },
+            france_travail: { label: 'France Travail', color: getColor(9), type: 'income' },
+            retraite_aspa: { label: 'Retraite, A.S.P.A.', color: getColor(10), type: 'income' },
+            salaire: { label: 'Salaire', color: getColor(11), type: 'income' },
+            ada: { label: 'ADA', color: getColor(12), type: 'income' },
+            stage_formation_bourses: { label: 'Stage, Formation, bourses', color: getColor(13), type: 'income' },
+            autres_revenus: { label: 'Autres revenus', color: getColor(14), type: 'income' },
+            aide_conseil_departemental: { label: 'Aide Conseil Départemental', color: getColor(15), type: 'income' },
+            pension_alimentaire: { label: 'Pension alimentaire', color: getColor(16), type: 'income' },
+            travail_non_declare: { label: 'Travail non déclaré', color: getColor(17), type: 'income' },
+            soutien_familial_amical: { label: 'Soutien familial ou amical', color: getColor(18), type: 'income' },
+            contrat_garantie_jeunes: { label: 'Contrat Garantie Jeunes', color: getColor(19), type: 'income' },
+            contrat_apprentissage: { label: 'Contrat d\'apprentissage', color: getColor(20), type: 'income' },
+            tickets_service: { label: 'Tickets service', color: getColor(21), type: 'income' },
+            bons_alimentation: { label: 'Bons d\'alimentation', color: getColor(22), type: 'income' },
+
+            // Charges - commencer après les revenus pour éviter les doublons de couleurs
+            loyer_residuel: { label: 'Loyer résiduel', color: getColor(23), type: 'expense' },
+            energie: { label: 'Énergie', color: getColor(24), type: 'expense' },
+            eau: { label: 'Eau', color: getColor(25), type: 'expense' },
+            assurance_habitation: { label: 'Assurance habitation', color: getColor(26), type: 'expense' },
+            mutuelle_privee: { label: 'Mutuelle privée', color: getColor(27), type: 'expense' },
+            css: { label: 'CSS', color: getColor(28), type: 'expense' },
+            frais_scolaires: { label: 'Frais scolaires', color: getColor(29), type: 'expense' },
+            frais_sante_non_rembourses: { label: 'Frais de santé non remboursés', color: getColor(30), type: 'expense' },
+            transport_commun: { label: 'Transport en commun', color: getColor(31), type: 'expense' },
+            carburant: { label: 'Carburant', color: getColor(32), type: 'expense' },
+            credit_consommation: { label: 'Crédit à la consommation', color: getColor(33), type: 'expense' },
+            dettes_diverses: { label: 'Dettes diverses', color: getColor(34), type: 'expense' },
+            abonnements_sport_culture: { label: 'Abonnements sport et culture', color: getColor(35), type: 'expense' }
+        };
+
+        // Fonction pour déterminer si un champ doit être affiché (non-zéro sur au moins un snapshot)
+        function shouldShowField(fieldName) {
+            return snapshots.some(snapshot => Math.abs(snapshot[fieldName]) > 0);
+        }
+
+        // Filtrer les champs à afficher
+        const visibleFields = Object.keys(FIELD_DEFINITIONS).filter(shouldShowField);
+
+        // Créer les datasets dynamiquement
+        const datasets = [];
+
+        // Ajouter les revenus (stack positif)
+        visibleFields.filter(field => FIELD_DEFINITIONS[field].type === 'income').forEach(field => {
+            datasets.push({
+                label: FIELD_DEFINITIONS[field].label,
+                data: snapshots.map(s => s[field]),
+                backgroundColor: FIELD_DEFINITIONS[field].color,
+                borderColor: FIELD_DEFINITIONS[field].color,
+                borderWidth: 1,
+                stack: 'main',
+                barThickness: 80
+            });
+        });
+
+        // Ajouter les charges (stack négatif)
+        visibleFields.filter(field => FIELD_DEFINITIONS[field].type === 'expense').forEach(field => {
+            datasets.push({
+                label: FIELD_DEFINITIONS[field].label,
+                data: snapshots.map(s => s[field]),
+                backgroundColor: FIELD_DEFINITIONS[field].color,
+                borderColor: FIELD_DEFINITIONS[field].color,
+                borderWidth: 1,
+                stack: 'main',
+                barThickness: 80
+            });
+        });
+
+        // Ajouter la ligne pour le solde net (DEVANT les barres)
+        datasets.push({
+            label: 'Solde Net',
+            data: snapshots.map(s => s.total_net),
+            type: 'line',
+            backgroundColor: 'rgba(5, 120, 87, 0.1)',
+            borderColor: '#059669',
+            borderWidth: 4,
+            pointBackgroundColor: '#059669',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            tension: 0.4,
+            fill: false,
+            order: -1, // Valeur négative pour être vraiment au premier plan
+            yAxisID: 'y',
+            spanGaps: true
+        });
+
+    // Définir les tailles de police en fonction du mode
+    const fontSize = isModal ? {
+        legend: 16,
+        tooltip: { title: 18, body: 16, footer: 16 },
+        axis: 16,
+        axisTitle: 18
+    } : {
+        legend: 14,
+        tooltip: { title: 16, body: 14, footer: 14 },
+        axis: 14,
+        axisTitle: 16
+    };
+
+    // Créer le graphique
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: snapshots.map(s => s.date),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: false // Enlever le titre du graphique car on l'a déjà au-dessus
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        font: {
+                            size: fontSize.legend
+                        },
+                        filter: function(legendItem, chartData) {
+                            // Masquer 'Solde Net' de la légende car inutile
+                            return visibleFields.includes(legendItem.text);
+                        }
                     }
-                ]
+                },
+                tooltip: {
+                    titleFont: {
+                        size: fontSize.tooltip.title
+                    },
+                    bodyFont: {
+                        size: fontSize.tooltip.body
+                    },
+                    footerFont: {
+                        size: fontSize.tooltip.footer
+                    }
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
+            scales: {
+                x: {
+                    stacked: true,
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: fontSize.axis
+                        }
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: false,
                     title: {
                         display: true,
-                        text: 'Évolution Financière'
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true,
-                        grid: {
-                            display: false
+                        text: 'Montant (€)',
+                        font: {
+                            size: fontSize.axisTitle,
+                            weight: 'bold'
                         }
                     },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Montant (€)'
+                    ticks: {
+                        font: {
+                            size: fontSize.axis
+                        },
+                        callback: function(value) {
+                            return value + '€';
                         }
                     },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Solde Net (€)'
+                    grid: {
+                        color: function(context) {
+                            // Marquer la ligne 0 en plus foncé
+                            if (context.tick.value === 0) {
+                                return '#374151'; // Gris foncé pour la ligne 0
+                            }
+                            return '#E5E7EB'; // Gris clair pour les autres lignes
                         },
-                        grid: {
-                            drawOnChartArea: false,
-                        },
+                        lineWidth: function(context) {
+                            // Ligne 0 plus épaisse
+                            if (context.tick.value === 0) {
+                                return 3;
+                            }
+                            return 1;
+                        }
                     }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const elementIndex = elements[0].index;
+                    const snapshot = snapshots[elementIndex];
+                    showSnapshotDetails(snapshot);
                 }
             }
-        });
+        }
+    });
+
+    // Stocker le graphique dans la variable appropriée
+    if (isModal) {
+        window.financialChartModal = chart;
+    } else {
+        window.financialChart = chart;
+    }
+
+    return chart;
+}
+
+// Fonction pour initialiser le graphique principal
+function initializeFinancialChart() {
+    const ctx = document.getElementById('financialChart');
+    if (ctx) {
+        // Détruire le graphique existant s'il existe
+        if (window.financialChart && typeof window.financialChart.destroy === 'function') {
+            window.financialChart.destroy();
+        }
+        createFinancialChart(ctx, false);
     }
 }
 
 // Initialiser au chargement de la page
 document.addEventListener('DOMContentLoaded', initializeFinancialChart);
+
+// Bouton expand pour plein écran
+document.getElementById('expandChart').addEventListener('click', function() {
+    // Créer la modale plein écran
+    const modal = document.createElement('div');
+    modal.id = 'chartModal';
+    modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg w-full h-full max-w-7xl max-h-full flex flex-col">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-2xl font-semibold text-gray-900">Évolution Financière - Vue Étendue</h2>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+            </div>
+            <div class="flex-1 p-6">
+                <div style="height: calc(100vh - 200px); position: relative;">
+                    <canvas id="financialChartModal"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Initialiser le graphique dans la modale
+    const modalCtx = document.getElementById('financialChartModal');
+
+    // Recréer le graphique avec la même configuration mais des polices plus grandes
+    createFinancialChart(modalCtx, true); // true = mode modal avec polices plus grandes
+
+    // Fermer la modale
+    document.getElementById('closeModal').addEventListener('click', function() {
+        if (window.financialChartModal) {
+            window.financialChartModal.destroy();
+        }
+        document.body.removeChild(modal);
+    });
+
+    // Fermer en cliquant à l'extérieur
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            if (window.financialChartModal) {
+                window.financialChartModal.destroy();
+            }
+            document.body.removeChild(modal);
+        }
+    });
+});
 
 // Réinitialiser après mise à jour HTMX
 document.addEventListener('htmx:afterSwap', function(event) {

@@ -3,7 +3,7 @@
 {% block title %}{{ beneficiary.full_name }} - ONA{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header with back button -->
     <div class="mb-8">
         <div class="flex items-center justify-between">
@@ -15,11 +15,6 @@
                 </a>
             </div>
             <div class="flex space-x-3">
-                <button type="button" 
-                        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <i class="fas fa-edit mr-2"></i>
-                    Modifier
-                </button>
                 <a href="{% url 'beneficiaries:financial_snapshot_create' beneficiary.pk %}"
                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     <i class="fas fa-chart-line mr-2"></i>
@@ -29,9 +24,9 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <!-- Left column: Personal info and financial tracking -->
-        <div class="lg:col-span-2 space-y-8">
+        <div class="lg:col-span-3 space-y-8">
             <!-- Personal Information -->
             <div class="bg-white shadow-lg sm:rounded-lg">
                 <div class="px-6 py-6 sm:p-8">
@@ -146,7 +141,7 @@
         </div>
 
         <!-- Right column: Interaction history -->
-        <div class="space-y-8">
+        <div class="lg:col-span-2 space-y-8">
             <div class="bg-white shadow-lg sm:rounded-lg">
                 <div class="px-6 py-6 sm:p-8">
                     <div class="flex items-center justify-between mb-8">
@@ -164,7 +159,7 @@
                     <div class="space-y-4" id="interaction-history">
                         {% if interactions %}
                             {% for interaction in interactions %}
-                            <div class="flex items-start space-x-3">
+                            <div class="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="flex-shrink-0">
                                     <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                         <i class="{{ interaction.interaction_type_icon }} text-blue-600 text-sm"></i>
@@ -179,8 +174,8 @@
                                         <span class="text-xs text-gray-500">{{ interaction.created_at|date:"d/m/Y" }}</span>
                                     </div>
                                     <p class="text-sm text-gray-600 mt-1">{{ interaction.get_interaction_type_display }}</p>
-                                    {% if interaction.short_description %}
-                                        <p class="text-xs text-gray-500 mt-2">{{ interaction.short_description }}</p>
+                                    {% if interaction.description %}
+                                        <p class="text-sm text-gray-700 mt-2 leading-relaxed">{{ interaction.description }}</p>
                                     {% endif %}
                                     {% if interaction.changes_made %}
                                         <div class="mt-2">
