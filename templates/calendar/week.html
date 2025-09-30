@@ -1,0 +1,567 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendrier - Vue Semaine - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-week text-blue-600 mr-2"></i>
+            Mon Calendrier
+        </h1>
+        <p class="text-gray-600 mt-1">
+            Semaine du {{ week_start|date:"d/m/Y" }} au {{ week_end|date:"d/m/Y" }}
+        </p>
+    </div>
+    <div class="flex items-center space-x-3">
+        <!-- Liens de gestion -->
+        <div class="flex space-x-2">
+            <a href="{% url 'calendar:availability_list' %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-check text-green-600 mr-2"></i>Mes disponibilités
+            </a>
+            <a href="{% url 'calendar:appointment_list' %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>Mes rendez-vous
+            </a>
+        </div>
+
+        <!-- Boutons de navigation -->
+        <div class="flex bg-white rounded-lg shadow border">
+            <a href="{% url 'calendar:day' %}"
+               class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-day mr-2"></i>Jour
+            </a>
+            <a href="{% url 'calendar:week' %}"
+               class="px-4 py-2 text-sm font-medium bg-blue-50 text-blue-700 border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fas fa-calendar-week mr-2"></i>Semaine
+            </a>
+            <a href="{% url 'calendar:month' %}"
+               class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-alt mr-2"></i>Mois
+            </a>
+        </div>
+
+        <!-- Navigation par semaine -->
+        <div class="flex bg-white rounded-lg shadow border">
+            <a href="?week={{ prev_week|date:'Y-m-d' }}"
+               class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <a href="{% url 'calendar:week' %}"
+               class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                Cette semaine
+            </a>
+            <a href="?week={{ next_week|date:'Y-m-d' }}"
+               class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'calendar:availability_create' %}"
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Disponibilité
+            </a>
+            <a href="{% url 'calendar:appointment_create' %}"
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Rendez-vous
+            </a>
+
+            {% if user.volunteer_profile.role in 'ADMIN,EMPLOYEE' %}
+            <a href="{% url 'calendar:global' %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-users mr-2"></i>Vue Globale
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex space-x-6">
+    <!-- Calendrier principal -->
+    <div class="flex-1 bg-white rounded-lg shadow overflow-hidden">
+    <!-- En-tête avec les jours -->
+    <div class="grid grid-cols-8 border-b border-gray-200">
+        <div class="p-4 text-center font-medium text-gray-500"></div>
+        {% for day in week_days %}
+        <div class="p-4 text-center border-l border-gray-200
+            {% if day.is_today %}bg-blue-50{% elif day.date < today %}bg-gray-200{% endif %}">
+            <div class="text-sm font-medium text-gray-900">
+                {{ day.date|date:"l" }}
+            </div>
+            <div class="text-lg font-bold {% if day.is_today %}text-blue-600{% elif day.date < today %}text-gray-400{% else %}text-gray-900{% endif %}">
+                {{ day.date|date:"d" }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <!-- Grille horaire -->
+    <div class="overflow-y-auto max-h-[600px]">
+        {% for hour_data in work_hours %}
+        <div class="grid grid-cols-8 border-b border-gray-100" style="min-height: 60px;">
+            <!-- Colonne heure -->
+            <div class="p-2 text-sm font-medium border-r border-gray-200 bg-gray-50 text-center
+                {% if hour_data.is_default %}text-gray-700{% else %}text-gray-400{% endif %}">
+                {{ hour_data.hour }}
+            </div>
+
+            <!-- Colonnes jours -->
+            {% for day in week_days %}
+            <div class="border-r border-gray-200 p-1 cursor-pointer {% if day.date < today %}bg-gray-100 opacity-60{% else %}hover:bg-blue-50{% endif %} relative"
+                 data-date="{{ day.date|date:'Y-m-d' }}" data-hour="{{ hour_data.hour_24 }}" data-time="{{ hour_data.hour }}"
+                 onclick="{% if day.date >= today %}handleCellClick(this, event){% endif %}">
+
+
+                <!-- Disponibilités pour cette heure et ce jour -->
+                {% for slot in day.availability_slots %}
+                    {% if slot.start_time.hour <= hour_data.hour_24 and hour_data.hour_24 < slot.end_time.hour %}
+                    <div class="absolute inset-1 bg-green-100 border border-green-200 rounded opacity-60 cursor-pointer"
+                         title="{{ slot.title }}"
+                         onclick="event.stopPropagation(); editAvailabilitySlot({{ slot.id }}, '{{ day.date|date:'Y-m-d' }}', {{ hour_data.hour_24 }})"></div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Rendez-vous pour cette heure et ce jour -->
+                {% for appointment in day.appointments %}
+                    {% if appointment.start_time.hour == hour_data.hour_24 %}
+                    <div class="bg-blue-500 text-white text-xs px-1 py-1 rounded mb-1 relative z-10"
+                         onclick="event.stopPropagation(); viewAppointment({{ appointment.id }})">
+                        <div class="font-medium truncate">{{ appointment.start_time|time:"H:i" }}-{{ appointment.end_time|time:"H:i" }}</div>
+                        <div class="truncate">{{ appointment.beneficiary.last_name }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    </div>
+
+    <!-- Panel latéral HTMX -->
+    <div class="w-80 bg-white rounded-lg shadow" id="calendar-sidebar" style="display: none;">
+        <div id="sidebar-content">
+            <!-- Contenu dynamique HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Panneau de résumé -->
+<div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Prochains rendez-vous -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-clock text-blue-600 mr-2"></i>
+            Prochains rendez-vous
+        </h3>
+        {% if appointments %}
+            <div class="space-y-3">
+                {% for appointment in appointments|slice:":5" %}
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">
+                            {{ appointment.beneficiary.first_name }} {{ appointment.beneficiary.last_name }}
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            {{ appointment.appointment_date|date:"d/m/Y" }} à {{ appointment.start_time|time:"H:i" }}
+                        </div>
+                        <div class="text-sm text-gray-500">{{ appointment.title }}</div>
+                    </div>
+                    <div class="ml-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if appointment.status == 'SCHEDULED' %}bg-yellow-100 text-yellow-800
+                            {% elif appointment.status == 'CONFIRMED' %}bg-green-100 text-green-800
+                            {% elif appointment.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'calendar:appointment_list' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Voir tous les rendez-vous →
+                </a>
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-sm">Aucun rendez-vous programmé cette semaine.</p>
+        {% endif %}
+    </div>
+
+    <!-- Créneaux de disponibilité -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-calendar-check text-green-600 mr-2"></i>
+            Mes disponibilités
+        </h3>
+        {% if availability_slots %}
+            <div class="space-y-3">
+                {% for slot in availability_slots|slice:":5" %}
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">
+                            {% if slot.recurrence_type == 'WEEKLY' %}
+                                {{ slot.get_weekday_display }} {{ slot.start_time|time:"H:i" }}-{{ slot.end_time|time:"H:i" }}
+                            {% else %}
+                                {{ slot.specific_date|date:"d/m/Y" }} {{ slot.start_time|time:"H:i" }}-{{ slot.end_time|time:"H:i" }}
+                            {% endif %}
+                        </div>
+                        {% if slot.title %}
+                        <div class="text-sm text-gray-600">{{ slot.title }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if slot.slot_type == 'AVAILABILITY' %}bg-green-100 text-green-800
+                            {% elif slot.slot_type == 'BUSY' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ slot.get_slot_type_display }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'calendar:availability_list' %}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                    Gérer mes disponibilités →
+                </a>
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-sm">
+                Aucun créneau de disponibilité défini.
+                <a href="{% url 'calendar:availability_create' %}" class="text-green-600 hover:text-green-800 font-medium">
+                    Créer le premier →
+                </a>
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables globales pour la sélection de plage
+    let isSelecting = false;
+    let startCell = null;
+    let endCell = null;
+    let selectedCells = [];
+
+    // Gestionnaire de clic sur les cellules
+    window.handleCellClick = function(cell, event) {
+        if (event.ctrlKey || event.metaKey) {
+            // Mode sélection multiple avec Ctrl/Cmd
+            startSelection(cell);
+        } else {
+            // Clic simple - ouvre le panel pour créer une nouvelle dispo
+            openNewSlotPanel(cell);
+        }
+    };
+
+    // Gestion du glisser-déposer pour sélection de plage
+    function startSelection(cell) {
+        if (!isSelecting) {
+            isSelecting = true;
+            startCell = cell;
+            selectedCells = [cell];
+            cell.classList.add('bg-blue-200', 'border-2', 'border-blue-400');
+
+            // Ajouter les listeners pour la sélection
+            document.addEventListener('mouseover', handleMouseOver);
+            document.addEventListener('mouseup', endSelection);
+        }
+    }
+
+    function handleMouseOver(event) {
+        if (isSelecting && event.target.hasAttribute('data-date')) {
+            const cell = event.target;
+            updateSelection(cell);
+        }
+    }
+
+    function updateSelection(endCell) {
+        // Nettoyer la sélection précédente
+        selectedCells.forEach(cell => {
+            cell.classList.remove('bg-blue-200', 'border-2', 'border-blue-400');
+        });
+
+        selectedCells = getSelectionRange(startCell, endCell);
+
+        // Appliquer le style à la nouvelle sélection
+        selectedCells.forEach(cell => {
+            cell.classList.add('bg-blue-200', 'border-2', 'border-blue-400');
+        });
+    }
+
+    function endSelection() {
+        if (isSelecting) {
+            isSelecting = false;
+            document.removeEventListener('mouseover', handleMouseOver);
+            document.removeEventListener('mouseup', endSelection);
+
+            if (selectedCells.length > 1) {
+                // Ouvre le panel pour créer une dispo sur la plage sélectionnée
+                openRangeSlotPanel(selectedCells);
+            }
+        }
+    }
+
+    function getSelectionRange(start, end) {
+        // Logique pour déterminer les cellules entre start et end
+        const startDate = start.dataset.date;
+        const startHour = parseInt(start.dataset.hour);
+        const endDate = end.dataset.date;
+        const endHour = parseInt(end.dataset.hour);
+
+        const cells = [];
+        const allCells = document.querySelectorAll('[data-date]');
+
+        allCells.forEach(cell => {
+            const cellDate = cell.dataset.date;
+            const cellHour = parseInt(cell.dataset.hour);
+
+            if (cellDate === startDate && cellHour >= Math.min(startHour, endHour) && cellHour <= Math.max(startHour, endHour)) {
+                cells.push(cell);
+            }
+        });
+
+        return cells;
+    }
+
+    // Panel latéral
+    function showSidebar() {
+        document.getElementById('calendar-sidebar').style.display = 'block';
+    }
+
+    function hideSidebar() {
+        document.getElementById('calendar-sidebar').style.display = 'none';
+        // Nettoyer les sélections
+        selectedCells.forEach(cell => {
+            cell.classList.remove('bg-blue-200', 'border-2', 'border-blue-400');
+        });
+        selectedCells = [];
+    }
+
+    // Fonctions globales
+    window.editAvailabilitySlot = function(slotId, date, hour) {
+        // Store the slot ID globally for save/delete functions
+        window.currentSlotId = slotId;
+
+        fetch(`/calendrier/availability/${slotId}/edit-panel/`, {
+            headers: {
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('sidebar-content').innerHTML = html;
+            showSidebar();
+        });
+    };
+
+    window.openNewSlotPanel = function(cell) {
+        const date = cell.dataset.date;
+        const hour = cell.dataset.hour;
+
+        fetch(`/calendrier/availability/new-panel/?date=${date}&hour=${hour}`, {
+            headers: {
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('sidebar-content').innerHTML = html;
+            showSidebar();
+        });
+    };
+
+    window.openRangeSlotPanel = function(cells) {
+        const startCell = cells[0];
+        const endCell = cells[cells.length - 1];
+        const date = startCell.dataset.date;
+        const startHour = Math.min(parseInt(startCell.dataset.hour), parseInt(endCell.dataset.hour));
+        const endHour = Math.max(parseInt(startCell.dataset.hour), parseInt(endCell.dataset.hour)) + 1;
+
+        fetch(`/calendrier/availability/new-panel/?date=${date}&start_hour=${startHour}&end_hour=${endHour}`, {
+            headers: {
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('sidebar-content').innerHTML = html;
+            showSidebar();
+        });
+    };
+
+    window.closeSidebar = function() {
+        hideSidebar();
+    };
+
+    // Clic sur le bouton X pour fermer
+    document.addEventListener('click', function(event) {
+        if (event.target.matches('#close-sidebar') || event.target.closest('#close-sidebar')) {
+            hideSidebar();
+        }
+    });
+
+    window.viewAppointment = function(appointmentId) {
+        window.location.href = `/calendrier/appointments/${appointmentId}/`;
+    };
+
+    // Fonctions pour les panels
+    window.createAvailability = function() {
+        const form = document.getElementById('new-availability-form');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        formData.append('action', 'create_availability');
+
+        fetch('/calendrier/availability/new-panel/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            if (html.includes('<script>')) {
+                eval(html.match(/<script>(.*?)<\/script>/s)[1]);
+            } else {
+                document.getElementById('sidebar-content').innerHTML = html;
+            }
+        });
+    };
+
+    window.createAppointment = function() {
+        const form = document.getElementById('new-availability-form');
+        if (!form) return;
+
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        const date = form.querySelector('input[name="date"]').value;
+
+        if (!startTime || !endTime || !date) {
+            alert('Veuillez sélectionner une heure de début et de fin');
+            return;
+        }
+
+        // Construire l'URL avec les paramètres pré-remplis
+        const params = new URLSearchParams({
+            date: date,
+            start_time: startTime,
+            end_time: endTime
+        });
+
+        // Rediriger vers le formulaire de création de rendez-vous
+        window.location.href = '/calendrier/appointments/create/?' + params.toString();
+    };
+
+    window.setTimeSlot = function(start, end) {
+        const startInput = document.getElementById('start_time');
+        const endInput = document.getElementById('end_time');
+        if (startInput) startInput.value = start;
+        if (endInput) endInput.value = end;
+        window.updateDuration && window.updateDuration();
+    };
+
+    window.updateDuration = function() {
+        const startTime = document.getElementById('start_time')?.value;
+        const endTime = document.getElementById('end_time')?.value;
+        const durationDisplay = document.getElementById('duration-display');
+
+        if (startTime && endTime && durationDisplay) {
+            const start = new Date(`2000-01-01T${startTime}`);
+            const end = new Date(`2000-01-01T${endTime}`);
+            const diff = (end - start) / (1000 * 60); // minutes
+
+            if (diff > 0) {
+                const hours = Math.floor(diff / 60);
+                const minutes = diff % 60;
+                let durationText = '';
+
+                if (hours > 0) {
+                    durationText += hours + 'h';
+                }
+                if (minutes > 0) {
+                    durationText += (hours > 0 ? '' : '') + String(minutes).padStart(2, '0');
+                }
+
+                durationDisplay.textContent = durationText || '0min';
+            }
+        }
+    };
+
+    window.saveSlot = function() {
+        const form = document.getElementById('edit-availability-form');
+        if (!form) return;
+
+        const formData = new FormData(form);
+
+        // Get the slot ID from the current panel context
+        const slotId = window.currentSlotId || (form.getAttribute('data-slot-id'));
+        if (!slotId) {
+            console.error('No slot ID found for editing');
+            return;
+        }
+
+        fetch(`/calendrier/availability/${slotId}/edit-panel/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            if (html.includes('<script>')) {
+                eval(html.match(/<script>(.*?)<\/script>/s)[1]);
+            } else {
+                document.getElementById('sidebar-content').innerHTML = html;
+            }
+        });
+    };
+
+    window.deleteSlot = function() {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce créneau de disponibilité ?')) {
+            const form = document.getElementById('edit-availability-form');
+            if (!form) return;
+
+            const formData = new FormData(form);
+            formData.append('delete', '1');
+
+            // Get the slot ID from the current panel context
+            const slotId = window.currentSlotId || (form.getAttribute('data-slot-id'));
+            if (!slotId) {
+                console.error('No slot ID found for deleting');
+                return;
+            }
+
+            fetch(`/calendrier/availability/${slotId}/edit-panel/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'HX-Request': 'true'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                if (html.includes('<script>')) {
+                    eval(html.match(/<script>(.*?)<\/script>/s)[1]);
+                } else {
+                    document.getElementById('sidebar-content').innerHTML = html;
+                }
+            });
+        }
+    };
+});
+</script>
+{% endblock %}

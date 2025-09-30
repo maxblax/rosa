@@ -1,0 +1,750 @@
+{% extends 'base.html' %}
+{% load beneficiaries_tags %}
+
+{% block title %}
+{% if object %}Modifier un rendez-vous{% else %}Créer un rendez-vous{% endif %} - ONA
+{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-plus text-blue-600 mr-2"></i>
+            {% if object %}Modifier un rendez-vous{% else %}Créer un rendez-vous{% endif %}
+        </h1>
+        <p class="text-gray-600 mt-1">
+            Planifiez un rendez-vous - Semaine du {{ week_start|date:"d/m/Y" }} au {{ week_end|date:"d/m/Y" }}
+        </p>
+    </div>
+    <div class="flex space-x-3">
+        <!-- Navigation par semaine -->
+        <div class="flex bg-white rounded-lg shadow border">
+            <a href="?week={{ prev_week|date:'Y-m-d' }}"
+               class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <span class="px-4 py-2 text-sm font-medium text-gray-700 border-r">
+                Cette semaine
+            </span>
+            <a href="?week={{ next_week|date:'Y-m-d' }}"
+               class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+
+        <a href="{% url 'calendar:appointment_list' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Retour
+        </a>
+        <a href="{% url 'calendar:week' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-calendar mr-2"></i>Mon calendrier
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+    <!-- Formulaire à gauche (1/3) -->
+    <div class="xl:col-span-1">
+        <form method="post" class="space-b-4">
+            {% csrf_token %}
+
+            <!-- Informations principales -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        Informations du rendez-vous
+                    </h3>
+                </div>
+
+                <div class="px-6 py-4 space-y-6">
+                    <!-- Bénéficiaire -->
+                    <div>
+                        <label for="{{ form.beneficiary.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.beneficiary.label }} <span class="text-red-500">*</span>
+                        </label>
+                        <select name="{{ form.beneficiary.name }}" id="{{ form.beneficiary.id_for_label }}"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required onchange="filterVolunteersByBeneficiary(); validateRequiredFields();">
+                            <option value="">Choisir un bénéficiaire</option>
+                            {% get_beneficiaries as beneficiaries %}
+                            {% for beneficiary in beneficiaries %}
+                            <option value="{{ beneficiary.id }}"
+                                    {% if form.beneficiary.value == beneficiary.id or form.beneficiary.field.initial == beneficiary.id %}selected{% endif %}>
+                                {{ beneficiary.last_name|upper }} {{ beneficiary.first_name }}
+                                {% if beneficiary.phone_number %}({{ beneficiary.phone_number }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Sélection du bénévole -->
+                    <div>
+                        <label for="{{ form.volunteer_calendar.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.volunteer_calendar.label }}
+                        </label>
+                        {{ form.volunteer_calendar }}
+                    </div>
+
+                    <!-- Date et horaires -->
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label for="{{ form.appointment_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ form.appointment_date.label }} <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="{{ form.appointment_date.name }}" id="{{ form.appointment_date.id_for_label }}"
+                                   value="{{ form.appointment_date.value|default:'' }}" required
+                                   min="{{ today|date:'Y-m-d' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {% if form.appointment_date.errors %}border-red-500{% endif %}">
+                            {% if form.appointment_date.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in form.appointment_date.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                    {{ form.start_time.label }} <span class="text-red-500">*</span>
+                                </label>
+                                <input type="time" name="{{ form.start_time.name }}" id="{{ form.start_time.id_for_label }}"
+                                       value="{{ form.start_time.value|default:'' }}" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="{{ form.end_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                    {{ form.end_time.label }} <span class="text-red-500">*</span>
+                                </label>
+                                <input type="time" name="{{ form.end_time.name }}" id="{{ form.end_time.id_for_label }}"
+                                       value="{{ form.end_time.value|default:'' }}" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Type et titre -->
+                    <div>
+                        <label for="{{ form.appointment_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.appointment_type.label }}
+                        </label>
+                        <select name="{{ form.appointment_type.name }}" id="{{ form.appointment_type.id_for_label }}"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            {% for value, label in form.appointment_type.field.choices %}
+                            <option value="{{ value }}" {% if form.appointment_type.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.title.label }}
+                        </label>
+                        <input type="text" name="{{ form.title.name }}" id="{{ form.title.id_for_label }}"
+                               value="{{ form.title.value|default:'' }}"
+                               placeholder="Ex: Entretien initial, Suivi social..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Lieu -->
+                    <div>
+                        <label for="{{ form.location.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.location.label }}
+                        </label>
+                        <input type="text" name="{{ form.location.name }}" id="{{ form.location.id_for_label }}"
+                               value="{{ form.location.value|default:'' }}"
+                               placeholder="Ex: Bureau 1, Salle de réunion..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Description et notes</h3>
+                </div>
+
+                <div class="px-6 py-4 space-y-4">
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.description.label }}
+                        </label>
+                        <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="3"
+                                  placeholder="Objet du rendez-vous, motif de la demande..."
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ form.description.value|default:'' }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.preparation_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.preparation_notes.label }}
+                        </label>
+                        <textarea name="{{ form.preparation_notes.name }}" id="{{ form.preparation_notes.id_for_label }}" rows="2"
+                                  placeholder="Dossiers à préparer, documents à apporter..."
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ form.preparation_notes.value|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning bandeau -->
+            <div id="availability-warning" class="hidden mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">
+                            Attention - Rendez-vous hors disponibilités
+                        </h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p id="warning-message">
+                                Le rendez-vous sélectionné n'est pas sur une plage de disponibilité du bénévole.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end space-x-3 mt-4">
+                <a href="{% url 'calendar:appointment_list' %}"
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Annuler
+                </a>
+                <button type="submit" id="submit-button"
+                        class="inline-flex items-center px-4 mr-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                        disabled>
+                    <i class="fas fa-save mr-2"></i>
+                    {% if object %}Mettre à jour{% else %}Créer le rendez-vous{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Calendrier à droite (2/3) -->
+    <div class="xl:col-span-2">
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-medium text-gray-900">
+                        Planning des disponibilités
+                    </h2>
+                    <div class="flex items-center space-x-4 text-xs">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-green-50 border border-green-200 rounded mr-2"></div>
+                            <span class="text-gray-600">Cliquer pour planifier</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                                Bénévole
+                            </th>
+                            {% for day in week_data %}
+                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider {% if day.date < today %}bg-gray-100{% endif %}">
+                                {{ day.date|date:"D d/m" }}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for calendar in calendars %}
+                        <tr class="hover:bg-gray-50 volunteer-row" data-volunteer-id="{{ calendar.volunteer.id }}" data-volunteer-name="{{ calendar.volunteer.user.get_full_name }}">
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-8 w-8">
+                                        <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <span class="text-xs font-medium text-blue-600">
+                                                {{ calendar.volunteer.user.first_name|first }}{{ calendar.volunteer.user.last_name|first }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-xs font-medium text-gray-900">
+                                            {{ calendar.volunteer.user.get_full_name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {{ calendar.volunteer.get_role_display }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            {% for day in week_data %}
+                            <td class="px-1 py-2 text-center {% if day.date < today %}bg-gray-100{% endif %}">
+                                <div class="space-y-1 min-h-20">
+                                    {% for vol_data in day.volunteers %}
+                                        {% if vol_data.calendar.id == calendar.id %}
+                                            <!-- RDV du jour pour ce bénévole -->
+                                            {% for appointment in vol_data.appointments %}
+                                            <div class="bg-blue-100 border border-blue-300 rounded p-1 text-xs mb-1 cursor-pointer hover:bg-blue-200"
+                                                 onclick="viewAppointment({{ appointment.id }})">
+                                                <div class="font-medium text-blue-800">
+                                                    {{ appointment.start_time|time:"H:i" }}
+                                                </div>
+                                                <div class="text-blue-600 truncate text-xs">
+                                                    {{ appointment.beneficiary.last_name|truncatechars:8 }}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+
+                                            <!-- Créneaux de disponibilité pour ce jour -->
+                                            {% for slot in vol_data.availability_slots %}
+                                            <div class="bg-green-50 border border-green-200 rounded p-1 text-xs mb-1 cursor-pointer hover:bg-green-100 transition-colors volunteer-slot"
+                                                 data-slot-id="{{ slot.id }}"
+                                                 data-calendar-id="{{ calendar.id }}"
+                                                 data-volunteer-id="{{ calendar.volunteer.id }}"
+                                                 data-calendar-name="{{ calendar.volunteer.user.get_full_name }}"
+                                                 data-date="{{ day.date|date:'Y-m-d' }}"
+                                                 data-start-time="{{ slot.start_time|time:'H:i' }}"
+                                                 data-end-time="{{ slot.end_time|time:'H:i' }}"
+                                                 onclick="selectAvailabilitySlot(this)">
+                                                <div class="font-medium text-green-700">
+                                                    {{ slot.start_time|time:"H:i" }}
+                                                </div>
+                                                <div class="text-green-600 text-xs">
+                                                    {{ slot.end_time|time:"H:i" }}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+
+                                            <!-- Indicateur si pas de données -->
+                                            {% if not vol_data.appointments and not vol_data.availability_slots %}
+                                            <div class="text-xs text-gray-300 py-2">
+                                                -
+                                            </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fonction pour voir les détails d'un rendez-vous
+function viewAppointment(appointmentId) {
+    window.location.href = `/calendrier/appointments/${appointmentId}/`;
+}
+
+// Fonction pour sélectionner un créneau de disponibilité
+function selectAvailabilitySlot(element) {
+    const calendarId = element.dataset.calendarId;
+    const calendarName = element.dataset.calendarName;
+    const date = element.dataset.date;
+    const startTime = element.dataset.startTime;
+    const endTime = element.dataset.endTime;
+
+    // Calculer 1 heure par défaut depuis l'heure de début
+    const [startHours, startMinutes] = startTime.split(':');
+    const oneHourLater = (parseInt(startHours) + 1).toString().padStart(2, '0') + ':' + startMinutes;
+
+    // Remplir automatiquement le formulaire
+    document.getElementById('{{ form.appointment_date.id_for_label }}').value = date;
+    document.getElementById('{{ form.start_time.id_for_label }}').value = startTime;
+    document.getElementById('{{ form.end_time.id_for_label }}').value = oneHourLater; // Défaut 1h
+    document.getElementById('{{ form.volunteer_calendar.id_for_label }}').value = calendarId;
+
+    // Supprimer l'ancien preview
+    clearAppointmentPreview();
+
+    // Créer le preview orange du rendez-vous
+    createAppointmentPreview(element, calendarId, date, startTime, oneHourLater);
+
+    // Feedback visuel
+    element.style.backgroundColor = '#fef3c7';
+    element.style.borderColor = '#f59e0b';
+
+    // Afficher une notification
+    showNotification(`Créneau sélectionné: ${calendarName} le ${new Date(date).toLocaleDateString('fr-FR')} de ${startTime} à ${oneHourLater}`);
+
+    // Retour à la normale après 2 secondes
+    setTimeout(() => {
+        element.style.backgroundColor = '';
+        element.style.borderColor = '';
+    }, 2000);
+
+    // Scroll vers le formulaire sur mobile
+    if (window.innerWidth < 1280) {
+        document.querySelector('form').scrollIntoView({behavior: 'smooth'});
+    }
+
+    // IMPORTANT: Revalider après avoir rempli automatiquement les champs
+    validateRequiredFields();
+}
+
+// Fonction de notification
+function showNotification(message) {
+    // Créer une notification temporaire
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg z-50';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Fonction pour filtrer les bénévoles selon le bénéficiaire sélectionné
+function filterVolunteersByBeneficiary() {
+    const beneficiarySelect = document.getElementById('{{ form.beneficiary.id_for_label }}');
+    const selectedBeneficiaryId = beneficiarySelect.value;
+
+    // Si aucun bénéficiaire sélectionné, afficher tous les bénévoles
+    if (!selectedBeneficiaryId) {
+        document.querySelectorAll('.volunteer-row').forEach(row => {
+            row.style.display = 'table-row';
+        });
+        return;
+    }
+
+    // Pour le moment, afficher tous les bénévoles (à améliorer avec les données relationnelles)
+    // Cette fonctionnalité nécessiterait des données supplémentaires côté backend
+    document.querySelectorAll('.volunteer-row').forEach(row => {
+        row.style.display = 'table-row';
+    });
+}
+
+// Fonction pour filtrer le calendrier par bénévole sélectionné
+function filterCalendarByVolunteer() {
+    const volunteerSelect = document.getElementById('{{ form.volunteer_calendar.id_for_label }}');
+    const selectedVolunteerId = volunteerSelect.value;
+
+    // Si aucun bénévole sélectionné, afficher toutes les lignes
+    if (!selectedVolunteerId) {
+        document.querySelectorAll('.volunteer-row').forEach(row => {
+            row.style.display = 'table-row';
+        });
+        return;
+    }
+
+    // Masquer toutes les lignes puis afficher seulement celle du bénévole sélectionné
+    document.querySelectorAll('.volunteer-row').forEach(row => {
+        const rowCalendarId = row.querySelector('[data-calendar-id]')?.dataset.calendarId;
+        if (rowCalendarId === selectedVolunteerId) {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Fonction pour créer le preview orange du rendez-vous
+function createAppointmentPreview(clickedSlot, calendarId, date, startTime, endTime) {
+    // Trouver la cellule correspondante pour ce calendrier et cette date
+    const calendarRows = document.querySelectorAll('.volunteer-row');
+    let targetCell = null;
+
+    calendarRows.forEach(row => {
+        const rowCalendarId = row.querySelector('[data-calendar-id]')?.dataset.calendarId;
+        if (rowCalendarId === calendarId) {
+            // Trouver la cellule pour la bonne date
+            const cells = row.querySelectorAll('td');
+            cells.forEach((cell, index) => {
+                if (index > 0) { // Skip first cell (volunteer name)
+                    const daySlots = cell.querySelectorAll('[data-date]');
+                    daySlots.forEach(slot => {
+                        if (slot.dataset.date === date) {
+                            targetCell = cell;
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    if (targetCell) {
+        // Créer l'élément de preview
+        const preview = document.createElement('div');
+        preview.className = 'bg-orange-100 border border-orange-300 rounded p-1 text-xs mb-1 appointment-preview';
+        preview.innerHTML = `
+            <div class="font-medium text-orange-700">${startTime}</div>
+            <div class="text-orange-600 text-xs">${endTime}</div>
+            <div class="text-orange-500 text-xs">Preview</div>
+        `;
+
+        // Ajouter le preview à la cellule
+        const dayContainer = targetCell.querySelector('.space-y-1');
+        if (dayContainer) {
+            dayContainer.appendChild(preview);
+        }
+    }
+}
+
+// Fonction pour nettoyer les previews précédents
+function clearAppointmentPreview() {
+    document.querySelectorAll('.appointment-preview').forEach(preview => {
+        preview.remove();
+    });
+}
+
+// Fonction pour vérifier si le RDV est dans les disponibilités
+function checkAvailabilityConflict() {
+    const volunteerSelect = document.getElementById('{{ form.volunteer_calendar.id_for_label }}');
+    const dateInput = document.getElementById('{{ form.appointment_date.id_for_label }}');
+    const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+    const endTimeInput = document.getElementById('{{ form.end_time.id_for_label }}');
+
+    const volunteerId = volunteerSelect.value;
+    const date = dateInput.value;
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
+
+    const warningDiv = document.getElementById('availability-warning');
+    const warningMessage = document.getElementById('warning-message');
+
+    // Masquer le warning par défaut
+    warningDiv.classList.add('hidden');
+
+    if (!volunteerId || !date || !startTime || !endTime) {
+        return;
+    }
+
+    // Trouver les créneaux de disponibilité pour ce bénévole et cette date
+    const volunteerRow = document.querySelector(`.volunteer-row [data-calendar-id="${volunteerId}"]`)?.closest('.volunteer-row');
+    if (!volunteerRow) return;
+
+    // Chercher dans toutes les cellules de la ligne du bénévole
+    const cells = volunteerRow.querySelectorAll('td');
+    let hasAvailabilitySlot = false;
+
+    cells.forEach((cell, index) => {
+        if (index > 0) { // Skip first cell (volunteer name)
+            const daySlots = cell.querySelectorAll('[data-date="' + date + '"]');
+            daySlots.forEach(slot => {
+                if (slot.classList.contains('volunteer-slot')) {
+                    const slotStartTime = slot.dataset.startTime;
+                    const slotEndTime = slot.dataset.endTime;
+
+                    // Vérifier si le RDV chevauche avec ce créneau de disponibilité
+                    if (startTime >= slotStartTime && endTime <= slotEndTime) {
+                        hasAvailabilitySlot = true;
+                    }
+                }
+            });
+        }
+    });
+
+    // Afficher le warning si pas de disponibilité trouvée
+    if (!hasAvailabilitySlot) {
+        const volunteerName = volunteerSelect.options[volunteerSelect.selectedIndex]?.text || 'Bénévole sélectionné';
+        const dateFormatted = new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        warningMessage.textContent = `Le rendez-vous ${dateFormatted} ${startTime}-${endTime} avec ${volunteerName} n'est pas sur une de ses disponibilités.`;
+        warningDiv.classList.remove('hidden');
+    }
+}
+
+// Fonction pour créer un preview basé sur les valeurs du formulaire
+function createPreviewFromForm() {
+    const volunteerSelect = document.getElementById('{{ form.volunteer_calendar.id_for_label }}');
+    const dateInput = document.getElementById('{{ form.appointment_date.id_for_label }}');
+    const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+    const endTimeInput = document.getElementById('{{ form.end_time.id_for_label }}');
+
+    const volunteerId = volunteerSelect.value;
+    const date = dateInput.value;
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
+
+    // Nettoyer les previews existants
+    clearAppointmentPreview();
+
+    // Créer le nouveau preview si tous les champs nécessaires sont remplis
+    if (volunteerId && date && startTime && endTime) {
+        // Trouver la cellule correspondante pour ce calendrier et cette date
+        const calendarRows = document.querySelectorAll('.volunteer-row');
+        let targetCell = null;
+
+        calendarRows.forEach(row => {
+            const rowCalendarId = row.querySelector('[data-calendar-id]')?.dataset.calendarId;
+            if (rowCalendarId === volunteerId) {
+                // Trouver la cellule pour la bonne date
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (index > 0) { // Skip first cell (volunteer name)
+                        const daySlots = cell.querySelectorAll('[data-date]');
+                        daySlots.forEach(slot => {
+                            if (slot.dataset.date === date) {
+                                targetCell = cell;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        if (targetCell) {
+            // Créer l'élément de preview
+            const preview = document.createElement('div');
+            preview.className = 'bg-orange-100 border border-orange-300 rounded p-1 text-xs mb-1 appointment-preview';
+            preview.innerHTML = `
+                <div class="font-medium text-orange-700">${startTime}</div>
+                <div class="text-orange-600 text-xs">${endTime}</div>
+                <div class="text-orange-500 text-xs">Preview</div>
+            `;
+
+            // Ajouter le preview à la cellule
+            const dayContainer = targetCell.querySelector('.space-y-1');
+            if (dayContainer) {
+                dayContainer.appendChild(preview);
+            }
+        }
+    }
+
+    // Vérifier les conflits de disponibilité
+    checkAvailabilityConflict();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation des champs obligatoires pour activer/désactiver le bouton
+    function validateRequiredFields() {
+        const beneficiaryField = document.getElementById('{{ form.beneficiary.id_for_label }}');
+        const dateField = document.getElementById('{{ form.appointment_date.id_for_label }}');
+        const startTimeField = document.getElementById('{{ form.start_time.id_for_label }}');
+        const endTimeField = document.getElementById('{{ form.end_time.id_for_label }}');
+        const submitButton = document.getElementById('submit-button');
+
+        const isValid = beneficiaryField.value &&
+                       dateField.value &&
+                       startTimeField.value &&
+                       endTimeField.value;
+
+        console.log('Validation:', {
+            beneficiary: beneficiaryField.value,
+            date: dateField.value,
+            startTime: startTimeField.value,
+            endTime: endTimeField.value,
+            isValid: isValid
+        });
+
+        submitButton.disabled = !isValid;
+    }
+
+    // Rendre la fonction accessible globalement
+    window.validateRequiredFields = validateRequiredFields;
+
+    // Highlight des créneaux au survol
+    const availabilitySlots = document.querySelectorAll('[data-slot-id]');
+    availabilitySlots.forEach(slot => {
+        slot.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.zIndex = '10';
+        });
+
+        slot.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.zIndex = 'auto';
+        });
+    });
+
+    // Tooltip informatif
+    const appointments = document.querySelectorAll('[onclick*="viewAppointment"]');
+    appointments.forEach(app => {
+        app.title = "Cliquer pour voir les détails du rendez-vous";
+    });
+
+    availabilitySlots.forEach(slot => {
+        const startTime = slot.dataset.startTime;
+        const endTime = slot.dataset.endTime;
+        const calendarName = slot.dataset.calendarName;
+        const date = new Date(slot.dataset.date).toLocaleDateString('fr-FR');
+        slot.title = `Cliquer pour programmer avec ${calendarName} le ${date} de ${startTime} à ${endTime}`;
+    });
+
+    // Auto-calcul de l'heure de fin
+    document.getElementById('{{ form.start_time.id_for_label }}').addEventListener('change', function() {
+        const startTime = this.value;
+        const endTimeField = document.getElementById('{{ form.end_time.id_for_label }}');
+
+        if (startTime && !endTimeField.value) {
+            const [hours, minutes] = startTime.split(':');
+            const endHour = (parseInt(hours) + 1).toString().padStart(2, '0');
+            endTimeField.value = `${endHour}:${minutes}`;
+        }
+
+        // Créer le nouveau preview avec les nouvelles heures
+        createPreviewFromForm();
+    });
+
+    // Validation de l'heure de fin
+    document.getElementById('{{ form.end_time.id_for_label }}').addEventListener('change', function() {
+        const startTime = document.getElementById('{{ form.start_time.id_for_label }}').value;
+        const endTime = this.value;
+
+        if (startTime && endTime && endTime <= startTime) {
+            alert('L\'heure de fin doit être postérieure à l\'heure de début');
+            this.focus();
+        }
+
+        // Créer le nouveau preview avec les nouvelles heures
+        createPreviewFromForm();
+    });
+
+    // Filtrer le calendrier quand on change de bénévole
+    document.getElementById('{{ form.volunteer_calendar.id_for_label }}').addEventListener('change', function() {
+        filterCalendarByVolunteer();
+        createPreviewFromForm(); // Recréer le preview avec le nouveau bénévole
+        validateRequiredFields(); // Revalider après changement
+    });
+
+    // Créer/mettre à jour le preview quand on change la date ou les horaires
+    document.getElementById('{{ form.appointment_date.id_for_label }}').addEventListener('change', function() {
+        const selectedDate = new Date(this.value);
+        const today = new Date('{{ today|date:"Y-m-d" }}');
+
+        if (selectedDate < today) {
+            alert('Impossible de sélectionner une date dans le passé');
+            this.value = '{{ today|date:"Y-m-d" }}'; // Reset à aujourd'hui
+            return;
+        }
+
+        createPreviewFromForm();
+        validateRequiredFields();
+    });
+    document.getElementById('{{ form.start_time.id_for_label }}').addEventListener('change', function() {
+        createPreviewFromForm();
+        validateRequiredFields();
+    });
+    document.getElementById('{{ form.end_time.id_for_label }}').addEventListener('change', function() {
+        createPreviewFromForm();
+        validateRequiredFields();
+    });
+
+    // Écouter les changements sur tous les champs obligatoires
+    ['{{ form.beneficiary.id_for_label }}', '{{ form.appointment_date.id_for_label }}',
+     '{{ form.start_time.id_for_label }}', '{{ form.end_time.id_for_label }}'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', validateRequiredFields);
+            field.addEventListener('input', validateRequiredFields);
+            field.addEventListener('keyup', validateRequiredFields);
+        }
+    });
+
+    // Validation initiale avec délai pour s'assurer que tout est chargé
+    setTimeout(validateRequiredFields, 100);
+});
+</script>
+{% endblock %}

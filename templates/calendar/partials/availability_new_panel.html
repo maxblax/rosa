@@ -1,0 +1,163 @@
+<div class="h-full flex flex-col">
+    <!-- En-tête du panel -->
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">
+                    <i class="fas fa-plus text-green-600 mr-2"></i>
+                    Nouveau créneau
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ date|date:"l d F Y" }}
+                </p>
+            </div>
+            <button type="button" onclick="closeSidebar()" class="text-gray-400 hover:text-gray-600" id="close-sidebar">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenu du panel -->
+    <div class="flex-1 px-6 py-4 overflow-y-auto">
+        <form id="new-availability-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="date" value="{{ date }}">
+
+            <!-- Horaires -->
+            <div class="mb-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">
+                    <i class="fas fa-clock mr-2"></i>Horaires
+                </h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="start_time" class="block text-sm font-medium text-gray-700">Début</label>
+                        <input type="time" id="start_time" name="start_time"
+                               value="{{ default_start }}"
+                               {% if is_past %}disabled{% endif %}
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 {% if is_past %}bg-gray-100 text-gray-500{% endif %}">
+                    </div>
+                    <div>
+                        <label for="end_time" class="block text-sm font-medium text-gray-700">Fin</label>
+                        <input type="time" id="end_time" name="end_time"
+                               value="{{ default_end }}"
+                               {% if is_past %}disabled{% endif %}
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 {% if is_past %}bg-gray-100 text-gray-500{% endif %}">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Durée calculée: <span id="duration-display">1h00</span>
+                </p>
+            </div>
+
+            <!-- Options -->
+            <div class="mb-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">
+                    <i class="fas fa-cog mr-2"></i>Options
+                </h4>
+                <div class="space-y-3">
+                    {% if is_past %}
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <h5 class="text-sm font-medium text-red-900 mb-2">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Créneau passé
+                            </h5>
+                            <p class="text-xs text-red-700">
+                                Impossible de créer une disponibilité ou un rendez-vous dans le passé.
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <h5 class="text-sm font-medium text-blue-900 mb-2">Disponibilité poncuelle</h5>
+                            <p class="text-xs text-blue-700 mb-3">
+                                Créer un créneau de disponibilité pour cette date uniquement.
+                                Les bénéficiaires pourront prendre rendez-vous sur ce créneau.
+                            </p>
+                            <button type="button" onclick="createAvailability()"
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <i class="fas fa-calendar-plus mr-2"></i>
+                                Créer la disponibilité
+                            </button>
+                        </div>
+
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <h5 class="text-sm font-medium text-yellow-900 mb-2">Rendez-vous direct</h5>
+                            <p class="text-xs text-yellow-700 mb-3">
+                                Créer directement un rendez-vous sur ce créneau.
+                                Vous serez redirigé vers le formulaire de rendez-vous.
+                            </p>
+                            <button type="button" onclick="createAppointment()"
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                                <i class="fas fa-user-plus mr-2"></i>
+                                Créer un rendez-vous
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Raccourcis horaires -->
+            {% if not is_past %}
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">
+                        <i class="fas fa-clock mr-2"></i>Raccourcis
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="window.setTimeSlot('09:00', '10:00')"
+                                class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            9h-10h
+                        </button>
+                        <button type="button" onclick="window.setTimeSlot('10:00', '11:00')"
+                                class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            10h-11h
+                        </button>
+                        <button type="button" onclick="window.setTimeSlot('11:00', '12:00')"
+                                class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            11h-12h
+                        </button>
+                        <button type="button" onclick="window.setTimeSlot('14:00', '15:00')"
+                                class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            14h-15h
+                        </button>
+                        <button type="button" onclick="window.setTimeSlot('15:00', '16:00')"
+                                class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            15h-16h
+                        </button>
+                        <button type="button" onclick="window.setTimeSlot('16:00', '17:00')"
+                                class="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            16h-17h
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Actions -->
+    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex justify-end">
+            <button type="button" onclick="closeSidebar()"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                Fermer
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Event listeners pour les champs time quand le panel se charge
+setTimeout(() => {
+    const startTimeInput = document.getElementById('start_time');
+    const endTimeInput = document.getElementById('end_time');
+
+    if (startTimeInput) {
+        startTimeInput.addEventListener('change', window.updateDuration);
+    }
+    if (endTimeInput) {
+        endTimeInput.addEventListener('change', window.updateDuration);
+    }
+
+    // Calculer la durée initiale
+    window.updateDuration && window.updateDuration();
+}, 100);
+</script>

@@ -1,6 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, DetailView, UpdateView
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.decorators import method_decorator
 from django.http import JsonResponse
 from django.db import transaction
 from django.urls import reverse_lazy, reverse
@@ -11,7 +14,7 @@ from .models import Beneficiary, FinancialSnapshot, Child, Interaction
 from .forms import BeneficiaryForm, FinancialSnapshotForm, ChildForm, ChildFormSet, InteractionForm
 
 
-class BeneficiaryListView(ListView):
+class BeneficiaryListView(LoginRequiredMixin, ListView):
     """Vue liste des bénéficiaires avec recherche"""
     model = Beneficiary
     template_name = 'beneficiaries/list.html'
@@ -37,7 +40,7 @@ class BeneficiaryListView(ListView):
         return context
 
 
-class BeneficiaryCreateView(CreateView):
+class BeneficiaryCreateView(LoginRequiredMixin, CreateView):
     """Vue de création d'un nouveau bénéficiaire avec snapshot financier initial"""
     model = Beneficiary
     form_class = BeneficiaryForm
@@ -77,7 +80,7 @@ class BeneficiaryCreateView(CreateView):
         return reverse('beneficiaries:detail', kwargs={'pk': self.object.pk})
 
 
-class BeneficiaryDetailView(DetailView):
+class BeneficiaryDetailView(LoginRequiredMixin, DetailView):
     """Vue détail d'un bénéficiaire avec historique financier"""
     model = Beneficiary
     template_name = 'beneficiaries/detail.html'
@@ -92,7 +95,7 @@ class BeneficiaryDetailView(DetailView):
         return context
 
 
-class BeneficiaryUpdateView(UpdateView):
+class BeneficiaryUpdateView(LoginRequiredMixin, UpdateView):
     """Vue d'édition d'un bénéficiaire"""
     model = Beneficiary
     form_class = BeneficiaryForm
@@ -140,6 +143,7 @@ class BeneficiaryUpdateView(UpdateView):
         return self.form_invalid(form)
 
 
+@login_required
 def financial_snapshot_create_view(request, pk):
     """Vue pour créer/modifier une photo instantanée financière mensuelle pour un bénéficiaire existant"""
     beneficiary = get_object_or_404(Beneficiary, pk=pk)
@@ -208,6 +212,7 @@ def financial_snapshot_create_view(request, pk):
     return render(request, 'beneficiaries/financial_snapshot_create.html', context)
 
 
+@login_required
 def beneficiary_search_autocomplete(request):
     """Vue pour l'autocomplétion de recherche de bénéficiaires (pour HTMX)"""
     query = request.GET.get('q', '')
@@ -237,7 +242,7 @@ def beneficiary_search_autocomplete(request):
     return JsonResponse({'results': results})
 
 
-class InteractionCreateView(CreateView):
+class InteractionCreateView(LoginRequiredMixin, CreateView):
     """Vue pour créer une nouvelle interaction avec un bénéficiaire"""
     model = Interaction
     form_class = InteractionForm
@@ -333,7 +338,7 @@ class InteractionCreateView(CreateView):
         return reverse('beneficiaries:detail', kwargs={'pk': self.beneficiary.pk})
 
 
-class InteractionDetailView(DetailView):
+class InteractionDetailView(LoginRequiredMixin, DetailView):
     """Vue détail d'une interaction"""
     model = Interaction
     template_name = 'beneficiaries/interaction_detail.html'
@@ -347,7 +352,7 @@ class InteractionDetailView(DetailView):
         )
 
 
-class InteractionUpdateView(UpdateView):
+class InteractionUpdateView(LoginRequiredMixin, UpdateView):
     """Vue pour modifier une interaction"""
     model = Interaction
     form_class = InteractionForm

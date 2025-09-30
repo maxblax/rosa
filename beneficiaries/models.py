@@ -83,6 +83,18 @@ class Beneficiary(models.Model):
         """Retourne la dernière photo instantanée financière"""
         return self.financial_snapshots.order_by('-date').first()
 
+    @property
+    def next_appointment(self):
+        """Retourne le prochain rendez-vous du bénéficiaire"""
+        from calendar_app.models import Appointment
+        from django.utils import timezone
+
+        return Appointment.objects.filter(
+            beneficiary=self,
+            appointment_date__gte=timezone.now().date(),
+            status__in=['SCHEDULED', 'CONFIRMED']
+        ).order_by('appointment_date', 'start_time').first()
+
 
 class FinancialSnapshot(models.Model):
     """Photo instantanée financière d'un bénéficiaire à un moment donné"""

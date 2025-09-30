@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if object %}Modifier une disponibilité{% else %}Créer une disponibilité{% endif %} - ONA
+{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-plus text-green-600 mr-2"></i>
+            {% if object %}Modifier une disponibilité{% else %}Créer une disponibilité{% endif %}
+        </h1>
+        <p class="text-gray-600 mt-1">
+            Définissez vos créneaux de disponibilité pour les bénéficiaires
+        </p>
+    </div>
+    <div class="flex space-x-3">
+        <a href="{% url 'calendar:availability_list' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Retour
+        </a>
+        <a href="{% url 'calendar:week' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-calendar mr-2"></i>Mon calendrier
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    Informations de base
+                </h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    Configurez le type et la récurrence de votre créneau de disponibilité.
+                </p>
+            </div>
+
+            <div class="px-6 py-4 space-y-6">
+                <!-- Type de créneau -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.slot_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.slot_type.label }}
+                        </label>
+                        <select name="{{ form.slot_type.name }}" id="{{ form.slot_type.id_for_label }}"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            {% for value, label in form.slot_type.field.choices %}
+                            <option value="{{ value }}" {% if form.slot_type.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.slot_type.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.slot_type.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.recurrence_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.recurrence_type.label }}
+                        </label>
+                        <select name="{{ form.recurrence_type.name }}" id="{{ form.recurrence_type.id_for_label }}"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                onchange="toggleRecurrenceFields()">
+                            {% for value, label in form.recurrence_type.field.choices %}
+                            <option value="{{ value }}" {% if form.recurrence_type.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.recurrence_type.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.recurrence_type.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Planning selon le type de récurrence -->
+                <div id="weekly-fields" class="space-y-4">
+                    <div>
+                        <label for="{{ form.weekday.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.weekday.label }}
+                        </label>
+                        <select name="{{ form.weekday.name }}" id="{{ form.weekday.id_for_label }}"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">Choisir un jour</option>
+                            {% for value, label in form.weekday.field.choices %}
+                            <option value="{{ value }}" {% if form.weekday.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div id="specific-fields" class="space-y-4" style="display: none;">
+                    <div>
+                        <label for="{{ form.specific_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.specific_date.label }}
+                        </label>
+                        <input type="date" name="{{ form.specific_date.name }}" id="{{ form.specific_date.id_for_label }}"
+                               value="{{ form.specific_date.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+
+                <!-- Horaires -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.start_time.label }}
+                        </label>
+                        <input type="time" name="{{ form.start_time.name }}" id="{{ form.start_time.id_for_label }}"
+                               value="{{ form.start_time.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label for="{{ form.end_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.end_time.label }}
+                        </label>
+                        <input type="time" name="{{ form.end_time.name }}" id="{{ form.end_time.id_for_label }}"
+                               value="{{ form.end_time.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paramètres avancés -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    Paramètres avancés
+                </h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    Configurez la validité et les options de réservation.
+                </p>
+            </div>
+
+            <div class="px-6 py-4 space-y-6">
+                <!-- Période de validité -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.valid_from.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.valid_from.label }}
+                        </label>
+                        <input type="date" name="{{ form.valid_from.name }}" id="{{ form.valid_from.id_for_label }}"
+                               value="{{ form.valid_from.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        {% if form.valid_from.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.valid_from.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.valid_until.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.valid_until.label }}
+                        </label>
+                        <input type="date" name="{{ form.valid_until.name }}" id="{{ form.valid_until.id_for_label }}"
+                               value="{{ form.valid_until.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        {% if form.valid_until.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.valid_until.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Options de réservation -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="{{ form.is_bookable.name }}" id="{{ form.is_bookable.id_for_label }}"
+                                   {% if form.is_bookable.value %}checked{% endif %}
+                                   class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                            <label for="{{ form.is_bookable.id_for_label }}" class="ml-2 block text-sm text-gray-900">
+                                {{ form.is_bookable.label }}
+                            </label>
+                        </div>
+                        {% if form.is_bookable.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.is_bookable.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.max_appointments.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.max_appointments.label }}
+                        </label>
+                        <input type="number" name="{{ form.max_appointments.name }}" id="{{ form.max_appointments.id_for_label }}"
+                               value="{{ form.max_appointments.value|default:'1' }}" min="1" max="10"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        {% if form.max_appointments.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.max_appointments.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if object %}
+                <div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}"
+                               {% if form.is_active.value %}checked{% endif %}
+                               class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                        <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm text-gray-900">
+                            {{ form.is_active.label }}
+                        </label>
+                    </div>
+                    {% if form.is_active.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.is_active.help_text }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Informations complémentaires -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">
+                    Informations complémentaires
+                </h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    Ajoutez un titre et des notes pour ce créneau.
+                </p>
+            </div>
+
+            <div class="px-6 py-4 space-y-6">
+                <div>
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.title.label }}
+                    </label>
+                    <input type="text" name="{{ form.title.name }}" id="{{ form.title.id_for_label }}"
+                           value="{{ form.title.value|default:'' }}" placeholder="Ex: Permanence sociale, Entretiens"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    {% if form.title.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.title.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.notes.label }}
+                    </label>
+                    <textarea name="{{ form.notes.name }}" id="{{ form.notes.id_for_label }}" rows="4"
+                              placeholder="Notes internes, instructions spéciales..."
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ form.notes.value|default:'' }}</textarea>
+                    {% if form.notes.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.notes.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'calendar:availability_list' %}" class="btn-secondary">
+                Annuler
+            </a>
+            <button type="submit" class="btn-success">
+                <i class="fas fa-save mr-2"></i>
+                {% if object %}Mettre à jour{% else %}Créer la disponibilité{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Prévisualisation du créneau -->
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 class="text-sm font-medium text-blue-900 mb-2">
+            <i class="fas fa-eye mr-1"></i>Prévisualisation
+        </h4>
+        <div id="slot-preview" class="text-sm text-blue-800">
+            Configurez les champs ci-dessus pour voir un aperçu de votre créneau.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function toggleRecurrenceFields() {
+        const recurrenceType = document.getElementById('{{ form.recurrence_type.id_for_label }}').value;
+        const weeklyFields = document.getElementById('weekly-fields');
+        const specificFields = document.getElementById('specific-fields');
+
+        if (recurrenceType === 'WEEKLY') {
+            weeklyFields.style.display = 'block';
+            specificFields.style.display = 'none';
+        } else if (recurrenceType === 'SPECIFIC') {
+            weeklyFields.style.display = 'none';
+            specificFields.style.display = 'block';
+        } else {
+            weeklyFields.style.display = 'none';
+            specificFields.style.display = 'none';
+        }
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const slotType = document.getElementById('{{ form.slot_type.id_for_label }}').value;
+        const recurrenceType = document.getElementById('{{ form.recurrence_type.id_for_label }}').value;
+        const weekday = document.getElementById('{{ form.weekday.id_for_label }}').value;
+        const specificDate = document.getElementById('{{ form.specific_date.id_for_label }}').value;
+        const startTime = document.getElementById('{{ form.start_time.id_for_label }}').value;
+        const endTime = document.getElementById('{{ form.end_time.id_for_label }}').value;
+        const title = document.getElementById('{{ form.title.id_for_label }}').value;
+
+        const preview = document.getElementById('slot-preview');
+
+        if (!startTime || !endTime) {
+            preview.textContent = 'Configurez les champs ci-dessus pour voir un aperçu de votre créneau.';
+            return;
+        }
+
+        let previewText = '';
+
+        if (recurrenceType === 'WEEKLY' && weekday) {
+            const weekdays = {
+                '0': 'Lundi', '1': 'Mardi', '2': 'Mercredi', '3': 'Jeudi',
+                '4': 'Vendredi', '5': 'Samedi', '6': 'Dimanche'
+            };
+            previewText = `Tous les ${weekdays[weekday]} de ${startTime} à ${endTime}`;
+        } else if (recurrenceType === 'SPECIFIC' && specificDate) {
+            previewText = `Le ${specificDate} de ${startTime} à ${endTime}`;
+        } else {
+            previewText = `Créneau de ${startTime} à ${endTime}`;
+        }
+
+        if (title) {
+            previewText += ` - ${title}`;
+        }
+
+        const slotTypeLabels = {
+            'AVAILABILITY': 'Disponible pour RDV',
+            'BUSY': 'Occupé (non disponible)'
+        };
+
+        if (slotType) {
+            previewText += ` (${slotTypeLabels[slotType]})`;
+        }
+
+        preview.textContent = previewText;
+    }
+
+    // Event listeners
+    document.getElementById('{{ form.recurrence_type.id_for_label }}').addEventListener('change', toggleRecurrenceFields);
+
+    const formFields = [
+        '{{ form.slot_type.id_for_label }}',
+        '{{ form.recurrence_type.id_for_label }}',
+        '{{ form.weekday.id_for_label }}',
+        '{{ form.specific_date.id_for_label }}',
+        '{{ form.start_time.id_for_label }}',
+        '{{ form.end_time.id_for_label }}',
+        '{{ form.title.id_for_label }}'
+    ];
+
+    formFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', updatePreview);
+            field.addEventListener('input', updatePreview);
+        }
+    });
+
+    // Initial setup
+    toggleRecurrenceFields();
+    updatePreview();
+});
+
+// Make function global for onchange
+function toggleRecurrenceFields() {
+    const event = new Event('change');
+    document.getElementById('{{ form.recurrence_type.id_for_label }}').dispatchEvent(event);
+}
+</script>
+{% endblock %}

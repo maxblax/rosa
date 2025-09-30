@@ -1,0 +1,579 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes Rendez-vous - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+            Mes Rendez-vous
+        </h1>
+        <p class="text-gray-600 mt-1">
+            Gérez vos rendez-vous avec les bénéficiaires
+        </p>
+    </div>
+    <div class="flex space-x-3">
+        <a href="{% url 'calendar:availability_list' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-calendar-check text-green-600 mr-2"></i>Mes disponibilités
+        </a>
+        <a href="{% url 'calendar:week' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-calendar mr-2"></i>Mon calendrier
+        </a>
+        <a href="{% url 'calendar:appointment_create' %}"
+           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>Nouveau rendez-vous
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Résumé des rendez-vous -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-calendar-check text-blue-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Total</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ appointments|length }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Programmés</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ scheduled_count|default:"0" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Confirmés</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ confirmed_count|default:"0" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-flag-checkered text-purple-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Terminés</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ completed_count|default:"0" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-times-circle text-red-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Annulés</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ cancelled_count|default:"0" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <div class="flex items-center space-x-4">
+                <div>
+                    <label for="filter-status" class="sr-only">Statut</label>
+                    <select id="filter-status" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les statuts</option>
+                        <option value="SCHEDULED">Programmé</option>
+                        <option value="CONFIRMED">Confirmé</option>
+                        <option value="IN_PROGRESS">En cours</option>
+                        <option value="COMPLETED">Terminé</option>
+                        <option value="CANCELLED">Annulé</option>
+                        <option value="NO_SHOW">Absent</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-type" class="sr-only">Type de rendez-vous</label>
+                    <select id="filter-type" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les types</option>
+                        <option value="INTERVIEW">Entretien</option>
+                        <option value="FOLLOW_UP">Suivi</option>
+                        <option value="ADMINISTRATIVE">Aide administrative</option>
+                        <option value="SOCIAL">Accompagnement social</option>
+                        <option value="OTHER">Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-period" class="sr-only">Période</label>
+                    <select id="filter-period" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Toutes les périodes</option>
+                        <option value="today">Aujourd'hui</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                        <option value="past">Passés</option>
+                        <option value="future">À venir</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label for="search-beneficiary" class="sr-only">Rechercher un bénéficiaire</label>
+                    <input type="text" id="search-beneficiary" placeholder="Rechercher un bénéficiaire..."
+                           class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                </div>
+            </div>
+            <div class="text-sm text-gray-500">
+                {{ appointments|length }} rendez-vous au total
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des rendez-vous -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">
+                Vos rendez-vous
+            </h3>
+        </div>
+
+        {% if appointments %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Bénéficiaire
+                        </th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                            Date
+                        </th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 hidden md:table-cell">
+                            Type
+                        </th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                            Motif
+                        </th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                            Statut
+                        </th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Rendez-vous futurs -->
+                    {% for appointment in future_appointments %}
+                    <tr class="hover:bg-gray-50 appointment-row"
+                        data-status="{{ appointment.status }}"
+                        data-type="{{ appointment.appointment_type }}"
+                        data-date="{{ appointment.appointment_date|date:'Y-m-d' }}"
+                        data-beneficiary="{{ appointment.beneficiary.last_name|lower }} {{ appointment.beneficiary.first_name|lower }}">
+                        <td class="px-3 py-3">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8">
+                                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <span class="text-xs font-medium text-blue-600">
+                                            {{ appointment.beneficiary.first_name|first }}{{ appointment.beneficiary.last_name|first }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ml-2">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ appointment.beneficiary.last_name|upper }}
+                                    </div>
+                                    <div class="text-xs text-gray-600">
+                                        {{ appointment.beneficiary.first_name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ appointment.appointment_date|date:"d/m" }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ appointment.start_time|time:"H:i" }}
+                            </div>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap hidden md:table-cell">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if appointment.appointment_type == 'INTERVIEW' %}bg-blue-100 text-blue-800
+                                {% elif appointment.appointment_type == 'FOLLOW_UP' %}bg-green-100 text-green-800
+                                {% elif appointment.appointment_type == 'ADMINISTRATIVE' %}bg-purple-100 text-purple-800
+                                {% elif appointment.appointment_type == 'SOCIAL' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ appointment.get_appointment_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 hidden lg:table-cell">
+                            <div class="text-sm font-medium text-gray-900 truncate max-w-64">
+                                {{ appointment.title|default:"—" }}
+                            </div>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap">
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                                {% if appointment.status == 'SCHEDULED' %}bg-yellow-100 text-yellow-800
+                                {% elif appointment.status == 'CONFIRMED' %}bg-green-100 text-green-800
+                                {% elif appointment.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                                {% elif appointment.status == 'COMPLETED' %}bg-purple-100 text-purple-800
+                                {% elif appointment.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                {% elif appointment.status == 'NO_SHOW' %}bg-gray-100 text-gray-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if appointment.status == 'SCHEDULED' %}<i class="fas fa-clock"></i>
+                                {% elif appointment.status == 'CONFIRMED' %}<i class="fas fa-check"></i>
+                                {% elif appointment.status == 'IN_PROGRESS' %}<i class="fas fa-play"></i>
+                                {% elif appointment.status == 'COMPLETED' %}<i class="fas fa-flag"></i>
+                                {% elif appointment.status == 'CANCELLED' %}<i class="fas fa-times"></i>
+                                {% elif appointment.status == 'NO_SHOW' %}<i class="fas fa-user-times"></i>
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap">
+                            <div class="flex items-center space-x-1">
+                                <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
+                                   class="text-blue-600 hover:text-blue-900"
+                                   title="Voir">
+                                    <i class="fas fa-eye text-xs"></i>
+                                </a>
+                                <a href="{% url 'calendar:appointment_edit' appointment.pk %}"
+                                   class="text-green-600 hover:text-green-900"
+                                   title="Modifier">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                                {% if appointment.status in 'SCHEDULED,CONFIRMED' %}
+                                <button onclick="confirmAppointment({{ appointment.pk }})"
+                                        class="text-green-600 hover:text-green-900"
+                                        title="Confirmer">
+                                    <i class="fas fa-check text-xs"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- Séparation pour les rendez-vous passés -->
+                    {% if past_appointments %}
+                    <tr class="bg-gray-100">
+                        <td colspan="6" class="px-3 py-2 text-center text-sm font-medium text-gray-600">
+                            <i class="fas fa-history mr-2"></i>
+                            Rendez-vous passés
+                        </td>
+                    </tr>
+
+                    <!-- Rendez-vous passés -->
+                    {% for appointment in past_appointments %}
+                    <tr class="bg-gray-50 hover:bg-gray-100 appointment-row text-gray-600"
+                        data-status="{{ appointment.status }}"
+                        data-type="{{ appointment.appointment_type }}"
+                        data-date="{{ appointment.appointment_date|date:'Y-m-d' }}"
+                        data-beneficiary="{{ appointment.beneficiary.last_name|lower }} {{ appointment.beneficiary.first_name|lower }}">
+                        <td class="px-3 py-3">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8">
+                                    <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <span class="text-xs font-medium text-gray-500">
+                                            {{ appointment.beneficiary.first_name|first }}{{ appointment.beneficiary.last_name|first }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ml-2">
+                                    <div class="text-sm font-medium text-gray-700">
+                                        {{ appointment.beneficiary.last_name|upper }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ appointment.beneficiary.first_name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-700">
+                                {{ appointment.appointment_date|date:"d/m" }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ appointment.start_time|time:"H:i" }}
+                            </div>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap hidden md:table-cell">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+                                {{ appointment.get_appointment_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 hidden lg:table-cell">
+                            <div class="text-sm font-medium text-gray-600 truncate max-w-64">
+                                {{ appointment.title|default:"—" }}
+                            </div>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap">
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                                {% if appointment.status == 'SCHEDULED' %}bg-yellow-200 text-yellow-700
+                                {% elif appointment.status == 'CONFIRMED' %}bg-green-200 text-green-700
+                                {% elif appointment.status == 'IN_PROGRESS' %}bg-blue-200 text-blue-700
+                                {% elif appointment.status == 'COMPLETED' %}bg-purple-200 text-purple-700
+                                {% elif appointment.status == 'CANCELLED' %}bg-red-200 text-red-700
+                                {% elif appointment.status == 'NO_SHOW' %}bg-gray-200 text-gray-600
+                                {% else %}bg-gray-200 text-gray-600{% endif %}">
+                                {% if appointment.status == 'SCHEDULED' %}<i class="fas fa-clock"></i>
+                                {% elif appointment.status == 'CONFIRMED' %}<i class="fas fa-check"></i>
+                                {% elif appointment.status == 'IN_PROGRESS' %}<i class="fas fa-play"></i>
+                                {% elif appointment.status == 'COMPLETED' %}<i class="fas fa-flag"></i>
+                                {% elif appointment.status == 'CANCELLED' %}<i class="fas fa-times"></i>
+                                {% elif appointment.status == 'NO_SHOW' %}<i class="fas fa-user-times"></i>
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="px-2 py-3 whitespace-nowrap">
+                            <div class="flex items-center space-x-1">
+                                <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
+                                   class="text-gray-500 hover:text-gray-700"
+                                   title="Voir">
+                                    <i class="fas fa-eye text-xs"></i>
+                                </a>
+                                <a href="{% url 'calendar:appointment_edit' appointment.pk %}"
+                                   class="text-gray-500 hover:text-gray-700"
+                                   title="Modifier">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Précédent
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Suivant
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Affichage de
+                        <span class="font-medium">{{ page_obj.start_index }}</span>
+                        à
+                        <span class="font-medium">{{ page_obj.end_index }}</span>
+                        sur
+                        <span class="font-medium">{{ paginator.count }}</span>
+                        résultats
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        {% endif %}
+
+                        {% for num in paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                            {{ num }}
+                        </span>
+                        {% else %}
+                        <a href="?page={{ num }}"
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-12">
+            <i class="fas fa-calendar-plus text-gray-400 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">
+                Aucun rendez-vous
+            </h3>
+            <p class="text-gray-500 mb-6">
+                Commencez par créer votre premier rendez-vous avec un bénéficiaire.
+            </p>
+            <a href="{% url 'calendar:appointment_create' %}" class="btn-success">
+                <i class="fas fa-plus mr-2"></i>Créer mon premier rendez-vous
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage en temps réel
+    const filterStatus = document.getElementById('filter-status');
+    const filterType = document.getElementById('filter-type');
+    const filterPeriod = document.getElementById('filter-period');
+    const searchBeneficiary = document.getElementById('search-beneficiary');
+    const rows = document.querySelectorAll('.appointment-row');
+
+    function applyFilters() {
+        const statusFilter = filterStatus.value;
+        const typeFilter = filterType.value;
+        const periodFilter = filterPeriod.value;
+        const searchFilter = searchBeneficiary.value.toLowerCase();
+
+        const today = new Date().toISOString().split('T')[0];
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        const monthEnd = new Date();
+        monthEnd.setMonth(monthEnd.getMonth() + 1, 0);
+
+        rows.forEach(row => {
+            const status = row.dataset.status;
+            const type = row.dataset.type;
+            const date = row.dataset.date;
+            const beneficiary = row.dataset.beneficiary;
+
+            const statusMatch = !statusFilter || status === statusFilter;
+            const typeMatch = !typeFilter || type === typeFilter;
+            const searchMatch = !searchFilter || beneficiary.includes(searchFilter);
+
+            let periodMatch = true;
+            if (periodFilter === 'today') {
+                periodMatch = date === today;
+            } else if (periodFilter === 'week') {
+                const appointmentDate = new Date(date);
+                periodMatch = appointmentDate >= weekStart && appointmentDate <= weekEnd;
+            } else if (periodFilter === 'month') {
+                const appointmentDate = new Date(date);
+                periodMatch = appointmentDate >= monthStart && appointmentDate <= monthEnd;
+            } else if (periodFilter === 'past') {
+                periodMatch = date < today;
+            } else if (periodFilter === 'future') {
+                periodMatch = date > today;
+            }
+
+            if (statusMatch && typeMatch && periodMatch && searchMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Mettre à jour le compteur
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        const counter = document.querySelector('.text-sm.text-gray-500');
+        if (counter) {
+            counter.textContent = `${visibleRows.length} rendez-vous affichés`;
+        }
+    }
+
+    filterStatus.addEventListener('change', applyFilters);
+    filterType.addEventListener('change', applyFilters);
+    filterPeriod.addEventListener('change', applyFilters);
+    searchBeneficiary.addEventListener('input', applyFilters);
+
+    // Actions rapides
+    window.confirmAppointment = function(appointmentId) {
+        if (confirm('Confirmer ce rendez-vous ?')) {
+            // En production, faire un appel AJAX pour changer le statut
+            fetch(`/calendrier/appointments/${appointmentId}/confirm/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la confirmation');
+                }
+            });
+        }
+    };
+
+    window.cancelAppointment = function(appointmentId) {
+        if (confirm('Annuler ce rendez-vous ?')) {
+            // En production, faire un appel AJAX pour changer le statut
+            fetch(`/calendrier/appointments/${appointmentId}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de l\'annulation');
+                }
+            });
+        }
+    };
+
+    // Tri des colonnes
+    const headers = document.querySelectorAll('th[data-sortable]');
+    headers.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function() {
+            const column = this.dataset.sortable;
+            // Implémenter le tri
+            console.log('Tri par:', column);
+        });
+    });
+});
+</script>
+{% endblock %}

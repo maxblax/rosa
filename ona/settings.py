@@ -37,11 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Local apps
     'users',
     'beneficiaries',
     'volunteers',
+    'calendar_app',
 ]
 
 MIDDLEWARE = [
@@ -139,4 +140,5 @@ LOGIN_REDIRECT_URL = '/beneficiaires/'
 LOGOUT_REDIRECT_URL = '/auth/login/'
 
 # Mode développement (bypass authentication)
-DEV_MODE = DEBUG  # En mode debug, pas besoin d'authentification
+# ATTENTION: Mettre à False pour forcer l'authentification même en développement
+DEV_MODE = False  # Toujours forcer l'authentification

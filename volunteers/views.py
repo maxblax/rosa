@@ -1,6 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, DetailView, UpdateView
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.decorators import method_decorator
 from django.http import JsonResponse
 from django.db import transaction
 from django.urls import reverse_lazy, reverse
@@ -12,7 +15,7 @@ from .models import Volunteer, TimeTracking
 from .forms import VolunteerForm, TimeTrackingForm
 
 
-class VolunteerListView(ListView):
+class VolunteerListView(LoginRequiredMixin, ListView):
     """Vue liste des bénévoles avec recherche et filtres par rôle"""
     model = Volunteer
     template_name = 'volunteers/list.html'
@@ -52,7 +55,7 @@ class VolunteerListView(ListView):
         return context
 
 
-class VolunteerCreateView(CreateView):
+class VolunteerCreateView(LoginRequiredMixin, CreateView):
     """Vue de création d'un nouveau bénévole"""
     model = Volunteer
     form_class = VolunteerForm
@@ -90,7 +93,7 @@ class VolunteerCreateView(CreateView):
         return reverse('volunteers:detail', kwargs={'pk': self.object.pk})
 
 
-class VolunteerDetailView(DetailView):
+class VolunteerDetailView(LoginRequiredMixin, DetailView):
     """Vue détail d'un bénévole avec historique des heures"""
     model = Volunteer
     template_name = 'volunteers/detail.html'
@@ -110,7 +113,7 @@ class VolunteerDetailView(DetailView):
         return context
 
 
-class VolunteerUpdateView(UpdateView):
+class VolunteerUpdateView(LoginRequiredMixin, UpdateView):
     """Vue d'édition d'un bénévole"""
     model = Volunteer
     form_class = VolunteerForm
@@ -145,7 +148,7 @@ class VolunteerUpdateView(UpdateView):
             return redirect(self.object.get_absolute_url())
 
 
-class TimeTrackingCreateView(CreateView):
+class TimeTrackingCreateView(LoginRequiredMixin, CreateView):
     """Vue pour créer un suivi d'heures pour un bénévole"""
     model = TimeTracking
     form_class = TimeTrackingForm
@@ -194,7 +197,7 @@ class TimeTrackingCreateView(CreateView):
         return reverse('volunteers:detail', kwargs={'pk': self.volunteer.pk})
 
 
-class TimeTrackingUpdateView(UpdateView):
+class TimeTrackingUpdateView(LoginRequiredMixin, UpdateView):
     """Vue pour modifier un suivi d'heures"""
     model = TimeTracking
     form_class = TimeTrackingForm
@@ -242,6 +245,7 @@ class TimeTrackingUpdateView(UpdateView):
         return reverse('volunteers:detail', kwargs={'pk': self.object.volunteer.pk})
 
 
+@login_required
 def volunteer_search_autocomplete(request):
     """Vue pour l'autocomplétion de recherche de bénévoles (pour HTMX)"""
     query = request.GET.get('q', '')

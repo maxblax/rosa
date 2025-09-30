@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes Disponibilités - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-check text-green-600 mr-2"></i>
+            Mes Disponibilités
+        </h1>
+        <p class="text-gray-600 mt-1">
+            Gérez vos créneaux de disponibilité pour les rendez-vous
+        </p>
+    </div>
+    <div class="flex space-x-3">
+        <a href="{% url 'calendar:appointment_list' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>Mes rendez-vous
+        </a>
+        <a href="{% url 'calendar:week' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <i class="fas fa-calendar mr-2"></i>Mon calendrier
+        </a>
+        <a href="{% url 'calendar:availability_create' %}"
+           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>Nouvelle disponibilité
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filtres et recherche -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <div class="flex items-center space-x-4">
+                <div>
+                    <label for="filter-type" class="sr-only">Type de créneau</label>
+                    <select id="filter-type" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Tous les types</option>
+                        <option value="AVAILABILITY">Disponible</option>
+                        <option value="BUSY">Occupé</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-recurrence" class="sr-only">Type de récurrence</label>
+                    <select id="filter-recurrence" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Toutes les récurrences</option>
+                        <option value="WEEKLY">Récurrentes</option>
+                        <option value="NONE">Spot (ponctuelles)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-active" class="sr-only">Statut</label>
+                    <select id="filter-active" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Tous les statuts</option>
+                        <option value="true">Actifs</option>
+                        <option value="false">Inactifs</option>
+                    </select>
+                </div>
+            </div>
+            <div class="text-sm text-gray-500">
+                {{ slots|length }} créneaux au total
+            </div>
+        </div>
+    </div>
+
+    <!-- Résumé des disponibilités -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-calendar-check text-green-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Créneaux actifs</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ slots|length }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-clock text-blue-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Heures/semaine</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ total_hours|default:"0" }}h
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-user-clock text-yellow-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Réservables</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ bookable_slots|default:"0" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-calendar-times text-red-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-500">Occupés</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                        {{ busy_slots|default:"0" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des créneaux -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">
+                Vos créneaux de disponibilité
+            </h3>
+        </div>
+
+        {% if slots %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Récurrence
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Horaires
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Titre
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Statut
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for slot in slots %}
+                    <tr class="hover:bg-gray-50 slot-row"
+                        data-type="{{ slot.slot_type }}"
+                        data-recurrence="{{ slot.recurrence_type }}"
+                        data-active="{{ slot.is_active|yesno:'true,false' }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div>
+                                    {% if slot.recurrence_type == 'WEEKLY' %}
+                                        <div class="text-sm font-medium text-gray-900">
+                                            <i class="fas fa-redo text-blue-500 mr-1"></i>
+                                            {{ slot.get_weekday_display }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">Récurrent</div>
+                                    {% elif slot.recurrence_type == 'NONE' %}
+                                        <div class="text-sm font-medium text-gray-900">
+                                            <i class="fas fa-calendar-day text-orange-500 mr-1"></i>
+                                            {{ slot.specific_date|date:"d/m/Y" }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                                <i class="fas fa-star mr-1"></i>Spot
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-sm font-medium text-gray-900">
+                                            <i class="fas fa-question text-gray-500 mr-1"></i>
+                                            Autre
+                                        </div>
+                                        <div class="text-sm text-gray-500">{{ slot.recurrence_type }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {{ slot.duration }} min
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if slot.slot_type == 'AVAILABILITY' %}bg-green-100 text-green-800
+                                {% elif slot.slot_type == 'BUSY' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if slot.slot_type == 'AVAILABILITY' %}
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                {% elif slot.slot_type == 'BUSY' %}
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                {% endif %}
+                                {{ slot.get_slot_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">
+                                {% if slot.recurrence_type == 'NONE' %}
+                                    {% if slot.title %}
+                                        {{ slot.title }}
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            <i class="fas fa-calendar text-orange-500 mr-1"></i>{{ slot.specific_date|date:"l d F Y" }}
+                                        </div>
+                                    {% else %}
+                                        Disponibilité {{ slot.start_time|time:"H:i" }}-{{ slot.end_time|time:"H:i" }}
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            <i class="fas fa-calendar text-orange-500 mr-1"></i>{{ slot.specific_date|date:"l d F Y" }}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    {{ slot.title|default:"—" }}
+                                {% endif %}
+                            </div>
+                            {% if slot.notes %}
+                            <div class="text-sm text-gray-500 truncate max-w-xs">
+                                {{ slot.notes|truncatechars:50 }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                {% if slot.is_active %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Actif
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-pause mr-1"></i>Inactif
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if slot.is_bookable %}
+                            <div class="text-xs text-gray-500 mt-1">
+                                <i class="fas fa-user-plus mr-1"></i>Réservable
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'calendar:availability_detail' slot.pk %}"
+                                   class="text-blue-600 hover:text-blue-900"
+                                   title="Voir les détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'calendar:availability_edit' slot.pk %}"
+                                   class="text-green-600 hover:text-green-900"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'calendar:availability_delete' slot.pk %}"
+                                   class="text-red-600 hover:text-red-900"
+                                   title="Supprimer"
+                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce créneau ?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Précédent
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Suivant
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Affichage de
+                        <span class="font-medium">{{ page_obj.start_index }}</span>
+                        à
+                        <span class="font-medium">{{ page_obj.end_index }}</span>
+                        sur
+                        <span class="font-medium">{{ paginator.count }}</span>
+                        résultats
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        {% endif %}
+
+                        {% for num in paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                            {{ num }}
+                        </span>
+                        {% else %}
+                        <a href="?page={{ num }}"
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-12">
+            <i class="fas fa-calendar-plus text-gray-400 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">
+                Aucun créneau de disponibilité
+            </h3>
+            <p class="text-gray-500 mb-6">
+                Commencez par créer vos premiers créneaux de disponibilité pour que les bénéficiaires puissent prendre rendez-vous.
+            </p>
+            <a href="{% url 'calendar:availability_create' %}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Créer ma première disponibilité
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage en temps réel
+    const filterType = document.getElementById('filter-type');
+    const filterRecurrence = document.getElementById('filter-recurrence');
+    const filterActive = document.getElementById('filter-active');
+    const rows = document.querySelectorAll('.slot-row');
+
+    function applyFilters() {
+        const typeFilter = filterType.value;
+        const recurrenceFilter = filterRecurrence.value;
+        const activeFilter = filterActive.value;
+
+        rows.forEach(row => {
+            const type = row.dataset.type;
+            const recurrence = row.dataset.recurrence;
+            const active = row.dataset.active;
+
+            const typeMatch = !typeFilter || type === typeFilter;
+            const recurrenceMatch = !recurrenceFilter || recurrence === recurrenceFilter;
+            const activeMatch = !activeFilter || active === activeFilter;
+
+            if (typeMatch && recurrenceMatch && activeMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Mettre à jour le compteur
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        const counter = document.querySelector('.text-sm.text-gray-500');
+        if (counter) {
+            counter.textContent = `${visibleRows.length} créneaux affichés`;
+        }
+    }
+
+    filterType.addEventListener('change', applyFilters);
+    filterRecurrence.addEventListener('change', applyFilters);
+    filterActive.addEventListener('change', applyFilters);
+
+    // Actions en lot (sélection multiple)
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][name="selected_slots"]');
+    const bulkActions = document.getElementById('bulk-actions');
+
+    function updateBulkActions() {
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        if (selectedCount > 0) {
+            if (bulkActions) bulkActions.style.display = 'block';
+        } else {
+            if (bulkActions) bulkActions.style.display = 'none';
+        }
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+
+    // Sélection tout/rien
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActions();
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -17,14 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-# Import for the redirect
+# Import for the redirect and auth decorator
 from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('ona.auth_urls')),
     path('beneficiaires/', include('beneficiaries.urls')),
     path('benevoles/', include('volunteers.urls')),
+    path('calendrier/', include('calendar_app.urls')),
     # TODO: Add home page redirect
-    path('', lambda request: redirect('beneficiaries:list')),  # Temporary redirect
+    path('', login_required(lambda request: redirect('beneficiaries:list'))),  # Protected redirect
 ]

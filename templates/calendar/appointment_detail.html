@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ appointment.title|default:"Rendez-vous" }} - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+            {{ appointment.title|default:"Rendez-vous" }}
+        </h1>
+        <p class="text-gray-600 mt-1">
+            avec {{ appointment.beneficiary.first_name }} {{ appointment.beneficiary.last_name }}
+        </p>
+    </div>
+    <div class="flex space-x-3">
+        <a href="{% url 'calendar:appointment_list' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Retour
+        </a>
+        <a href="{% url 'calendar:appointment_edit' appointment.pk %}" class="btn-primary">
+            <i class="fas fa-edit mr-2"></i>Modifier
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Informations principales -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Informations du rendez-vous</h3>
+        </div>
+        <div class="px-6 py-4">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Bénéficiaire</dt>
+                    <dd class="mt-1">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-blue-600">
+                                        {{ appointment.beneficiary.first_name|first }}{{ appointment.beneficiary.last_name|first }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ appointment.beneficiary.last_name|upper }} {{ appointment.beneficiary.first_name }}
+                                </div>
+                                {% if appointment.beneficiary.phone_number %}
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-phone mr-1"></i>{{ appointment.beneficiary.phone_number }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Statut</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if appointment.status == 'SCHEDULED' %}bg-yellow-100 text-yellow-800
+                            {% elif appointment.status == 'CONFIRMED' %}bg-green-100 text-green-800
+                            {% elif appointment.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                            {% elif appointment.status == 'COMPLETED' %}bg-purple-100 text-purple-800
+                            {% elif appointment.status == 'CANCELLED' %}bg-red-100 text-red-800
+                            {% elif appointment.status == 'NO_SHOW' %}bg-gray-100 text-gray-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Date et heure</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {{ appointment.appointment_date|date:"l d F Y" }}<br>
+                        {{ appointment.start_time|time:"H:i" }} - {{ appointment.end_time|time:"H:i" }}
+                        <span class="text-gray-500">({{ appointment.duration }} min)</span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Type</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if appointment.appointment_type == 'INITIAL_INTERVIEW' %}bg-blue-100 text-blue-800
+                            {% elif appointment.appointment_type == 'FOLLOW_UP' %}bg-green-100 text-green-800
+                            {% elif appointment.appointment_type == 'ADMINISTRATIVE' %}bg-purple-100 text-purple-800
+                            {% elif appointment.appointment_type == 'EMERGENCY' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ appointment.get_appointment_type_display }}
+                        </span>
+                    </dd>
+                </div>
+
+                {% if appointment.location %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Lieu</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>{{ appointment.location }}
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+    </div>
+
+    {% if appointment.description %}
+    <!-- Description -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Description</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-gray-700 whitespace-pre-line">{{ appointment.description }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if appointment.preparation_notes %}
+    <!-- Notes de préparation -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Notes de préparation</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-gray-700 whitespace-pre-line">{{ appointment.preparation_notes }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if appointment.completion_notes %}
+    <!-- Notes de fin de rendez-vous -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Notes de fin de rendez-vous</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-gray-700 whitespace-pre-line">{{ appointment.completion_notes }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex justify-end space-x-3">
+        {% if appointment.status in 'SCHEDULED,CONFIRMED' %}
+        <button onclick="markCompleted()" class="btn-success">
+            <i class="fas fa-check mr-2"></i>Marquer comme terminé
+        </button>
+        {% endif %}
+        <a href="{% url 'calendar:appointment_edit' appointment.pk %}" class="btn-primary">
+            <i class="fas fa-edit mr-2"></i>Modifier
+        </a>
+        <a href="{% url 'calendar:appointment_delete' appointment.pk %}" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+           onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')">
+            <i class="fas fa-trash mr-2"></i>Supprimer
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markCompleted() {
+    if (confirm('Marquer ce rendez-vous comme terminé ?')) {
+        // Rediriger vers la page d'édition avec le statut pré-rempli
+        window.location.href = '{% url "calendar:appointment_edit" appointment.pk %}?status=COMPLETED';
+    }
+}
+</script>
+{% endblock %}

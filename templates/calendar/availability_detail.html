@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Détail - {{ slot.title|default:"Créneau de disponibilité" }} - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-check text-green-600 mr-2"></i>
+            {{ slot.title|default:"Créneau de disponibilité" }}
+        </h1>
+        <p class="text-gray-600 mt-1">
+            Détail du créneau de disponibilité
+        </p>
+    </div>
+    <div class="flex space-x-3">
+        <a href="{% url 'calendar:availability_list' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Retour
+        </a>
+        <a href="{% url 'calendar:availability_edit' slot.pk %}" class="btn-primary">
+            <i class="fas fa-edit mr-2"></i>Modifier
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Informations principales -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Informations du créneau</h3>
+        </div>
+        <div class="px-6 py-4">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Type</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if slot.slot_type == 'AVAILABILITY' %}bg-green-100 text-green-800
+                            {% elif slot.slot_type == 'BUSY' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ slot.get_slot_type_display }}
+                        </span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Récurrence</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {% if slot.recurrence_type == 'WEEKLY' %}
+                            <i class="fas fa-redo text-blue-500 mr-1"></i>
+                            Chaque {{ slot.get_weekday_display }}
+                        {% elif slot.recurrence_type == 'SPECIFIC' %}
+                            <i class="fas fa-calendar-day text-purple-500 mr-1"></i>
+                            {{ slot.specific_date|date:"l d F Y" }}
+                        {% endif %}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Horaires</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}
+                        <span class="text-gray-500">({{ slot.duration }} min)</span>
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Statut</dt>
+                    <dd class="mt-1">
+                        {% if slot.is_active %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check mr-1"></i>Actif
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <i class="fas fa-pause mr-1"></i>Inactif
+                        </span>
+                        {% endif %}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end space-x-3">
+        <a href="{% url 'calendar:availability_edit' slot.pk %}" class="btn-primary">
+            <i class="fas fa-edit mr-2"></i>Modifier
+        </a>
+        <a href="{% url 'calendar:availability_delete' slot.pk %}" class="btn-danger"
+           onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce créneau ?')">
+            <i class="fas fa-trash mr-2"></i>Supprimer
+        </a>
+    </div>
+</div>
+{% endblock %}

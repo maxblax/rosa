@@ -1,21 +1,23 @@
 {
+  "approval_mode": "auto",
+  "auto_approve": {
+    "file_edits": true,
+    "file_creation": true,
+    "command_execution": true
+  },
   "permissions": {
     "allow": [
-      "mcp__playwright__browser_click",
-      "mcp__playwright__browser_take_screenshot",
-      "mcp__playwright__browser_type",
-      "mcp__playwright__browser_navigate",
-      "Bash(find:*)",
-      "WebFetch(domain:localhost)",
-      "Read(//Users/max/**)",
-      "mcp__playwright__browser_console_messages",
-      "mcp__playwright__browser_evaluate",
-      "mcp__playwright__browser_snapshot",
-      "Bash(python manage.py startapp:*)",
-      "Bash(mkdir:*)",
-      "Bash(python manage.py:*)",
-      "Bash(python:*)"
-    ],
+    "Bash(python*)",           // Au lieu de multiples "python ..."
+    "Bash(pip*)",              // Couvre pip install, pip list, etc.
+    "Bash(uv*)",               // Tous les commandes uv
+    "Bash(mkdir*)",
+    "Bash(find*)",
+    "Bash(source*)",
+    "WebFetch(domain:localhost)",
+    "WebFetch(domain:github.com)",
+    "WebSearch",
+    "mcp__playwright__browser_*"  // Tous les outils Playwright
+  ],
     "deny": [],
     "ask": []
   }
