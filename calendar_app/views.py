@@ -11,6 +11,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count
+from django import forms
 from datetime import datetime, timedelta, date
 import json
 
@@ -18,6 +19,9 @@ from .models import (
     VolunteerCalendar, AvailabilitySlot, AvailabilityException, Appointment
 )
 from .forms import AppointmentForm, AvailabilitySlotForm
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class CalendarPermissionMixin:
@@ -72,6 +76,100 @@ class CalendarPermissionMixin:
         raise ValueError("Aucun calendrier disponible")
 
 
+class CalendarImpersonationMixin:
+    """Mixin pour gérer l'impersonation des calendriers (admin/salarié uniquement)"""
+
+    def can_impersonate(self):
+        """Vérifie si l'utilisateur peut faire de l'impersonation"""
+        if self.request.user.is_superuser:
+            return True
+
+        try:
+            volunteer = self.request.user.volunteer_profile
+            return volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
+        except:
+            return False
+
+    def get_target_user(self):
+        """Récupère l'utilisateur ciblé par l'impersonation"""
+        as_user_id = self.request.GET.get('as_user')
+
+        # Si pas d'impersonation ou pas de permission, retourner l'utilisateur actuel
+        if not as_user_id or not self.can_impersonate():
+            return self.request.user
+
+        # Récupérer l'utilisateur ciblé
+        try:
+            target_user = User.objects.get(id=as_user_id)
+            # Vérifier que l'utilisateur ciblé a un profil volunteer
+            if hasattr(target_user, 'volunteer_profile') and target_user.volunteer_profile:
+                return target_user
+        except User.DoesNotExist:
+            pass
+
+        # Fallback sur l'utilisateur actuel
+        return self.request.user
+
+    def get_target_calendar(self):
+        """Récupère le calendrier de l'utilisateur ciblé"""
+        target_user = self.get_target_user()
+
+        if hasattr(target_user, 'volunteer_profile') and target_user.volunteer_profile:
+            volunteer = target_user.volunteer_profile
+            calendar, created = VolunteerCalendar.objects.get_or_create(volunteer=volunteer)
+            return calendar
+
+        # Fallback pour les superusers
+        if target_user.is_superuser:
+            from volunteers.models import Volunteer
+            volunteer, created = Volunteer.objects.get_or_create(
+                user=target_user,
+                defaults={
+                    'role': 'ADMIN',
+                    'phone': '',
+                    'availability': 'Disponible à temps plein'
+                }
+            )
+            calendar, created = VolunteerCalendar.objects.get_or_create(volunteer=volunteer)
+            return calendar
+
+        raise ValueError("Aucun calendrier disponible pour l'utilisateur ciblé")
+
+    def get_context_data(self, **kwargs):
+        """Ajoute les données d'impersonation au contexte"""
+        context = super().get_context_data(**kwargs)
+
+        # Informations sur l'impersonation
+        context['can_impersonate'] = self.can_impersonate()
+        context['target_user'] = self.get_target_user()
+        context['is_impersonating'] = self.get_target_user() != self.request.user
+
+        # Liste des utilisateurs pour le dropdown (si permission)
+        if self.can_impersonate():
+            from volunteers.models import Volunteer
+            available_users = User.objects.filter(
+                volunteer_profile__isnull=False,
+                is_active=True
+            ).select_related('volunteer_profile').order_by('first_name', 'last_name')
+            context['available_users'] = available_users
+
+        return context
+
+    def get_query_params(self, **extra_params):
+        """Ajoute le paramètre as_user aux liens pour préserver l'impersonation"""
+        params = {}
+
+        # Préserver l'impersonation
+        as_user_id = self.request.GET.get('as_user')
+        if as_user_id and self.can_impersonate():
+            params['as_user'] = as_user_id
+
+        # Ajouter les paramètres supplémentaires
+        params.update(extra_params)
+
+        return params
+
+
 class CalendarView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView):
     """Vue principale du calendrier - redirige vers la vue préférée"""
 
@@ -87,13 +185,13 @@ class CalendarView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView):
             return redirect('calendar:week')
 
 
-class CalendarWeekView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView):
+class CalendarWeekView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, TemplateView):
     """Vue semaine du calendrier"""
     template_name = 'calendar/week.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
 
         # Récupérer la semaine depuis les paramètres GET ou utiliser semaine actuelle
         week_param = self.request.GET.get('week')
@@ -179,13 +277,13 @@ class CalendarWeekView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView
         return context
 
 
-class CalendarDayView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView):
+class CalendarDayView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, TemplateView):
     """Vue jour du calendrier"""
     template_name = 'calendar/day.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
 
         # Récupérer la date depuis les paramètres GET ou utiliser aujourd'hui
         date_param = self.request.GET.get('date')
@@ -257,13 +355,13 @@ class CalendarDayView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView)
         return context
 
 
-class CalendarMonthView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView):
+class CalendarMonthView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, TemplateView):
     """Vue mois du calendrier - calendrier mensuel classique"""
     template_name = 'calendar/month.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
 
         # Mois actuel ou demandé
         month_param = self.request.GET.get('month')
@@ -495,7 +593,7 @@ class GlobalCalendarView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, ListView):
+class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, ListView):
     """Liste des créneaux de disponibilité"""
     model = AvailabilitySlot
     template_name = 'calendar/availability_list.html'
@@ -503,7 +601,7 @@ class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, ListView
     paginate_by = 20
 
     def get_queryset(self):
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(
             volunteer_calendar=calendar
         ).order_by('weekday', 'start_time')
@@ -512,7 +610,7 @@ class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, ListView
         context = super().get_context_data(**kwargs)
 
         # Récupérer tous les créneaux pour les statistiques (pas seulement la page courante)
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
         all_slots = AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
 
         # Calculer le total d'heures par semaine
@@ -546,22 +644,43 @@ class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, ListView
         return context
 
 
-class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, CreateView):
+class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, CreateView):
     """Créer un nouveau créneau de disponibilité"""
     model = AvailabilitySlot
+    form_class = AvailabilitySlotForm
     template_name = 'calendar/availability_form.html'
-    fields = [
-        'slot_type', 'recurrence_type', 'weekday', 'specific_date',
-        'start_time', 'end_time', 'valid_from', 'valid_until',
-        'title', 'notes', 'is_bookable', 'max_appointments'
-    ]
     success_url = reverse_lazy('calendar:availability_list')
 
+    def get_form(self, form_class=None):
+        """Personnaliser le formulaire pour pré-remplir et cacher le calendrier"""
+        form = super().get_form(form_class)
+
+        # Pré-remplir le calendrier avec l'utilisateur ciblé
+        target_calendar = self.get_target_calendar()
+        form.fields['volunteer_calendar'].initial = target_calendar
+        form.fields['volunteer_calendar'].widget = forms.HiddenInput()
+
+        return form
+
     def form_valid(self, form):
-        form.instance.volunteer_calendar = self.get_user_calendar()
+        # S'assurer que le bon calendrier est utilisé (sécurité)
+        form.instance.volunteer_calendar = self.get_target_calendar()
         form.instance.created_by = self.request.user
-        messages.success(self.request, 'Créneau de disponibilité créé avec succès')
+        target_user = self.get_target_user()
+        if self.get_target_user() != self.request.user:
+            messages.success(self.request, f'Créneau de disponibilité créé avec succès pour {target_user.get_full_name()}')
+        else:
+            messages.success(self.request, 'Créneau de disponibilité créé avec succès')
         return super().form_valid(form)
+
+    def get_success_url(self):
+        """Préserver le paramètre as_user dans l'URL de redirection"""
+        params = self.get_query_params()
+        url = reverse_lazy('calendar:availability_list')
+        if params:
+            from urllib.parse import urlencode
+            url += '?' + urlencode(params)
+        return url
 
 
 class AvailabilityDetailView(LoginRequiredMixin, CalendarPermissionMixin, DetailView):
@@ -610,7 +729,7 @@ class AvailabilityDeleteView(LoginRequiredMixin, CalendarPermissionMixin, Delete
         return super().delete(request, *args, **kwargs)
 
 
-class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, ListView):
+class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, ListView):
     """Liste des rendez-vous"""
     model = Appointment
     template_name = 'calendar/appointment_list.html'
@@ -618,7 +737,7 @@ class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, ListView)
     paginate_by = 20
 
     def get_queryset(self):
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
         return Appointment.objects.filter(
             volunteer_calendar=calendar
         ).select_related('beneficiary')
@@ -629,7 +748,7 @@ class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, ListView)
         from django.utils import timezone
 
         # Récupérer tous les rendez-vous pour calculer les statistiques
-        calendar = self.get_user_calendar()
+        calendar = self.get_target_calendar()
         all_appointments = Appointment.objects.filter(volunteer_calendar=calendar).select_related('beneficiary')
 
         # Date d'aujourd'hui
@@ -664,7 +783,7 @@ class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, ListView)
         return context
 
 
-class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CreateView):
+class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, CreateView):
     """Créer un nouveau rendez-vous"""
     model = Appointment
     form_class = AppointmentForm
@@ -745,15 +864,15 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CreateV
         if beneficiary_id:
             initial['beneficiary'] = beneficiary_id
 
-        # Pré-remplir le calendrier bénévole - utiliser le calendrier de l'utilisateur actuel par défaut
+        # Pré-remplir le calendrier bénévole - utiliser le calendrier ciblé par défaut
         volunteer_calendar_id = self.request.GET.get('volunteer_calendar')
         if volunteer_calendar_id:
             initial['volunteer_calendar'] = volunteer_calendar_id
         else:
-            # Utiliser automatiquement le calendrier de l'utilisateur actuel
+            # Utiliser automatiquement le calendrier de l'utilisateur ciblé (pour l'impersonation)
             try:
-                user_calendar = self.get_user_calendar()
-                initial['volunteer_calendar'] = user_calendar.id
+                target_calendar = self.get_target_calendar()
+                initial['volunteer_calendar'] = target_calendar.id
             except:
                 pass
 
@@ -781,10 +900,25 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CreateV
         prev_week = week_start - timedelta(days=7)
         next_week = week_start + timedelta(days=7)
 
-        # Récupérer tous les calendriers actifs
-        calendars = VolunteerCalendar.objects.filter(
-            volunteer__role__in=['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']
-        ).select_related('volunteer__user')
+        # Récupérer les calendriers
+        # Si on vient d'une vue calendrier (avec ou sans impersonation), filtrer uniquement le calendrier ciblé
+        # Sinon, afficher tous les calendriers actifs
+        as_user_id = self.request.GET.get('as_user')
+        target_user = self.get_target_user()
+
+        # Si l'utilisateur a un calendrier et qu'on vient probablement d'une vue calendrier,
+        # afficher uniquement son calendrier (ou celui de l'utilisateur qu'il impersonne)
+        try:
+            target_calendar = self.get_target_calendar()
+            # Afficher uniquement le calendrier de l'utilisateur ciblé
+            calendars = VolunteerCalendar.objects.filter(
+                id=target_calendar.id
+            ).select_related('volunteer__user')
+        except:
+            # Fallback : afficher tous les calendriers actifs
+            calendars = VolunteerCalendar.objects.filter(
+                volunteer__role__in=['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']
+            ).select_related('volunteer__user')
 
         # Récupérer tous les RDV et disponibilités de la semaine
         appointments = Appointment.objects.filter(
@@ -865,8 +999,21 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CreateV
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        messages.success(self.request, 'Rendez-vous créé avec succès')
+        target_user = self.get_target_user()
+        if self.get_target_user() != self.request.user:
+            messages.success(self.request, f'Rendez-vous créé avec succès pour {target_user.get_full_name()}')
+        else:
+            messages.success(self.request, 'Rendez-vous créé avec succès')
         return super().form_valid(form)
+
+    def get_success_url(self):
+        """Préserver le paramètre as_user dans l'URL de redirection"""
+        params = self.get_query_params()
+        url = reverse_lazy('calendar:appointment_list')
+        if params:
+            from urllib.parse import urlencode
+            url += '?' + urlencode(params)
+        return url
 
 
 class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, DetailView):
@@ -874,6 +1021,20 @@ class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, DetailV
     model = Appointment
     template_name = 'calendar/appointment_detail.html'
     context_object_name = 'appointment'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.utils import timezone
+        from datetime import datetime, timedelta
+
+        appointment = self.object
+        now = timezone.now()
+
+        # Vérifier si le RDV est passé
+        appointment_datetime = datetime.combine(appointment.appointment_date, appointment.end_time)
+        context['is_appointment_past'] = appointment_datetime < now.replace(tzinfo=None)
+
+        return context
 
     def get_queryset(self):
         # Filtrer les rendez-vous selon les permissions
@@ -912,6 +1073,108 @@ class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, UpdateVie
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        # Réutiliser la même logique que AppointmentCreateView
+        context = super().get_context_data(**kwargs)
+
+        # Récupérer la semaine depuis les paramètres GET ou utiliser semaine actuelle
+        week_param = self.request.GET.get('week')
+        if week_param:
+            try:
+                target_date = datetime.strptime(week_param, '%Y-%m-%d').date()
+                week_start = target_date - timedelta(days=target_date.weekday())
+            except ValueError:
+                today = timezone.now().date()
+                week_start = today - timedelta(days=today.weekday())
+        else:
+            # Utiliser la semaine du RDV actuel
+            today = self.object.appointment_date
+            week_start = today - timedelta(days=today.weekday())
+
+        week_end = week_start + timedelta(days=6)
+
+        # Navigation
+        prev_week = week_start - timedelta(days=7)
+        next_week = week_start + timedelta(days=7)
+
+        # Filtrer le planning pour n'afficher que le calendrier du bénévole du RDV
+        calendars = VolunteerCalendar.objects.filter(
+            id=self.object.volunteer_calendar.id
+        ).select_related('volunteer__user')
+
+        # Récupérer tous les RDV et disponibilités de la semaine
+        appointments = Appointment.objects.filter(
+            appointment_date__range=[week_start, week_end]
+        ).select_related('volunteer_calendar__volunteer__user', 'beneficiary')
+
+        availability_slots = AvailabilitySlot.objects.filter(
+            volunteer_calendar__in=calendars,
+            is_active=True
+        )
+
+        # Organiser les données par jour de la semaine et par bénévole
+        week_data = []
+        for i in range(7):  # 7 jours de la semaine
+            day_date = week_start + timedelta(days=i)
+            day_data = {
+                'date': day_date,
+                'weekday': day_date.weekday(),
+                'volunteers': []
+            }
+
+            for calendar in calendars:
+                # RDV du jour pour ce bénévole
+                day_appointments = appointments.filter(
+                    volunteer_calendar=calendar,
+                    appointment_date=day_date
+                ).order_by('start_time')
+
+                # Disponibilités du jour pour ce bénévole
+                day_slots = availability_slots.filter(
+                    volunteer_calendar=calendar
+                ).filter(
+                    Q(recurrence_type='WEEKLY', weekday=day_date.weekday()) |
+                    Q(recurrence_type='NONE', specific_date=day_date)
+                ).order_by('start_time')
+
+                # Calculer les disponibilités réelles (disponibilités - rendez-vous)
+                from calendar_app.views import AppointmentCreateView
+                create_view = AppointmentCreateView()
+                real_availability_slots = create_view.calculate_real_availability(day_slots, day_appointments)
+
+                # Filtrer les créneaux passés
+                today_date = timezone.now().date()
+                current_time = timezone.now().time()
+                filtered_slots = []
+
+                for slot in real_availability_slots:
+                    if day_date > today_date:
+                        filtered_slots.append(slot)
+                    elif day_date == today_date and slot['end_time'] > current_time:
+                        filtered_slots.append(slot)
+
+                real_availability_slots = filtered_slots
+
+                volunteer_data = {
+                    'calendar': calendar,
+                    'appointments': [],
+                    'availability_slots': real_availability_slots
+                }
+
+                day_data['volunteers'].append(volunteer_data)
+
+            week_data.append(day_data)
+
+        context['week_data'] = week_data
+        context['week_start'] = week_start
+        context['week_end'] = week_end
+        context['prev_week'] = prev_week
+        context['next_week'] = next_week
+        context['calendars'] = calendars
+        context['today'] = timezone.now().date()
+
+        return context
+
     def get_queryset(self):
         # Filtrer les rendez-vous selon les permissions
         user = self.request.user
@@ -939,6 +1202,20 @@ class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, UpdateVie
         return Appointment.objects.none()
 
     def form_valid(self, form):
+        # Si le RDV était confirmé et qu'on modifie la date/heure, repasser en SCHEDULED
+        appointment = form.instance
+        old_appointment = Appointment.objects.get(pk=appointment.pk)
+
+        # Vérifier si la date, heure de début ou heure de fin a changé
+        if (old_appointment.appointment_date != appointment.appointment_date or
+            old_appointment.start_time != appointment.start_time or
+            old_appointment.end_time != appointment.end_time):
+
+            # Si le statut était CONFIRMED, le repasser en SCHEDULED
+            if old_appointment.status == 'CONFIRMED':
+                appointment.status = 'SCHEDULED'
+                messages.info(self.request, 'Le rendez-vous a été modifié. Statut repassé à "Programmé" (à confirmer à nouveau)')
+
         messages.success(self.request, 'Rendez-vous modifié avec succès')
         return super().form_valid(form)
 
@@ -956,6 +1233,47 @@ class AppointmentDeleteView(LoginRequiredMixin, CalendarPermissionMixin, DeleteV
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Rendez-vous supprimé avec succès')
         return super().delete(request, *args, **kwargs)
+
+
+@login_required
+def appointment_change_status(request, pk):
+    """Changer le statut d'un rendez-vous"""
+    appointment = get_object_or_404(Appointment, pk=pk)
+
+    # Vérifier les permissions
+    user = request.user
+    can_edit = False
+
+    if user.is_superuser:
+        can_edit = True
+    else:
+        try:
+            volunteer = user.volunteer_profile
+            if volunteer.role in ['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']:
+                can_edit = True
+            else:
+                # Vérifier que c'est le calendrier de l'utilisateur
+                calendar = VolunteerCalendar.objects.filter(volunteer=volunteer).first()
+                if calendar and appointment.volunteer_calendar == calendar:
+                    can_edit = True
+        except AttributeError:
+            pass
+
+    if not can_edit:
+        messages.error(request, "Vous n'avez pas la permission de modifier ce rendez-vous")
+        return redirect('calendar:appointment_detail', pk=pk)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW']:
+            old_status = appointment.get_status_display()
+            appointment.status = new_status
+            appointment.save()
+            messages.success(request, f'Statut changé de "{old_status}" à "{appointment.get_status_display()}"')
+        else:
+            messages.error(request, 'Statut invalide')
+
+    return redirect('calendar:appointment_detail', pk=pk)
 
 
 class CalendarSettingsView(LoginRequiredMixin, CalendarPermissionMixin, UpdateView):
@@ -1250,8 +1568,26 @@ def available_volunteers_api(request):
 @login_required
 def availability_edit_panel(request, pk):
     """Panel HTMX pour éditer une disponibilité existante"""
+    # Gérer l'impersonation : vérifier le paramètre as_user
+    as_user_id = request.GET.get('as_user') or request.POST.get('as_user')
+    target_user = request.user
+
+    # Si as_user est fourni et que l'utilisateur a les permissions
+    if as_user_id:
+        # Vérifier que l'utilisateur actuel peut faire de l'impersonation
+        can_impersonate = request.user.is_superuser
+        if not can_impersonate and hasattr(request.user, 'volunteer_profile'):
+            volunteer = request.user.volunteer_profile
+            can_impersonate = volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
+
+        if can_impersonate:
+            try:
+                target_user = User.objects.get(id=as_user_id)
+            except User.DoesNotExist:
+                pass
+
     try:
-        calendar = get_object_or_404(VolunteerCalendar, volunteer__user=request.user)
+        calendar = get_object_or_404(VolunteerCalendar, volunteer__user=target_user)
         slot = get_object_or_404(AvailabilitySlot, pk=pk, volunteer_calendar=calendar)
     except:
         return HttpResponse('<div class="p-4 text-red-600">Erreur: créneau non trouvé</div>')
@@ -1283,17 +1619,67 @@ def availability_edit_panel(request, pk):
                 except ValueError:
                     return HttpResponse('<div class="p-4 text-red-600">Erreur: Format d\'heure invalide</div>')
 
+    # Calculer la date du slot pour le bouton de création de RDV
+    # Pour les slots hebdomadaires, utiliser la date fournie en paramètre ou la prochaine occurrence
+    # Pour les slots ponctuels, utiliser la date spécifique du slot
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+
+    if slot.recurrence_type == 'NONE':
+        slot_date = slot.specific_date
+    else:
+        # Pour un slot hebdomadaire, essayer de récupérer la date depuis les paramètres
+        date_param = request.GET.get('date')
+        if date_param:
+            try:
+                slot_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                # Fallback: calculer la prochaine occurrence
+                today = timezone.now().date()
+                days_until_weekday = (slot.weekday - today.weekday()) % 7
+                if days_until_weekday == 0:
+                    slot_date = today
+                else:
+                    slot_date = today + timedelta(days=days_until_weekday)
+        else:
+            # Fallback: calculer la prochaine occurrence
+            today = timezone.now().date()
+            days_until_weekday = (slot.weekday - today.weekday()) % 7
+            if days_until_weekday == 0:
+                slot_date = today
+            else:
+                slot_date = today + timedelta(days=days_until_weekday)
+
     # Rendu du panel d'édition
     return render(request, 'calendar/partials/availability_edit_panel.html', {
         'slot': slot,
+        'slot_date': slot_date,
     })
 
 
 @login_required
 def availability_new_panel(request):
     """Panel HTMX pour créer une nouvelle disponibilité"""
+    # Gérer l'impersonation : vérifier le paramètre as_user
+    as_user_id = request.GET.get('as_user') or request.POST.get('as_user')
+    target_user = request.user
+
+    # Si as_user est fourni et que l'utilisateur a les permissions
+    if as_user_id:
+        # Vérifier que l'utilisateur actuel peut faire de l'impersonation
+        can_impersonate = request.user.is_superuser
+        if not can_impersonate and hasattr(request.user, 'volunteer_profile'):
+            volunteer = request.user.volunteer_profile
+            can_impersonate = volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
+
+        if can_impersonate:
+            try:
+                target_user = User.objects.get(id=as_user_id)
+            except User.DoesNotExist:
+                pass
+
     try:
-        calendar = get_object_or_404(VolunteerCalendar, volunteer__user=request.user)
+        calendar = get_object_or_404(VolunteerCalendar, volunteer__user=target_user)
     except:
         return HttpResponse('<div class="p-4 text-red-600">Erreur: calendrier non trouvé</div>')
 
@@ -1389,6 +1775,11 @@ def availability_new_panel(request):
             url = f"/calendrier/appointments/create/?date={slot_date}"
             if start_time:
                 url += f"&time={start_time}"
+
+            # Préserver le paramètre as_user
+            if as_user_id:
+                url += f"&as_user={as_user_id}"
+
             return HttpResponse(f'<script>window.location.href = "{url}";</script>')
 
     # Vérifier si c'est dans le passé
@@ -1419,17 +1810,25 @@ def availability_new_panel(request):
 
     # Valeurs par défaut
     try:
-        if hour:
-            default_start = f"{hour:02d}:00" if isinstance(hour, int) else f"{hour}:00"
-            next_hour = int(hour) + 1 if isinstance(hour, int) else int(hour.split(':')[0]) + 1
+        if hour is not None:
+            # Convertir hour en int pour gérer tous les cas
+            hour_int = int(hour) if isinstance(hour, (int, str)) else int(str(hour).split(':')[0])
+            default_start = f"{hour_int:02d}:00"
+            next_hour = hour_int + 1
             default_end = f"{next_hour:02d}:00"
-        elif start_hour:
-            default_start = f"{start_hour}:00"
-            default_end = f"{end_hour or int(start_hour) + 1}:00"
+        elif start_hour is not None:
+            start_hour_int = int(start_hour)
+            default_start = f"{start_hour_int:02d}:00"
+            if end_hour is not None:
+                end_hour_int = int(end_hour)
+                default_end = f"{end_hour_int:02d}:00"
+            else:
+                default_end = f"{start_hour_int + 1:02d}:00"
         else:
             default_start = "09:00"
             default_end = "10:00"
-    except:
+    except Exception as e:
+        # Fallback en cas d'erreur
         default_start = "09:00"
         default_end = "10:00"
 

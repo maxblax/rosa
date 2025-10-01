@@ -20,6 +20,7 @@ class BeneficiaryListView(LoginRequiredMixin, ListView):
     template_name = 'beneficiaries/list.html'
     context_object_name = 'beneficiaries'
     paginate_by = 20
+
     
     def get_queryset(self):
         queryset = super().get_queryset()

@@ -1,0 +1,38 @@
+{% if can_impersonate %}
+<div class="relative">
+    <label for="user-selector" class="sr-only">Voir le calendrier de</label>
+    <select id="user-selector"
+            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 max-w-48"
+            onchange="switchUser(this.value)">
+        <option value="">Mon calendrier</option>
+        {% for user in available_users %}
+            <option value="{{ user.id }}"
+                    {% if user == target_user %}selected{% endif %}>
+                {{ user.first_name }} {{ user.last_name|upper }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+{% if is_impersonating %}
+<!-- Badge d'alerte en mode impersonation -->
+<div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+    <i class="fas fa-exclamation-triangle mr-1"></i>
+    <span>Vous gérez le calendrier de <strong>{{ target_user.first_name }} {{ target_user.last_name|upper }}</strong></span>
+</div>
+{% endif %}
+
+<script>
+function switchUser(userId) {
+    const url = new URL(window.location);
+
+    if (userId) {
+        url.searchParams.set('as_user', userId);
+    } else {
+        url.searchParams.delete('as_user');
+    }
+
+    window.location.href = url.toString();
+}
+</script>
+{% endif %}

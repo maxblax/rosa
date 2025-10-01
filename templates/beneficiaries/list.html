@@ -111,12 +111,16 @@
                     <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 hidden xl:table-cell">
                         {{ beneficiary.phone|default:"-" }}
                     </td>
-                    <td class="px-3 py-3 whitespace-nowrap text-sm">
+                    <td class="px-3 py-3 text-sm">
                         {% if beneficiary.next_appointment %}
                             <a href="{% url 'calendar:appointment_detail' beneficiary.next_appointment.pk %}"
-                               class="text-blue-600 hover:text-blue-800 font-medium">
-                                <i class="fas fa-calendar-check mr-1"></i>
-                                <div>{{ beneficiary.next_appointment.appointment_date|date:"d/m" }}</div>
+                               class="text-blue-600 hover:text-blue-800">
+                                <div class="text-sm font-medium">
+                                    {{ beneficiary.next_appointment.appointment_date|date:"l" }}
+                                </div>
+                                <div class="text-sm text-gray-700">
+                                    {{ beneficiary.next_appointment.appointment_date|date:"d F Y" }}
+                                </div>
                                 <div class="text-xs text-gray-500">
                                     {{ beneficiary.next_appointment.start_time|time:"H:i" }}
                                 </div>
@@ -126,14 +130,14 @@
                         {% endif %}
                     </td>
                     <td class="px-2 py-3 whitespace-nowrap text-sm">
-                        <div class="flex space-x-1">
+                        <div class="flex space-x-2">
                             <a href="{% url 'beneficiaries:detail' beneficiary.pk %}"
-                               class="text-blue-600 hover:text-blue-800" title="Voir">
-                                <i class="fas fa-eye"></i>
+                               class="inline-flex items-center justify-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                                <i class="fas fa-eye mr-1.5"></i>Voir
                             </a>
                             <a href="{% url 'beneficiaries:edit' beneficiary.pk %}"
-                               class="text-green-600 hover:text-green-800" title="Modifier">
-                                <i class="fas fa-edit"></i>
+                               class="inline-flex items-center justify-center px-3 py-1.5 border border-green-300 rounded-md shadow-sm text-xs font-medium text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                <i class="fas fa-edit mr-1.5"></i>Modifier
                             </a>
                         </div>
                     </td>

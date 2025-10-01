@@ -32,6 +32,7 @@ urlpatterns = [
     path('appointments/<int:pk>/', views.AppointmentDetailView.as_view(), name='appointment_detail'),
     path('appointments/<int:pk>/edit/', views.AppointmentEditView.as_view(), name='appointment_edit'),
     path('appointments/<int:pk>/delete/', views.AppointmentDeleteView.as_view(), name='appointment_delete'),
+    path('appointments/<int:pk>/status/', views.appointment_change_status, name='appointment_status'),
 
     # API endpoints pour HTMX
     path('api/slots/', views.api_availability_slots, name='api_slots'),

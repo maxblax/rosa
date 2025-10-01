@@ -276,8 +276,9 @@ class AvailabilitySlotForm(forms.ModelForm):
     class Meta:
         model = AvailabilitySlot
         fields = [
-            'title', 'slot_type', 'recurrence_type', 'weekday',
-            'specific_date', 'start_time', 'end_time', 'notes'
+            'volunteer_calendar', 'title', 'slot_type', 'recurrence_type', 'weekday',
+            'specific_date', 'start_time', 'end_time', 'valid_from', 'valid_until',
+            'notes', 'is_bookable', 'max_appointments'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -304,9 +305,24 @@ class AvailabilitySlotForm(forms.ModelForm):
                 'type': 'time',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
+            'valid_from': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'valid_until': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
             'notes': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 3
+            }),
+            'is_bookable': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            }),
+            'max_appointments': forms.NumberInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'min': '1', 'max': '10'
             }),
         }
 
@@ -327,7 +343,7 @@ class AvailabilitySlotForm(forms.ModelForm):
         if recurrence_type == 'WEEKLY' and not weekday:
             raise forms.ValidationError("Le jour de la semaine est requis pour une récurrence hebdomadaire.")
 
-        if recurrence_type == 'ONCE' and not specific_date:
+        if recurrence_type == 'NONE' and not specific_date:
             raise forms.ValidationError("La date spécifique est requise pour un créneau unique.")
 
         return cleaned_data

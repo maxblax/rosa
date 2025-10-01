@@ -35,13 +35,19 @@
     <div class="mb-6">
         <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
             <div class="flex items-center">
-                <i class="fas fa-calendar-check text-blue-600 mr-3"></i>
+                <i class="fas fa-calendar-check text-blue-600 text-xl mr-3"></i>
                 <div class="flex-1">
-                    <h4 class="text-sm font-medium text-blue-800">Prochain rendez-vous</h4>
-                    <p class="mt-1 text-sm text-blue-600">
+                    <h4 class="text-base font-semibold text-blue-800">Prochain rendez-vous</h4>
+                    <p class="mt-1 text-sm text-blue-700">
                         <a href="{% url 'calendar:appointment_detail' beneficiary.next_appointment.pk %}"
-                           class="hover:text-blue-800 font-medium underline">
-                            {{ beneficiary.next_appointment.appointment_date|date:"l d/m/Y" }} à {{ beneficiary.next_appointment.start_time|time:"H:i" }}
+                           class="hover:text-blue-900 font-medium underline">
+                            {{ beneficiary.next_appointment.appointment_date|date:"l" }}
+                        </a>
+                    </p>
+                    <p class="text-sm text-blue-600">
+                        <a href="{% url 'calendar:appointment_detail' beneficiary.next_appointment.pk %}"
+                           class="hover:text-blue-900 font-medium underline">
+                            {{ beneficiary.next_appointment.appointment_date|date:"d F Y" }} à {{ beneficiary.next_appointment.start_time|time:"H:i" }}
                         </a>
                         {% if beneficiary.next_appointment.title %}
                         - {{ beneficiary.next_appointment.title }}

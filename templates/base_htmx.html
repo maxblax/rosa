@@ -1,0 +1,33 @@
+<!-- Template partiel pour les requêtes HTMX - contient seulement le contenu principal -->
+<!-- Top header -->
+<header class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
+    <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex-1">
+                {% block page_header %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main content -->
+<main class="flex-1 bg-gray-50 overflow-y-auto">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% if messages %}
+            <div id="messages-container" class="mb-6">
+                {% for message in messages %}
+                    <div class="mb-4 p-4 rounded-md flex items-center justify-between {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %} message-alert">
+                        <span>{{ message }}</span>
+                        <button class="text-lg leading-none ml-4 hover:opacity-75" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+    </div>
+</main>
+
+{% block extra_js %}
+{% endblock %}

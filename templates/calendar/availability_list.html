@@ -7,25 +7,39 @@
     <div>
         <h1 class="text-2xl font-bold text-gray-900">
             <i class="fas fa-calendar-check text-green-600 mr-2"></i>
-            Mes Disponibilités
+            {% if is_impersonating %}
+                Disponibilités de {{ target_user.first_name }} {{ target_user.last_name|upper }}
+            {% else %}
+                Mes Disponibilités
+            {% endif %}
         </h1>
         <p class="text-gray-600 mt-1">
-            Gérez vos créneaux de disponibilité pour les rendez-vous
+            {% if is_impersonating %}
+                Gérez les créneaux de disponibilité de {{ target_user.first_name }} {{ target_user.last_name }}
+            {% else %}
+                Gérez vos créneaux de disponibilité pour les rendez-vous
+            {% endif %}
         </p>
     </div>
-    <div class="flex space-x-3">
-        <a href="{% url 'calendar:appointment_list' %}"
-           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>Mes rendez-vous
-        </a>
-        <a href="{% url 'calendar:week' %}"
-           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-            <i class="fas fa-calendar mr-2"></i>Mon calendrier
-        </a>
-        <a href="{% url 'calendar:availability_create' %}"
-           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
-            <i class="fas fa-plus mr-2"></i>Nouvelle disponibilité
-        </a>
+    <div class="flex items-center space-x-3">
+        <!-- Dropdown d'impersonation -->
+        {% include 'calendar/partials/impersonation_dropdown.html' %}
+
+        <div class="flex space-x-3">
+            <a href="{% url 'calendar:appointment_list' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+                {% if is_impersonating %}Rendez-vous de {{ target_user.first_name }}{% else %}Mes rendez-vous{% endif %}
+            </a>
+            <a href="{% url 'calendar:week' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar mr-2"></i>Mon calendrier
+            </a>
+            <a href="{% url 'calendar:availability_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Nouvelle disponibilité
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -258,22 +272,18 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div class="flex items-center space-x-2">
+                            <div class="flex items-center justify-end space-x-2">
                                 <a href="{% url 'calendar:availability_detail' slot.pk %}"
-                                   class="text-blue-600 hover:text-blue-900"
-                                   title="Voir les détails">
-                                    <i class="fas fa-eye"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                                    <i class="fas fa-eye mr-1.5"></i>Voir
                                 </a>
                                 <a href="{% url 'calendar:availability_edit' slot.pk %}"
-                                   class="text-green-600 hover:text-green-900"
-                                   title="Modifier">
-                                    <i class="fas fa-edit"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-green-300 rounded-md shadow-sm text-xs font-medium text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                    <i class="fas fa-edit mr-1.5"></i>Modifier
                                 </a>
                                 <a href="{% url 'calendar:availability_delete' slot.pk %}"
-                                   class="text-red-600 hover:text-red-900"
-                                   title="Supprimer"
-                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce créneau ?')">
-                                    <i class="fas fa-trash"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-red-300 rounded-md shadow-sm text-xs font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                                    <i class="fas fa-trash mr-1.5"></i>Supprimer
                                 </a>
                             </div>
                         </td>

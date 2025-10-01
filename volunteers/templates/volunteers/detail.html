@@ -28,12 +28,12 @@
     </div>
     <div class="flex space-x-3">
         <a href="{% url 'volunteers:edit' volunteer.pk %}"
-           class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center">
+           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
             <i class="fas fa-edit mr-2"></i>
             Modifier
         </a>
         <a href="{% url 'volunteers:time_tracking_create' volunteer.pk %}"
-           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center">
+           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
             <i class="fas fa-clock mr-2"></i>
             Ajouter des heures
         </a>
@@ -143,8 +143,8 @@
                     Suivi des heures
                 </h3>
                 <a href="{% url 'volunteers:time_tracking_create' volunteer.pk %}"
-                   class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                    <i class="fas fa-plus mr-1"></i>
+                   class="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <i class="fas fa-plus mr-1.5"></i>
                     Ajouter
                 </a>
             </div>
@@ -186,8 +186,8 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="{% url 'volunteers:time_tracking_edit' volunteer.pk tracking.pk %}"
-                                           class="text-green-600 hover:text-green-900">
-                                            <i class="fas fa-edit"></i>
+                                           class="inline-flex items-center justify-center px-3 py-1.5 border border-green-300 rounded-md shadow-sm text-xs font-medium text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                            <i class="fas fa-edit mr-1.5"></i>Modifier
                                         </a>
                                     </td>
                                 </tr>

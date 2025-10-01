@@ -40,7 +40,18 @@
         .sidebar-collapsed .sidebar-text {
             display: none;
         }
-        .content-collapsed {
+        .sidebar-collapsed .sidebar-expanded-only {
+            display: none;
+        }
+        .sidebar-collapsed .sidebar-collapsed-only {
+            display: block !important;
+        }
+        .sidebar-collapsed nav a {
+            justify-content: center !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+        #main-content.content-collapsed {
             margin-left: 64px !important;
         }
         .field-changed {
@@ -49,88 +60,160 @@
             box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
         }
     </style>
+    <script>
+        // Appliquer l'état de la sidebar IMMÉDIATEMENT avant le rendu
+        (function() {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                document.documentElement.classList.add('sidebar-pre-collapsed');
+            }
+        })();
+    </script>
+    <style>
+        .sidebar-pre-collapsed #sidebar {
+            width: 64px;
+        }
+        .sidebar-pre-collapsed #main-content {
+            margin-left: 64px !important;
+        }
+        .sidebar-pre-collapsed .sidebar-text {
+            display: none;
+        }
+        .sidebar-pre-collapsed .sidebar-expanded-only {
+            display: none;
+        }
+        .sidebar-pre-collapsed .sidebar-collapsed-only {
+            display: block !important;
+        }
+        .sidebar-pre-collapsed nav a {
+            justify-content: center !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+    </style>
 </head>
 <body class="h-screen bg-gray-100 overflow-hidden">
     <div class="h-full flex">
         <!-- Sidebar Navigation -->
-        <div id="sidebar" class="bg-slate-800 text-white w-64 h-screen flex-shrink-0 transition-all duration-300 fixed left-0 top-0 z-10">
+        <div id="sidebar" class="bg-slate-800 text-white h-screen flex-shrink-0 transition-all duration-300 fixed left-0 top-0 z-10">
             <div class="p-4 h-full flex flex-col">
                 <div class="flex items-center justify-between mb-8">
                     <h1 class="text-xl font-bold sidebar-text">Association APA30</h1>
-                    <button id="sidebar-toggle" class="text-white hover:bg-slate-700 p-2 rounded">
+                    <button id="sidebar-toggle" class="text-white hover:bg-slate-700 p-2 rounded flex-shrink-0">
                         <i class="fas fa-chevron-left" id="toggle-icon"></i>
                     </button>
                 </div>
                 
                 <nav class="flex-1 space-y-2">
-                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
-                        <i class="fas fa-home mr-3"></i>
-                        <span class="sidebar-text">Home</span>
+                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                       title="Home">
+                        <i class="fas fa-home sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Home</span>
                     </a>
-                    <a href="{% url 'beneficiaries:list' %}" 
-                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'beneficiaries' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors">
-                        <i class="fas fa-users mr-3"></i>
-                        <span class="sidebar-text">Bénéficiaires</span>
+                    <a href="{% url 'beneficiaries:list' %}"
+                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'beneficiaries' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       title="Bénéficiaires">
+                        <i class="fas fa-users sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Bénéficiaires</span>
                     </a>
                     <a href="{% url 'volunteers:list' %}"
-                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'volunteers' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors">
-                        <i class="fas fa-hands-helping mr-3"></i>
-                        <span class="sidebar-text">Bénévoles</span>
+                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'volunteers' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       title="Bénévoles">
+                        <i class="fas fa-hands-helping sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Bénévoles</span>
                     </a>
-                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
-                        <i class="fas fa-handshake mr-3"></i>
-                        <span class="sidebar-text">Partenaires</span>
+                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                       title="Partenaires">
+                        <i class="fas fa-handshake sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Partenaires</span>
                     </a>
                     <a href="{% url 'calendar:main' %}"
-                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'calendar' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors">
-                        <i class="fas fa-calendar mr-3"></i>
-                        <span class="sidebar-text">Calendrier</span>
+                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'calendar' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       title="Calendrier">
+                        <i class="fas fa-calendar sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Calendrier</span>
                     </a>
-                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
-                        <i class="fas fa-chart-bar mr-3"></i>
-                        <span class="sidebar-text">Analyses</span>
+                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                       title="Analyses">
+                        <i class="fas fa-chart-bar sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Analyses</span>
                     </a>
-                    <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors">
-                        <i class="fas fa-box mr-3"></i>
-                        <span class="sidebar-text">Stock</span>
+                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                       title="Stock">
+                        <i class="fas fa-box sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Stock</span>
                     </a>
                 </nav>
                 
                 <div class="mt-auto">
                     {% if user.is_authenticated %}
-                        <div class="flex items-center p-3 bg-slate-700 rounded-lg mb-2">
-                            <i class="fas fa-user-circle text-2xl mr-3 text-blue-400"></i>
-                            <div class="flex-1 min-w-0 sidebar-text">
-                                <div class="text-sm font-medium truncate">
-                                    {{ user.get_full_name|default:user.username }}
+                        <!-- Mode collapsed: juste l'avatar et logout en icône -->
+                        <div class="sidebar-collapsed-only hidden">
+                            <div class="flex flex-col items-center space-y-2">
+                                <div class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-blue-400 text-lg font-bold"
+                                     title="{{ user.get_full_name|default:user.username }}">
+                                    {{ user.get_full_name|default:user.username|slice:":1"|upper }}
                                 </div>
-                                <div class="text-xs text-slate-300 truncate">
-                                    {% if user.volunteer_profile %}
-                                        {{ user.volunteer_profile.get_role_display }}
-                                    {% elif user.is_superuser %}
-                                        Administrateur
-                                    {% else %}
-                                        Utilisateur
-                                    {% endif %}
-                                </div>
+                                <a href="{% url 'auth:logout' %}"
+                                   class="w-10 h-10 flex items-center justify-center text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+                                   title="Déconnexion">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </a>
                             </div>
                         </div>
-                        <a href="{% url 'auth:logout' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            <span class="sidebar-text">Déconnexion</span>
-                        </a>
+
+                        <!-- Mode normal: info complète -->
+                        <div class="sidebar-expanded-only">
+                            <div class="flex items-center p-3 bg-slate-700 rounded-lg mb-2">
+                                <div class="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center text-blue-400 text-lg font-bold mr-3">
+                                    {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium truncate">
+                                        {{ user.get_full_name|default:user.username }}
+                                    </div>
+                                    <div class="text-xs text-slate-300 truncate">
+                                        {% if user.volunteer_profile %}
+                                            {{ user.volunteer_profile.get_role_display }}
+                                        {% elif user.is_superuser %}
+                                            Administrateur
+                                        {% else %}
+                                            Utilisateur
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="{% url 'auth:logout' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                                <i class="fas fa-sign-out-alt mr-2"></i>
+                                <span>Déconnexion</span>
+                            </a>
+                        </div>
                     {% else %}
-                        <a href="{% url 'auth:login' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            <span class="sidebar-text">Connexion</span>
-                        </a>
+                        <!-- Mode collapsed: juste l'icône login -->
+                        <div class="sidebar-collapsed-only hidden">
+                            <div class="flex justify-center">
+                                <a href="{% url 'auth:login' %}"
+                                   class="w-10 h-10 flex items-center justify-center text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+                                   title="Connexion">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Mode normal -->
+                        <div class="sidebar-expanded-only">
+                            <a href="{% url 'auth:login' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                <span>Connexion</span>
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Main content area -->
-        <div class="w-full flex flex-col h-screen" style="margin-left: 256px;" id="main-content">
+        <div class="w-full flex flex-col h-screen transition-all duration-300" style="margin-left: 256px;" id="main-content">
             <!-- Top header -->
             <header class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
                 <div class="px-6 py-4">
@@ -180,21 +263,45 @@
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const toggleButton = document.getElementById('sidebar-toggle');
+            const toggleButtonCollapsed = document.getElementById('sidebar-toggle-collapsed');
             const toggleIcon = document.getElementById('toggle-icon');
             const mainContent = document.getElementById('main-content');
 
-            toggleButton.addEventListener('click', function() {
+            // Restaurer l'état de la sidebar depuis localStorage
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+            // Nettoyer la classe pre-collapsed et appliquer les classes normales
+            document.documentElement.classList.remove('sidebar-pre-collapsed');
+
+            if (isCollapsed) {
+                sidebar.classList.add('sidebar-collapsed');
+                mainContent.classList.add('content-collapsed');
+                toggleIcon.classList.remove('fa-chevron-left');
+                toggleIcon.classList.add('fa-chevron-right');
+            }
+
+            function toggleSidebar() {
+                const willBeCollapsed = !sidebar.classList.contains('sidebar-collapsed');
+
                 sidebar.classList.toggle('sidebar-collapsed');
                 mainContent.classList.toggle('content-collapsed');
 
-                if (sidebar.classList.contains('sidebar-collapsed')) {
+                // Sauvegarder l'état dans localStorage
+                localStorage.setItem('sidebarCollapsed', willBeCollapsed.toString());
+
+                if (willBeCollapsed) {
                     toggleIcon.classList.remove('fa-chevron-left');
                     toggleIcon.classList.add('fa-chevron-right');
                 } else {
                     toggleIcon.classList.remove('fa-chevron-right');
                     toggleIcon.classList.add('fa-chevron-left');
                 }
-            });
+            }
+
+            toggleButton.addEventListener('click', toggleSidebar);
+            if (toggleButtonCollapsed) {
+                toggleButtonCollapsed.addEventListener('click', toggleSidebar);
+            }
 
             // Auto-hide messages after 5 seconds
             const messages = document.querySelectorAll('.message-alert');

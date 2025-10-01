@@ -7,25 +7,39 @@
     <div>
         <h1 class="text-2xl font-bold text-gray-900">
             <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
-            Mes Rendez-vous
+            {% if is_impersonating %}
+                Rendez-vous de {{ target_user.first_name }} {{ target_user.last_name|upper }}
+            {% else %}
+                Mes Rendez-vous
+            {% endif %}
         </h1>
         <p class="text-gray-600 mt-1">
-            Gérez vos rendez-vous avec les bénéficiaires
+            {% if is_impersonating %}
+                Gérez les rendez-vous de {{ target_user.first_name }} {{ target_user.last_name }} avec les bénéficiaires
+            {% else %}
+                Gérez vos rendez-vous avec les bénéficiaires
+            {% endif %}
         </p>
     </div>
-    <div class="flex space-x-3">
-        <a href="{% url 'calendar:availability_list' %}"
-           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-            <i class="fas fa-calendar-check text-green-600 mr-2"></i>Mes disponibilités
-        </a>
-        <a href="{% url 'calendar:week' %}"
-           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-            <i class="fas fa-calendar mr-2"></i>Mon calendrier
-        </a>
-        <a href="{% url 'calendar:appointment_create' %}"
-           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
-            <i class="fas fa-plus mr-2"></i>Nouveau rendez-vous
-        </a>
+    <div class="flex items-center space-x-3">
+        <!-- Dropdown d'impersonation -->
+        {% include 'calendar/partials/impersonation_dropdown.html' %}
+
+        <div class="flex space-x-3">
+            <a href="{% url 'calendar:availability_list' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-check text-green-600 mr-2"></i>
+                {% if is_impersonating %}Disponibilités de {{ target_user.first_name }}{% else %}Mes disponibilités{% endif %}
+            </a>
+            <a href="{% url 'calendar:week' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar mr-2"></i>Mon calendrier
+            </a>
+            <a href="{% url 'calendar:appointment_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Nouveau rendez-vous
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -215,12 +229,15 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-2 py-3 whitespace-nowrap">
+                        <td class="px-3 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">
-                                {{ appointment.appointment_date|date:"d/m" }}
+                                {{ appointment.appointment_date|date:"l" }}
                             </div>
-                            <div class="text-xs text-gray-500">
-                                {{ appointment.start_time|time:"H:i" }}
+                            <div class="text-sm text-gray-700">
+                                {{ appointment.appointment_date|date:"d F Y" }}
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ appointment.start_time|time:"H:i" }} - {{ appointment.end_time|time:"H:i" }}
                             </div>
                         </td>
                         <td class="px-2 py-3 whitespace-nowrap hidden md:table-cell">
@@ -238,8 +255,8 @@
                                 {{ appointment.title|default:"—" }}
                             </div>
                         </td>
-                        <td class="px-2 py-3 whitespace-nowrap">
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                        <td class="px-3 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium
                                 {% if appointment.status == 'SCHEDULED' %}bg-yellow-100 text-yellow-800
                                 {% elif appointment.status == 'CONFIRMED' %}bg-green-100 text-green-800
                                 {% elif appointment.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
@@ -247,34 +264,26 @@
                                 {% elif appointment.status == 'CANCELLED' %}bg-red-100 text-red-800
                                 {% elif appointment.status == 'NO_SHOW' %}bg-gray-100 text-gray-800
                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {% if appointment.status == 'SCHEDULED' %}<i class="fas fa-clock"></i>
-                                {% elif appointment.status == 'CONFIRMED' %}<i class="fas fa-check"></i>
-                                {% elif appointment.status == 'IN_PROGRESS' %}<i class="fas fa-play"></i>
-                                {% elif appointment.status == 'COMPLETED' %}<i class="fas fa-flag"></i>
-                                {% elif appointment.status == 'CANCELLED' %}<i class="fas fa-times"></i>
-                                {% elif appointment.status == 'NO_SHOW' %}<i class="fas fa-user-times"></i>
+                                {% if appointment.status == 'SCHEDULED' %}<i class="fas fa-clock mr-2"></i>Programmé
+                                {% elif appointment.status == 'CONFIRMED' %}<i class="fas fa-check-circle mr-2"></i>Confirmé
+                                {% elif appointment.status == 'IN_PROGRESS' %}<i class="fas fa-play-circle mr-2"></i>En cours
+                                {% elif appointment.status == 'COMPLETED' %}<i class="fas fa-flag-checkered mr-2"></i>Terminé
+                                {% elif appointment.status == 'CANCELLED' %}<i class="fas fa-times-circle mr-2"></i>Annulé
+                                {% elif appointment.status == 'NO_SHOW' %}<i class="fas fa-user-slash mr-2"></i>Absent
+                                {% else %}<i class="fas fa-question-circle mr-2"></i>{{ appointment.get_status_display }}
                                 {% endif %}
                             </span>
                         </td>
-                        <td class="px-2 py-3 whitespace-nowrap">
-                            <div class="flex items-center space-x-1">
+                        <td class="px-3 py-3">
+                            <div class="flex flex-col space-y-1.5">
                                 <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
-                                   class="text-blue-600 hover:text-blue-900"
-                                   title="Voir">
-                                    <i class="fas fa-eye text-xs"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                                    <i class="fas fa-eye mr-1.5"></i>Voir
                                 </a>
                                 <a href="{% url 'calendar:appointment_edit' appointment.pk %}"
-                                   class="text-green-600 hover:text-green-900"
-                                   title="Modifier">
-                                    <i class="fas fa-edit text-xs"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-green-300 rounded-md shadow-sm text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                    <i class="fas fa-edit mr-1.5"></i>Modifier
                                 </a>
-                                {% if appointment.status in 'SCHEDULED,CONFIRMED' %}
-                                <button onclick="confirmAppointment({{ appointment.pk }})"
-                                        class="text-green-600 hover:text-green-900"
-                                        title="Confirmer">
-                                    <i class="fas fa-check text-xs"></i>
-                                </button>
-                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -315,12 +324,15 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-2 py-3 whitespace-nowrap">
+                        <td class="px-3 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-700">
-                                {{ appointment.appointment_date|date:"d/m" }}
+                                {{ appointment.appointment_date|date:"l" }}
                             </div>
-                            <div class="text-xs text-gray-500">
-                                {{ appointment.start_time|time:"H:i" }}
+                            <div class="text-sm text-gray-600">
+                                {{ appointment.appointment_date|date:"d F Y" }}
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ appointment.start_time|time:"H:i" }} - {{ appointment.end_time|time:"H:i" }}
                             </div>
                         </td>
                         <td class="px-2 py-3 whitespace-nowrap hidden md:table-cell">
@@ -333,8 +345,8 @@
                                 {{ appointment.title|default:"—" }}
                             </div>
                         </td>
-                        <td class="px-2 py-3 whitespace-nowrap">
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium
+                        <td class="px-3 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium
                                 {% if appointment.status == 'SCHEDULED' %}bg-yellow-200 text-yellow-700
                                 {% elif appointment.status == 'CONFIRMED' %}bg-green-200 text-green-700
                                 {% elif appointment.status == 'IN_PROGRESS' %}bg-blue-200 text-blue-700
@@ -342,26 +354,25 @@
                                 {% elif appointment.status == 'CANCELLED' %}bg-red-200 text-red-700
                                 {% elif appointment.status == 'NO_SHOW' %}bg-gray-200 text-gray-600
                                 {% else %}bg-gray-200 text-gray-600{% endif %}">
-                                {% if appointment.status == 'SCHEDULED' %}<i class="fas fa-clock"></i>
-                                {% elif appointment.status == 'CONFIRMED' %}<i class="fas fa-check"></i>
-                                {% elif appointment.status == 'IN_PROGRESS' %}<i class="fas fa-play"></i>
-                                {% elif appointment.status == 'COMPLETED' %}<i class="fas fa-flag"></i>
-                                {% elif appointment.status == 'CANCELLED' %}<i class="fas fa-times"></i>
-                                {% elif appointment.status == 'NO_SHOW' %}<i class="fas fa-user-times"></i>
+                                {% if appointment.status == 'SCHEDULED' %}<i class="fas fa-clock mr-2"></i>Programmé
+                                {% elif appointment.status == 'CONFIRMED' %}<i class="fas fa-check-circle mr-2"></i>Confirmé
+                                {% elif appointment.status == 'IN_PROGRESS' %}<i class="fas fa-play-circle mr-2"></i>En cours
+                                {% elif appointment.status == 'COMPLETED' %}<i class="fas fa-flag-checkered mr-2"></i>Terminé
+                                {% elif appointment.status == 'CANCELLED' %}<i class="fas fa-times-circle mr-2"></i>Annulé
+                                {% elif appointment.status == 'NO_SHOW' %}<i class="fas fa-user-slash mr-2"></i>Absent
+                                {% else %}<i class="fas fa-question-circle mr-2"></i>{{ appointment.get_status_display }}
                                 {% endif %}
                             </span>
                         </td>
-                        <td class="px-2 py-3 whitespace-nowrap">
-                            <div class="flex items-center space-x-1">
+                        <td class="px-3 py-3">
+                            <div class="flex flex-col space-y-1.5">
                                 <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
-                                   class="text-gray-500 hover:text-gray-700"
-                                   title="Voir">
-                                    <i class="fas fa-eye text-xs"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                                    <i class="fas fa-eye mr-1.5"></i>Voir
                                 </a>
                                 <a href="{% url 'calendar:appointment_edit' appointment.pk %}"
-                                   class="text-gray-500 hover:text-gray-700"
-                                   title="Modifier">
-                                    <i class="fas fa-edit text-xs"></i>
+                                   class="inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                                    <i class="fas fa-edit mr-1.5"></i>Modifier
                                 </a>
                             </div>
                         </td>

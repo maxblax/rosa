@@ -3,78 +3,95 @@
 {% block title %}Calendrier - Vue Semaine - ONA{% endblock %}
 
 {% block page_header %}
-<div class="flex items-center justify-between">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">
-            <i class="fas fa-calendar-week text-blue-600 mr-2"></i>
-            Mon Calendrier
-        </h1>
-        <p class="text-gray-600 mt-1">
-            Semaine du {{ week_start|date:"d/m/Y" }} au {{ week_end|date:"d/m/Y" }}
-        </p>
+<div class="space-y-4">
+    <!-- Première ligne : Titre et actions principales -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-calendar-week text-blue-600 mr-2"></i>
+                {% if is_impersonating %}
+                    Calendrier de {{ target_user.first_name }} {{ target_user.last_name|upper }}
+                {% else %}
+                    Mon Calendrier
+                {% endif %}
+            </h1>
+            <p class="text-gray-600 mt-1">
+                Semaine du {{ week_start|date:"d/m/Y" }} au {{ week_end|date:"d/m/Y" }}
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- Dropdown d'impersonation -->
+            {% include 'calendar/partials/impersonation_dropdown.html' %}
+
+            <!-- Boutons d'action -->
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'calendar:availability_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+                   class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <i class="fas fa-plus mr-2"></i>Disponibilité
+                </a>
+                <a href="{% url 'calendar:appointment_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+                   class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                    <i class="fas fa-plus mr-2"></i>Rendez-vous
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="flex items-center space-x-3">
+
+    <!-- Deuxième ligne : Navigation et liens -->
+    <div class="flex items-center justify-between">
         <!-- Liens de gestion -->
         <div class="flex space-x-2">
-            <a href="{% url 'calendar:availability_list' %}"
-               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-calendar-check text-green-600 mr-2"></i>Mes disponibilités
+            <a href="{% url 'calendar:availability_list' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-check text-green-600 mr-2"></i>
+                {% if is_impersonating %}Disponibilités{% else %}Mes disponibilités{% endif %}
             </a>
-            <a href="{% url 'calendar:appointment_list' %}"
-               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>Mes rendez-vous
+            <a href="{% url 'calendar:appointment_list' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+                {% if is_impersonating %}Rendez-vous{% else %}Mes rendez-vous{% endif %}
             </a>
-        </div>
-
-        <!-- Boutons de navigation -->
-        <div class="flex bg-white rounded-lg shadow border">
-            <a href="{% url 'calendar:day' %}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-calendar-day mr-2"></i>Jour
-            </a>
-            <a href="{% url 'calendar:week' %}"
-               class="px-4 py-2 text-sm font-medium bg-blue-50 text-blue-700 border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <i class="fas fa-calendar-week mr-2"></i>Semaine
-            </a>
-            <a href="{% url 'calendar:month' %}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-calendar-alt mr-2"></i>Mois
-            </a>
-        </div>
-
-        <!-- Navigation par semaine -->
-        <div class="flex bg-white rounded-lg shadow border">
-            <a href="?week={{ prev_week|date:'Y-m-d' }}"
-               class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-chevron-left"></i>
-            </a>
-            <a href="{% url 'calendar:week' %}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                Cette semaine
-            </a>
-            <a href="?week={{ next_week|date:'Y-m-d' }}"
-               class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
-
-        <!-- Boutons d'action -->
-        <div class="flex items-center space-x-3">
-            <a href="{% url 'calendar:availability_create' %}"
-               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                <i class="fas fa-plus mr-2"></i>Disponibilité
-            </a>
-            <a href="{% url 'calendar:appointment_create' %}"
-               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
-                <i class="fas fa-plus mr-2"></i>Rendez-vous
-            </a>
-
             {% if user.volunteer_profile.role in 'ADMIN,EMPLOYEE' %}
-            <a href="{% url 'calendar:global' %}"
-               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+            <a href="{% url 'calendar:global' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+               class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
                 <i class="fas fa-users mr-2"></i>Vue Globale
             </a>
             {% endif %}
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex items-center space-x-3">
+            <!-- Boutons de navigation -->
+            <div class="flex bg-white rounded-lg shadow border">
+                <a href="{% url 'calendar:day' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                    <i class="fas fa-calendar-day mr-1"></i>Jour
+                </a>
+                <a href="{% url 'calendar:week' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+                   class="px-3 py-2 text-sm font-medium bg-blue-50 text-blue-700 border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-calendar-week mr-1"></i>Semaine
+                </a>
+                <a href="{% url 'calendar:month' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                    <i class="fas fa-calendar-alt mr-1"></i>Mois
+                </a>
+            </div>
+
+            <!-- Navigation par semaine -->
+            <div class="flex bg-white rounded-lg shadow border">
+                <a href="?week={{ prev_week|date:'Y-m-d' }}{% if request.GET.as_user %}&as_user={{ request.GET.as_user }}{% endif %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-l-lg border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <a href="{% url 'calendar:week' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                    Cette semaine
+                </a>
+                <a href="?week={{ next_week|date:'Y-m-d' }}{% if request.GET.as_user %}&as_user={{ request.GET.as_user }}{% endif %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -354,7 +371,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Store the slot ID globally for save/delete functions
         window.currentSlotId = slotId;
 
-        fetch(`/calendrier/availability/${slotId}/edit-panel/`, {
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        let url = `/calendrier/availability/${slotId}/edit-panel/?date=${date}`;
+        if (asUser) {
+            url += `&as_user=${asUser}`;
+        }
+
+        fetch(url, {
             headers: {
                 'HX-Request': 'true'
             }
@@ -369,8 +392,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openNewSlotPanel = function(cell) {
         const date = cell.dataset.date;
         const hour = cell.dataset.hour;
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        const url = `/calendrier/availability/new-panel/?date=${date}&hour=${hour}${asUser ? '&as_user=' + asUser : ''}`;
 
-        fetch(`/calendrier/availability/new-panel/?date=${date}&hour=${hour}`, {
+        fetch(url, {
             headers: {
                 'HX-Request': 'true'
             }
@@ -388,8 +413,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = startCell.dataset.date;
         const startHour = Math.min(parseInt(startCell.dataset.hour), parseInt(endCell.dataset.hour));
         const endHour = Math.max(parseInt(startCell.dataset.hour), parseInt(endCell.dataset.hour)) + 1;
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        const url = `/calendrier/availability/new-panel/?date=${date}&start_hour=${startHour}&end_hour=${endHour}${asUser ? '&as_user=' + asUser : ''}`;
 
-        fetch(`/calendrier/availability/new-panel/?date=${date}&start_hour=${startHour}&end_hour=${endHour}`, {
+        fetch(url, {
             headers: {
                 'HX-Request': 'true'
             }
@@ -423,6 +450,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(form);
         formData.append('action', 'create_availability');
+
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        if (asUser) {
+            formData.append('as_user', asUser);
+        }
 
         fetch('/calendrier/availability/new-panel/', {
             method: 'POST',
@@ -460,6 +492,12 @@ document.addEventListener('DOMContentLoaded', function() {
             start_time: startTime,
             end_time: endTime
         });
+
+        // Ajouter le paramètre as_user s'il existe
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        if (asUser) {
+            params.append('as_user', asUser);
+        }
 
         // Rediriger vers le formulaire de création de rendez-vous
         window.location.href = '/calendrier/appointments/create/?' + params.toString();
@@ -506,6 +544,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(form);
 
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        if (asUser) {
+            formData.append('as_user', asUser);
+        }
+
         // Get the slot ID from the current panel context
         const slotId = window.currentSlotId || (form.getAttribute('data-slot-id'));
         if (!slotId) {
@@ -531,36 +574,70 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.deleteSlot = function() {
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce créneau de disponibilité ?')) {
-            const form = document.getElementById('edit-availability-form');
-            if (!form) return;
+        const form = document.getElementById('edit-availability-form');
+        if (!form) return;
 
-            const formData = new FormData(form);
-            formData.append('delete', '1');
+        const formData = new FormData(form);
+        formData.append('delete', '1');
 
-            // Get the slot ID from the current panel context
-            const slotId = window.currentSlotId || (form.getAttribute('data-slot-id'));
-            if (!slotId) {
-                console.error('No slot ID found for deleting');
-                return;
-            }
-
-            fetch(`/calendrier/availability/${slotId}/edit-panel/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'HX-Request': 'true'
-                }
-            })
-            .then(response => response.text())
-            .then(html => {
-                if (html.includes('<script>')) {
-                    eval(html.match(/<script>(.*?)<\/script>/s)[1]);
-                } else {
-                    document.getElementById('sidebar-content').innerHTML = html;
-                }
-            });
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        if (asUser) {
+            formData.append('as_user', asUser);
         }
+
+        // Get the slot ID from the current panel context
+        const slotId = window.currentSlotId || (form.getAttribute('data-slot-id'));
+        if (!slotId) {
+            console.error('No slot ID found for deleting');
+            return;
+        }
+
+        fetch(`/calendrier/availability/${slotId}/edit-panel/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'HX-Request': 'true'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            if (html.includes('<script>')) {
+                eval(html.match(/<script>(.*?)<\/script>/s)[1]);
+            } else {
+                document.getElementById('sidebar-content').innerHTML = html;
+            }
+        });
+    };
+
+    window.createAppointmentFromSlot = function() {
+        // Récupérer les informations du slot depuis les attributs data
+        const panel = document.getElementById('edit-availability-panel');
+        if (!panel) return;
+
+        const slotDate = panel.dataset.slotDate;
+        const slotStart = panel.dataset.slotStart;
+        const slotEnd = panel.dataset.slotEnd;
+
+        if (!slotDate || !slotStart || !slotEnd) {
+            alert('Impossible de récupérer les informations du créneau');
+            return;
+        }
+
+        // Construire l'URL avec les paramètres pré-remplis
+        const params = new URLSearchParams({
+            date: slotDate,
+            start_time: slotStart,
+            end_time: slotEnd
+        });
+
+        // Ajouter le paramètre as_user s'il existe
+        const asUser = new URLSearchParams(window.location.search).get('as_user');
+        if (asUser) {
+            params.append('as_user', asUser);
+        }
+
+        // Rediriger vers le formulaire de création de rendez-vous
+        window.location.href = '/calendrier/appointments/create/?' + params.toString();
     };
 });
 </script>
