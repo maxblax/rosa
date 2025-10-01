@@ -61,8 +61,7 @@ class CalendarPermissionMixin:
                 user=self.request.user,
                 defaults={
                     'role': 'ADMIN',
-                    'phone': '',
-                    'availability': 'Disponible à temps plein'
+                    'phone': ''
                 }
             )
             calendar, created = VolunteerCalendar.objects.get_or_create(volunteer=volunteer)
@@ -126,8 +125,7 @@ class CalendarImpersonationMixin:
                 user=target_user,
                 defaults={
                     'role': 'ADMIN',
-                    'phone': '',
-                    'availability': 'Disponible à temps plein'
+                    'phone': ''
                 }
             )
             calendar, created = VolunteerCalendar.objects.get_or_create(volunteer=volunteer)

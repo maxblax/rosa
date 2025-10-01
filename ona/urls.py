@@ -17,9 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-# Import for the redirect and auth decorator
-from django.shortcuts import redirect
-from django.contrib.auth.decorators import login_required
+# Import for home view
+from ona.views import home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,6 +28,5 @@ urlpatterns = [
     path('calendrier/', include('calendar_app.urls')),
     path('partenaires/', include('partners.urls')),
     path('stock/', include('stock.urls')),
-    # TODO: Add home page redirect
-    path('', login_required(lambda request: redirect('beneficiaries:list'))),  # Protected redirect
+    path('', home, name='home'),
 ]

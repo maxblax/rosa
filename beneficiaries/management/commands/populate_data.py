@@ -21,9 +21,10 @@ from django.utils import timezone
 from faker import Faker
 
 from beneficiaries.models import Beneficiary, FinancialSnapshot, Child, Interaction
-from volunteers.models import Volunteer, TimeTracking
+from volunteers.models import Volunteer
 from calendar_app.models import VolunteerCalendar, AvailabilitySlot, Appointment
 from partners.models import Partner
+from news.models import News
 
 fake = Faker('fr_FR')
 
@@ -95,6 +96,12 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f'✅ {partners_count} partenaires créés')
             )
 
+            # Créer les actualités
+            news_count = self.create_news()
+            self.stdout.write(
+                self.style.SUCCESS(f'✅ {news_count} actualités créées')
+            )
+
         self.stdout.write(
             self.style.SUCCESS('🎉 Population des données terminée avec succès!')
         )
@@ -107,12 +114,12 @@ class Command(BaseCommand):
         Appointment.objects.all().delete()
         AvailabilitySlot.objects.all().delete()
         VolunteerCalendar.objects.all().delete()
-        TimeTracking.objects.all().delete()
         Interaction.objects.all().delete()
         Child.objects.all().delete()
         FinancialSnapshot.objects.all().delete()
         Beneficiary.objects.all().delete()
         Partner.objects.all().delete()
+        News.objects.all().delete()
         Volunteer.objects.all().delete()
         User.objects.filter(is_superuser=False).delete()
 
@@ -155,13 +162,8 @@ class Command(BaseCommand):
                     address=fake.address(),
                     role=role,
                     skills=self.generate_skills(),
-                    availability=self.generate_availability(),
                     join_date=fake.date_between(start_date='-2y', end_date='today'),
                 )
-
-                # Ajouter du suivi d'heures pour certains bénévoles
-                if role in ['VOLUNTEER_INTERVIEW', 'EMPLOYEE']:
-                    self.create_time_tracking(volunteer)
 
                 users.append(user)
 
@@ -177,28 +179,6 @@ class Command(BaseCommand):
         ]
         return ", ".join(random.sample(skills_pool, random.randint(2, 4)))
 
-    def generate_availability(self):
-        """Génère des créneaux de disponibilité textuelle"""
-        days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
-        chosen_days = random.sample(days, random.randint(1, 3))
-        times = ["9h-12h", "14h-17h", "9h-17h", "10h-16h"]
-        chosen_time = random.choice(times)
-        return f"{', '.join(chosen_days)} {chosen_time}"
-
-    def create_time_tracking(self, volunteer):
-        """Crée des suivis d'heures mensuels pour un bénévole"""
-        # Créer des suivis pour les 6 derniers mois
-        for i in range(6):
-            month_date = date.today().replace(day=1) - timedelta(days=30*i)
-            hours = random.uniform(5.0, 40.0)
-
-            TimeTracking.objects.create(
-                volunteer=volunteer,
-                month=month_date,
-                hours_worked=round(hours, 1),
-                activities=fake.sentence(nb_words=8),
-                notes=fake.sentence(nb_words=5) if random.choice([True, False]) else '',
-            )
 
     def create_beneficiaries(self, count):
         """Crée des bénéficiaires avec des profils diversifiés"""
@@ -569,3 +549,51 @@ class Command(BaseCommand):
             partners_count += 1
 
         return partners_count
+
+    def create_news(self):
+        """Crée des actualités avec différents types"""
+        news_data = [
+            {
+                'title': 'Distribution alimentaire exceptionnelle ce weekend',
+                'news_type': 'EVENEMENT',
+                'description': 'Nous organisons une distribution alimentaire exceptionnelle samedi de 9h à 12h. Inscription nécessaire auprès de l\'accueil.',
+                'is_pinned': True,
+            },
+            {
+                'title': 'Nouveau partenariat avec la banque alimentaire',
+                'news_type': 'PARTENARIAT',
+                'description': 'Grâce à notre nouveau partenariat avec la banque alimentaire locale, nous pourrons désormais proposer une plus grande variété de produits frais.',
+                'is_pinned': False,
+            },
+            {
+                'title': 'Formation des bénévoles le mois prochain',
+                'news_type': 'FORMATION',
+                'description': 'Une session de formation pour les nouveaux bénévoles aura lieu le premier samedi du mois prochain. Inscription obligatoire.',
+                'is_pinned': False,
+            },
+            {
+                'title': 'Permanence administrative tous les mercredis',
+                'news_type': 'INFO',
+                'description': 'À partir de ce mois-ci, nous proposons une permanence dédiée aux démarches administratives tous les mercredis après-midi sur rendez-vous.',
+                'is_pinned': False,
+            },
+            {
+                'title': 'Collecte de vêtements d\'hiver',
+                'news_type': 'EVENEMENT',
+                'description': 'Nous lançons une grande collecte de vêtements chauds pour l\'hiver. Vous pouvez déposer vos dons à l\'accueil du lundi au vendredi.',
+                'is_pinned': False,
+            },
+        ]
+
+        news_count = 0
+        for i, news_item_data in enumerate(news_data):
+            # Échelonner les dates de publication (du plus récent au plus ancien)
+            publication_offset = timedelta(days=i * 2)
+            news_item = News(**news_item_data)
+            news_item.save()
+            # Modifier la date de publication après création
+            news_item.publication_date = (date.today() - publication_offset)
+            news_item.save()
+            news_count += 1
+
+        return news_count

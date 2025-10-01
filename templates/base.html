@@ -105,7 +105,8 @@
                 </div>
                 
                 <nav class="flex-1 space-y-2">
-                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                    <a href="{% url 'home' %}"
+                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.url_name == 'home' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Home">
                         <i class="fas fa-home sidebar-icon"></i>
                         <span class="sidebar-text ml-3">Home</span>

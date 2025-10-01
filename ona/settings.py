@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'calendar_app',
     'partners',
     'stock',
+    'news',
 ]
 
 MIDDLEWARE = [

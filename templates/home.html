@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-home text-blue-600 mr-2"></i>
+            Tableau de Bord
+        </h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Accès rapides -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+            Accès rapides
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="{% url 'calendar:day' %}" class="flex items-center justify-center px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200">
+                <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
+                <span class="font-medium text-blue-700">Mon planning du jour</span>
+            </a>
+            <a href="{% url 'calendar:week' %}" class="flex items-center justify-center px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200">
+                <i class="fas fa-calendar-week text-green-600 mr-2"></i>
+                <span class="font-medium text-green-700">Ma semaine</span>
+            </a>
+            <a href="{% url 'beneficiaries:create' %}" class="flex items-center justify-center px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200">
+                <i class="fas fa-user-plus text-purple-600 mr-2"></i>
+                <span class="font-medium text-purple-700">Nouveau bénéficiaire</span>
+            </a>
+            <a href="{% url 'calendar:appointment_create' %}" class="flex items-center justify-center px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200">
+                <i class="fas fa-calendar-plus text-orange-600 mr-2"></i>
+                <span class="font-medium text-orange-700">Nouveau RDV</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Grille principale -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Prochains Rendez-vous -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+                    Prochains Rendez-vous
+                </h2>
+            </div>
+
+            {% if upcoming_appointments %}
+            <div class="space-y-3">
+                {% for appointment in upcoming_appointments %}
+                <div class="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium text-gray-900">
+                                {{ appointment.beneficiary.first_name }} {{ appointment.beneficiary.last_name }}
+                            </span>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ appointment.start_time|time:"H:i" }}
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            {{ appointment.appointment_date|date:"d/m/Y" }} • {{ appointment.get_appointment_type_display }}
+                        </div>
+                        {% if appointment.title %}
+                        <div class="text-sm text-gray-500 mt-1">
+                            {{ appointment.title }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'calendar:appointment_list' %}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    Voir tous les rendez-vous →
+                </a>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-calendar-times text-4xl mb-2"></i>
+                <p>Aucun rendez-vous prévu</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Suivi des Bénéficiaires -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-users text-green-600 mr-2"></i>
+                    Suivi des Bénéficiaires
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-sm text-blue-600 mb-1">Total Actifs</div>
+                    <div class="text-2xl font-bold text-blue-700">{{ stats.total }}</div>
+                </div>
+
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="flex items-center text-sm text-green-600 mb-1">
+                        <span>Nouveaux ce mois</span>
+                        <i class="fas fa-arrow-up ml-1"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-green-700">+{{ stats.new_this_month }}</div>
+                </div>
+
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-sm text-purple-600 mb-1">Aidés récemment</div>
+                    <div class="text-2xl font-bold text-purple-700">{{ stats.helped_recently }}</div>
+                </div>
+
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <div class="flex items-center text-sm text-orange-600 mb-1">
+                        <span>Inactifs (6+ mois)</span>
+                        <i class="fas fa-arrow-down ml-1"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-orange-700">{{ stats.inactive }}</div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'beneficiaries:list' %}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    Voir tous les bénéficiaires →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deuxième rangée -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Évolution des Bénéficiaires -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                    Évolution des Bénéficiaires
+                </h2>
+            </div>
+
+            <canvas id="evolutionChart" height="200"></canvas>
+        </div>
+
+        <!-- Dernières Nouvelles -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-newspaper text-orange-600 mr-2"></i>
+                    Dernières Nouvelles
+                </h2>
+            </div>
+
+            {% if latest_news %}
+            <div class="space-y-3">
+                {% for news_item in latest_news %}
+                <div class="border-l-4
+                    {% if news_item.news_type == 'EVENEMENT' %}border-blue-500{% elif news_item.news_type == 'PARTENARIAT' %}border-green-500{% elif news_item.news_type == 'FORMATION' %}border-purple-500{% else %}border-gray-500{% endif %}
+                    pl-4 py-2">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-semibold px-2 py-1 rounded
+                            {% if news_item.news_type == 'EVENEMENT' %}bg-blue-100 text-blue-700{% elif news_item.news_type == 'PARTENARIAT' %}bg-green-100 text-green-700{% elif news_item.news_type == 'FORMATION' %}bg-purple-100 text-purple-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ news_item.get_news_type_display }}
+                        </span>
+                        <span class="text-xs text-gray-500">{{ news_item.publication_date|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="font-medium text-gray-900 mb-1">{{ news_item.title }}</div>
+                    <p class="text-sm text-gray-600">{{ news_item.description|truncatewords:20 }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-newspaper text-4xl mb-2"></i>
+                <p>Aucune actualité pour le moment</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Graphique d'évolution des bénéficiaires
+    const ctx = document.getElementById('evolutionChart');
+    if (ctx) {
+        const evolutionData = {{ evolution_data_json|safe }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: evolutionData.map(d => d.month),
+                datasets: [{
+                    label: 'Nombre de bénéficiaires',
+                    data: evolutionData.map(d => d.count),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
