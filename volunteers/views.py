@@ -4,15 +4,74 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.decorators import method_decorator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.db import transaction
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import datetime, date
-from .models import Volunteer, TimeTracking
-from .forms import VolunteerForm, TimeTrackingForm
+from .models import Volunteer
+from .forms import VolunteerForm
+
+
+class AdminOrEmployeeRequiredMixin:
+    """Mixin pour restreindre l'accès aux ADMIN et EMPLOYEE uniquement"""
+
+    def dispatch(self, request, *args, **kwargs):
+        # Vérifier si l'utilisateur a un profil bénévole
+        if not hasattr(request.user, 'volunteer_profile'):
+            messages.error(request, 'Vous devez avoir un profil bénévole pour accéder à cette page.')
+            return redirect('volunteers:list')
+
+        volunteer = request.user.volunteer_profile
+
+        # Seuls les ADMIN et EMPLOYEE peuvent gérer les utilisateurs
+        if volunteer.role not in ['ADMIN', 'EMPLOYEE']:
+            messages.error(
+                request,
+                'Vous n\'avez pas les permissions nécessaires pour effectuer cette action. '
+                'Seuls les administrateurs et salariés peuvent gérer les utilisateurs.'
+            )
+            return redirect('volunteers:list')
+
+        return super().dispatch(request, *args, **kwargs)
+
+
+class CanEditVolunteerMixin:
+    """Mixin pour permettre aux utilisateurs de modifier leur propre profil ou pour ADMIN/EMPLOYEE de modifier n'importe quel profil"""
+
+    def dispatch(self, request, *args, **kwargs):
+        # Vérifier si l'utilisateur a un profil bénévole
+        if not hasattr(request.user, 'volunteer_profile'):
+            messages.error(request, 'Vous devez avoir un profil bénévole pour accéder à cette page.')
+            return redirect('volunteers:list')
+
+        volunteer = request.user.volunteer_profile
+
+        # Récupérer le bénévole à modifier
+        volunteer_to_edit = self.get_object()
+
+        # ADMIN et EMPLOYEE peuvent modifier n'importe quel profil
+        if volunteer.role in ['ADMIN', 'EMPLOYEE']:
+            return super().dispatch(request, *args, **kwargs)
+
+        # Les autres peuvent seulement modifier leur propre profil
+        if volunteer == volunteer_to_edit:
+            return super().dispatch(request, *args, **kwargs)
+
+        messages.error(
+            request,
+            'Vous n\'avez pas les permissions nécessaires pour modifier ce profil. '
+            'Vous pouvez uniquement modifier votre propre profil.'
+        )
+        return redirect('volunteers:detail', pk=volunteer.pk)
+
+    def get_object(self):
+        """Permet de récupérer l'objet avant dispatch"""
+        if not hasattr(self, 'object') or self.object is None:
+            self.object = super().get_object()
+        return self.object
 
 
 class VolunteerListView(LoginRequiredMixin, ListView):
@@ -55,7 +114,7 @@ class VolunteerListView(LoginRequiredMixin, ListView):
         return context
 
 
-class VolunteerCreateView(LoginRequiredMixin, CreateView):
+class VolunteerCreateView(LoginRequiredMixin, AdminOrEmployeeRequiredMixin, CreateView):
     """Vue de création d'un nouveau bénévole"""
     model = Volunteer
     form_class = VolunteerForm
@@ -94,26 +153,91 @@ class VolunteerCreateView(LoginRequiredMixin, CreateView):
 
 
 class VolunteerDetailView(LoginRequiredMixin, DetailView):
-    """Vue détail d'un bénévole avec historique des heures"""
+    """Vue détail d'un bénévole avec statistiques des rendez-vous et disponibilités"""
     model = Volunteer
     template_name = 'volunteers/detail.html'
     context_object_name = 'volunteer'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['time_trackings'] = self.object.time_trackings.all()[:12]  # Derniers 12 mois
-        context['latest_time_tracking'] = self.object.latest_time_tracking
+        from calendar_app.models import Appointment, AvailabilitySlot
+        from collections import defaultdict
+        from dateutil.relativedelta import relativedelta
 
-        # Calculer les statistiques
-        current_year = date.today().year
-        year_trackings = self.object.time_trackings.filter(month__year=current_year)
-        context['total_hours_this_year'] = sum(t.hours_worked for t in year_trackings)
-        context['months_tracked_this_year'] = year_trackings.count()
+        context = super().get_context_data(**kwargs)
+
+        # Calculer les 12 derniers mois
+        today = date.today()
+        start_date = today - relativedelta(months=11)
+        start_date = start_date.replace(day=1)
+
+        # Récupérer le calendrier du bénévole
+        if hasattr(self.object, 'calendar'):
+            calendar = self.object.calendar
+
+            # Statistiques par mois
+            monthly_stats = []
+
+            for i in range(12):
+                month_date = start_date + relativedelta(months=i)
+                next_month = month_date + relativedelta(months=1)
+
+                # Compter les rendez-vous pour ce mois
+                appointments_count = Appointment.objects.filter(
+                    volunteer_calendar=calendar,
+                    appointment_date__gte=month_date,
+                    appointment_date__lt=next_month,
+                    status__in=['SCHEDULED', 'CONFIRMED', 'COMPLETED']
+                ).count()
+
+                # Calculer les heures de disponibilité pour ce mois
+                availability_slots = AvailabilitySlot.objects.filter(
+                    volunteer_calendar=calendar,
+                    slot_type='AVAILABILITY',
+                    is_active=True
+                )
+
+                total_hours = 0
+                for slot in availability_slots:
+                    # Obtenir les occurrences dans ce mois
+                    occurrences = slot.get_occurrences_in_range(month_date, next_month - relativedelta(days=1))
+                    for occurrence in occurrences:
+                        total_hours += slot.duration_hours
+
+                monthly_stats.append({
+                    'month': month_date,
+                    'month_name': month_date.strftime('%B %Y'),
+                    'appointments_count': appointments_count,
+                    'availability_hours': round(total_hours, 1),
+                })
+
+            context['monthly_stats'] = list(reversed(monthly_stats))
+
+            # Statistiques annuelles
+            current_year = today.year
+            year_start = date(current_year, 1, 1)
+            year_appointments = Appointment.objects.filter(
+                volunteer_calendar=calendar,
+                appointment_date__gte=year_start,
+                appointment_date__lte=today,
+                status__in=['SCHEDULED', 'CONFIRMED', 'COMPLETED']
+            )
+            context['total_appointments_this_year'] = year_appointments.count()
+
+            # Calculer les heures totales de RDV cette année
+            total_hours_appointments = sum(a.duration_hours for a in year_appointments)
+            context['total_hours_appointments_this_year'] = round(total_hours_appointments, 1)
+        else:
+            context['monthly_stats'] = []
+            context['total_appointments_this_year'] = 0
+            context['total_hours_appointments_this_year'] = 0
+
+        # Nombre de bénéficiaires dont ce bénévole est l'interlocuteur privilégié
+        context['preferred_beneficiaries_count'] = self.object.preferred_beneficiaries.count()
 
         return context
 
 
-class VolunteerUpdateView(LoginRequiredMixin, UpdateView):
+class VolunteerUpdateView(LoginRequiredMixin, CanEditVolunteerMixin, UpdateView):
     """Vue d'édition d'un bénévole"""
     model = Volunteer
     form_class = VolunteerForm
@@ -146,103 +270,6 @@ class VolunteerUpdateView(LoginRequiredMixin, UpdateView):
 
             messages.success(self.request, 'Bénévole modifié avec succès.')
             return redirect(self.object.get_absolute_url())
-
-
-class TimeTrackingCreateView(LoginRequiredMixin, CreateView):
-    """Vue pour créer un suivi d'heures pour un bénévole"""
-    model = TimeTracking
-    form_class = TimeTrackingForm
-    template_name = 'volunteers/time_tracking_create.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        self.volunteer = get_object_or_404(Volunteer, pk=kwargs['volunteer_pk'])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['volunteer'] = self.volunteer
-        return context
-
-    def form_valid(self, form):
-        # Le formulaire a déjà converti le mois en date
-        first_day_of_month = form.cleaned_data['month']
-
-        self.object = form.save(commit=False)
-        self.object.volunteer = self.volunteer
-        self.object.month = first_day_of_month
-
-        # Vérifier qu'il n'y a pas déjà un suivi pour ce mois
-        existing = TimeTracking.objects.filter(
-            volunteer=self.volunteer,
-            month=first_day_of_month
-        ).exists()
-
-        if existing:
-            messages.error(
-                self.request,
-                f'Un suivi d\'heures existe déjà pour {first_day_of_month.strftime("%B %Y")}.'
-            )
-            return self.form_invalid(form)
-
-        self.object.save()
-
-        messages.success(
-            self.request,
-            f'Suivi d\'heures pour {first_day_of_month.strftime("%B %Y")} créé avec succès.'
-        )
-
-        return redirect(self.get_success_url())
-
-    def get_success_url(self):
-        return reverse('volunteers:detail', kwargs={'pk': self.volunteer.pk})
-
-
-class TimeTrackingUpdateView(LoginRequiredMixin, UpdateView):
-    """Vue pour modifier un suivi d'heures"""
-    model = TimeTracking
-    form_class = TimeTrackingForm
-    template_name = 'volunteers/time_tracking_edit.html'
-    context_object_name = 'time_tracking'
-
-    def get_object(self):
-        return get_object_or_404(
-            TimeTracking,
-            pk=self.kwargs['pk'],
-            volunteer__pk=self.kwargs['volunteer_pk']
-        )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['volunteer'] = self.object.volunteer
-        return context
-
-    def form_valid(self, form):
-        # Le formulaire a déjà converti le mois en date
-        first_day_of_month = form.cleaned_data['month']
-
-        self.object = form.save(commit=False)
-        self.object.month = first_day_of_month
-
-        # Vérifier qu'il n'y a pas déjà un autre suivi pour ce mois
-        existing = TimeTracking.objects.filter(
-            volunteer=self.object.volunteer,
-            month=first_day_of_month
-        ).exclude(pk=self.object.pk).exists()
-
-        if existing:
-            messages.error(
-                self.request,
-                f'Un autre suivi d\'heures existe déjà pour {first_day_of_month.strftime("%B %Y")}.'
-            )
-            return self.form_invalid(form)
-
-        self.object.save()
-
-        messages.success(self.request, 'Suivi d\'heures modifié avec succès.')
-        return redirect(self.get_success_url())
-
-    def get_success_url(self):
-        return reverse('volunteers:detail', kwargs={'pk': self.object.volunteer.pk})
 
 
 @login_required

@@ -188,6 +188,22 @@
                             <div class="mt-1 text-sm text-red-600">{{ form.dependents_count.errors.0 }}</div>
                         {% endif %}
                     </div>
+
+                    <!-- Interlocuteur privilégié -->
+                    <div class="sm:col-span-4">
+                        <label for="{{ form.preferred_contact.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.preferred_contact.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.preferred_contact }}
+                        </div>
+                        {% if form.preferred_contact.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.preferred_contact.help_text }}</p>
+                        {% endif %}
+                        {% if form.preferred_contact.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.preferred_contact.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>

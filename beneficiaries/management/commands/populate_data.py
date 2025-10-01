@@ -23,6 +23,7 @@ from faker import Faker
 from beneficiaries.models import Beneficiary, FinancialSnapshot, Child, Interaction
 from volunteers.models import Volunteer, TimeTracking
 from calendar_app.models import VolunteerCalendar, AvailabilitySlot, Appointment
+from partners.models import Partner
 
 fake = Faker('fr_FR')
 
@@ -88,6 +89,12 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f'✅ {interactions_count} interactions créées')
             )
 
+            # Créer les partenaires
+            partners_count = self.create_partners()
+            self.stdout.write(
+                self.style.SUCCESS(f'✅ {partners_count} partenaires créés')
+            )
+
         self.stdout.write(
             self.style.SUCCESS('🎉 Population des données terminée avec succès!')
         )
@@ -105,6 +112,7 @@ class Command(BaseCommand):
         Child.objects.all().delete()
         FinancialSnapshot.objects.all().delete()
         Beneficiary.objects.all().delete()
+        Partner.objects.all().delete()
         Volunteer.objects.all().delete()
         User.objects.filter(is_superuser=False).delete()
 
@@ -493,3 +501,71 @@ class Command(BaseCommand):
             "Entretien téléphonique", "Visite de suivi"
         ]
         return random.choice(titles)
+
+    def create_partners(self):
+        """Crée des partenaires avec des services variés"""
+        partners_data = [
+            {
+                'name': 'Banque Alimentaire',
+                'address': '123 Rue de la Solidarité, 75001 Paris',
+                'phone': '01 23 45 67 89',
+                'email': 'contact@banquealimentaire.org',
+                'services': 'Distribution alimentaire, Collecte de dons'
+            },
+            {
+                'name': 'Croix Rouge',
+                'address': '456 Avenue de l\'Entraide, 75002 Paris',
+                'phone': '01 98 76 54 32',
+                'email': 'contact@croixrouge.org',
+                'services': 'Vestiaire social, Aide médicale, Formation premiers secours'
+            },
+            {
+                'name': 'Restos du Cœur',
+                'address': '789 Boulevard du Partage, 75003 Paris',
+                'phone': '01 45 67 89 12',
+                'email': 'contact@restosducoeur.org',
+                'services': 'Repas chauds, Aide alimentaire, Accompagnement social'
+            },
+            {
+                'name': 'Secours Populaire',
+                'address': '321 Rue de l\'Entraide, 75010 Paris',
+                'phone': '01 44 78 21 00',
+                'email': 'contact@secourspopulaire.fr',
+                'services': 'Aide alimentaire, Vestiaire, Aide aux devoirs, Vacances enfants'
+            },
+            {
+                'name': 'Emmaüs',
+                'address': '654 Avenue de la Fraternité, 75011 Paris',
+                'phone': '01 41 58 25 00',
+                'email': 'contact@emmaus.org',
+                'services': 'Hébergement d\'urgence, Insertion professionnelle, Collecte de dons'
+            },
+            {
+                'name': 'Médecins du Monde',
+                'address': '987 Rue de la Santé, 75013 Paris',
+                'phone': '01 44 92 15 15',
+                'email': 'contact@medecinsdumonde.org',
+                'services': 'Soins médicaux gratuits, Accompagnement social, Orientation santé'
+            },
+            {
+                'name': 'France Horizon',
+                'address': '147 Boulevard de l\'Avenir, 75014 Paris',
+                'phone': '01 53 27 64 00',
+                'email': 'contact@francehorizon.fr',
+                'services': 'Accompagnement emploi, Formation professionnelle, Coaching'
+            },
+            {
+                'name': 'Habitat et Humanisme',
+                'address': '258 Rue du Logement, 75015 Paris',
+                'phone': '01 42 11 20 00',
+                'email': 'contact@habitat-humanisme.org',
+                'services': 'Aide au logement, Accompagnement logement, Intermédiation locative'
+            },
+        ]
+
+        partners_count = 0
+        for partner_data in partners_data:
+            Partner.objects.create(**partner_data)
+            partners_count += 1
+
+        return partners_count

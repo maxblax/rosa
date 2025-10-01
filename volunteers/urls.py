@@ -12,8 +12,4 @@ urlpatterns = [
     path('create/', views.VolunteerCreateView.as_view(), name='create'),
     path('<int:pk>/', views.VolunteerDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', views.VolunteerUpdateView.as_view(), name='edit'),
-
-    # Suivi des heures
-    path('<int:volunteer_pk>/time-tracking/create/', views.TimeTrackingCreateView.as_view(), name='time_tracking_create'),
-    path('<int:volunteer_pk>/time-tracking/<int:pk>/edit/', views.TimeTrackingUpdateView.as_view(), name='time_tracking_edit'),
 ]

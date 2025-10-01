@@ -3,3 +3,4 @@ django-htmx
 psycopg2-binary
 Pillow
 faker
+python-dateutil

@@ -4,7 +4,7 @@ from .models import Beneficiary, FinancialSnapshot, Child, Interaction
 
 @admin.register(Beneficiary)
 class BeneficiaryAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'civility', 'birth_date', 'phone', 'email', 'family_status', 'created_at']
+    list_display = ['full_name', 'civility', 'birth_date', 'phone', 'email', 'family_status', 'preferred_contact', 'created_at']
     list_filter = ['civility', 'family_status', 'housing_status', 'created_at']
     search_fields = ['first_name', 'last_name', 'email', 'phone']
     ordering = ['last_name', 'first_name']
@@ -17,7 +17,7 @@ class BeneficiaryAdmin(admin.ModelAdmin):
             'fields': ('address', 'residence_address')
         }),
         ('Situation', {
-            'fields': ('occupation', 'housing_status', 'family_status', 'dependents_count')
+            'fields': ('occupation', 'housing_status', 'family_status', 'dependents_count', 'preferred_contact')
         }),
     )
 

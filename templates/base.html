@@ -122,7 +122,8 @@
                         <i class="fas fa-hands-helping sidebar-icon"></i>
                         <span class="sidebar-text ml-3">Bénévoles</span>
                     </a>
-                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                    <a href="{% url 'partners:list' %}"
+                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'partners' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Partenaires">
                         <i class="fas fa-handshake sidebar-icon"></i>
                         <span class="sidebar-text ml-3">Partenaires</span>
@@ -138,7 +139,8 @@
                         <i class="fas fa-chart-bar sidebar-icon"></i>
                         <span class="sidebar-text ml-3">Analyses</span>
                     </a>
-                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                    <a href="{% url 'stock:list' %}"
+                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'stock' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Stock">
                         <i class="fas fa-box sidebar-icon"></i>
                         <span class="sidebar-text ml-3">Stock</span>
@@ -213,7 +215,7 @@
         </div>
 
         <!-- Main content area -->
-        <div class="w-full flex flex-col h-screen transition-all duration-300" style="margin-left: 256px;" id="main-content">
+        <div class="w-full flex flex-col h-screen transition-all duration-300" style="margin-left: 238px;" id="main-content">
             <!-- Top header -->
             <header class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
                 <div class="px-6 py-4">

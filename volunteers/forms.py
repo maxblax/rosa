@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import ModelForm
 from django.contrib.auth.models import User
-from .models import Volunteer, TimeTracking
+from .models import Volunteer
 
 
 class VolunteerForm(ModelForm):
@@ -29,7 +29,7 @@ class VolunteerForm(ModelForm):
         model = Volunteer
         fields = [
             'civility', 'role', 'status', 'birth_date', 'phone', 'address',
-            'skills', 'availability', 'join_date'
+            'skills', 'join_date'
         ]
         widgets = {
             'birth_date': forms.DateInput(attrs={
@@ -62,11 +62,6 @@ class VolunteerForm(ModelForm):
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 4,
                 'placeholder': 'Compétences particulières, expériences...'
-            }),
-            'availability': forms.Textarea(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'rows': 3,
-                'placeholder': 'Jours et heures de disponibilité'
             }),
         }
 
@@ -163,80 +158,3 @@ class VolunteerForm(ModelForm):
                     raise forms.ValidationError("Ce nom d'utilisateur est déjà utilisé.")
 
         return cleaned_data
-
-
-class TimeTrackingForm(ModelForm):
-    """Formulaire pour créer/modifier un suivi d'heures"""
-
-    # Champ personnalisé pour le mois
-    month = forms.CharField(
-        label='Mois',
-        widget=forms.TextInput(attrs={
-            'type': 'month',
-            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-        }),
-        help_text='Sélectionnez le mois concerné'
-    )
-
-    class Meta:
-        model = TimeTracking
-        fields = ['hours_worked', 'activities', 'notes']
-        widgets = {
-            'hours_worked': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'step': '0.5',
-                'min': '0',
-                'placeholder': 'Nombre d\'heures'
-            }),
-            'activities': forms.Textarea(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'rows': 5,
-                'placeholder': 'Décrivez les activités réalisées ce mois-ci...'
-            }),
-            'notes': forms.Textarea(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'rows': 3,
-                'placeholder': 'Observations particulières, commentaires...'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Rendre certains champs obligatoires
-        self.fields['month'].required = True
-        self.fields['hours_worked'].required = True
-
-        # Tous les autres champs sont optionnels
-        self.fields['activities'].required = False
-        self.fields['notes'].required = False
-
-        # Si on a une instance, pré-remplir le champ month
-        if self.instance and self.instance.pk and self.instance.month:
-            # Convertir la date en format YYYY-MM pour l'input month
-            self.fields['month'].initial = self.instance.month.strftime('%Y-%m')
-
-    def clean_month(self):
-        """Convertit la chaîne YYYY-MM en date (premier jour du mois)"""
-        month_str = self.cleaned_data.get('month')
-        if not month_str:
-            raise forms.ValidationError("Le mois est requis.")
-
-        try:
-            from datetime import date
-            # Parse YYYY-MM format
-            year, month = month_str.split('-')
-            year = int(year)
-            month = int(month)
-
-            # Validation des valeurs
-            if year < 2020 or year > 2030:
-                raise ValueError("Année invalide")
-            if month < 1 or month > 12:
-                raise ValueError("Mois invalide")
-
-            # Retourner le premier jour du mois
-            return date(year, month, 1)
-
-        except (ValueError, TypeError) as e:
-            raise forms.ValidationError("Format de mois invalide. Utilisez le sélecteur de mois.")

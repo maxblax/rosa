@@ -75,6 +75,9 @@
                         <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                             Téléphone
                         </th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                            Interlocuteur
+                        </th>
                         <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Prochain RDV
                         </th>
@@ -111,6 +114,15 @@
                     <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 hidden xl:table-cell">
                         {{ beneficiary.phone|default:"-" }}
                     </td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 hidden lg:table-cell">
+                        {% if beneficiary.preferred_contact %}
+                            <a href="{% url 'volunteers:detail' beneficiary.preferred_contact.pk %}" class="text-blue-600 hover:text-blue-800">
+                                {{ beneficiary.preferred_contact.full_name }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
                     <td class="px-3 py-3 text-sm">
                         {% if beneficiary.next_appointment %}
                             <a href="{% url 'calendar:appointment_detail' beneficiary.next_appointment.pk %}"
@@ -144,7 +156,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="9" class="px-6 py-4 text-center text-gray-500">
                         {% if search_query %}
                             Aucun bénéficiaire trouvé pour "{{ search_query }}"
                         {% else %}

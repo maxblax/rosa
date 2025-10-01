@@ -63,11 +63,6 @@ class Volunteer(models.Model):
         blank=True,
         help_text='Compétences particulières du bénévole'
     )
-    availability = models.TextField(
-        'Disponibilités',
-        blank=True,
-        help_text='Jours et heures de disponibilité'
-    )
 
     # Dates importantes
     join_date = models.DateField('Date d\'adhésion', default=date.today)
@@ -125,6 +120,11 @@ class Volunteer(models.Model):
         return self.role == 'VOLUNTEER_GOVERNANCE'
 
     @property
+    def can_manage_users(self):
+        """Vérifie si le bénévole peut créer/modifier/supprimer des utilisateurs"""
+        return self.role in ['ADMIN', 'EMPLOYEE']
+
+    @property
     def role_icon(self):
         """Retourne l'icône FontAwesome appropriée selon le rôle"""
         icons = {
@@ -135,62 +135,5 @@ class Volunteer(models.Model):
         }
         return icons.get(self.role, 'fas fa-user')
 
-    @property
-    def latest_time_tracking(self):
-        """Retourne le dernier suivi d'heures"""
-        return self.time_trackings.order_by('-month').first()
 
 
-class TimeTracking(models.Model):
-    """Suivi des heures de bénévolat par mois"""
-
-    volunteer = models.ForeignKey(
-        Volunteer,
-        on_delete=models.CASCADE,
-        related_name='time_trackings',
-        verbose_name='Bénévole'
-    )
-    month = models.DateField(
-        'Mois',
-        help_text='Premier jour du mois concerné (ex: 2024-03-01 pour mars 2024)'
-    )
-    hours_worked = models.DecimalField(
-        'Heures travaillées',
-        max_digits=5,
-        decimal_places=1,
-        default=0,
-        help_text='Nombre d\'heures de bénévolat effectuées ce mois-ci'
-    )
-    activities = models.TextField(
-        'Activités réalisées',
-        blank=True,
-        help_text='Description des activités menées ce mois-ci'
-    )
-    notes = models.TextField(
-        'Notes',
-        blank=True,
-        help_text='Observations particulières ou commentaires'
-    )
-
-    # Métadonnées
-    created_at = models.DateTimeField('Créé le', auto_now_add=True)
-    updated_at = models.DateTimeField('Modifié le', auto_now=True)
-
-    class Meta:
-        verbose_name = 'Suivi d\'heures'
-        verbose_name_plural = 'Suivis d\'heures'
-        ordering = ['-month']
-        unique_together = ['volunteer', 'month']
-
-    def __str__(self):
-        return f"{self.volunteer.full_name} - {self.month.strftime('%B %Y')} - {self.hours_worked}h"
-
-    @property
-    def month_year_display(self):
-        """Affichage formaté du mois et année"""
-        months = {
-            1: 'Janvier', 2: 'Février', 3: 'Mars', 4: 'Avril',
-            5: 'Mai', 6: 'Juin', 7: 'Juillet', 8: 'Août',
-            9: 'Septembre', 10: 'Octobre', 11: 'Novembre', 12: 'Décembre'
-        }
-        return f"{months[self.month.month]} {self.month.year}"

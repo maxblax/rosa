@@ -27,6 +27,8 @@ urlpatterns = [
     path('beneficiaires/', include('beneficiaries.urls')),
     path('benevoles/', include('volunteers.urls')),
     path('calendrier/', include('calendar_app.urls')),
+    path('partenaires/', include('partners.urls')),
+    path('stock/', include('stock.urls')),
     # TODO: Add home page redirect
     path('', login_required(lambda request: redirect('beneficiaries:list'))),  # Protected redirect
 ]

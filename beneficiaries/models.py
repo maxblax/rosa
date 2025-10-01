@@ -58,7 +58,19 @@ class Beneficiary(models.Model):
         default='CELIBATAIRE'
     )
     dependents_count = models.PositiveIntegerField('Nombre d\'enfants à charge', default=0)
-    
+
+    # Relation avec le bénévole référent
+    preferred_contact = models.ForeignKey(
+        'volunteers.Volunteer',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='preferred_beneficiaries',
+        verbose_name='Interlocuteur privilégié',
+        limit_choices_to={'role__in': ['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']},
+        help_text='Bénévole référent pour ce bénéficiaire'
+    )
+
     # Métadonnées
     created_at = models.DateTimeField('Créé le', auto_now_add=True)
     updated_at = models.DateTimeField('Modifié le', auto_now=True)

@@ -854,7 +854,7 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
     def get_initial(self):
         initial = super().get_initial()
         # Pré-remplir avec les paramètres GET
-        initial['appointment_date'] = self.request.GET.get('date')  # Correction: utiliser 'appointment_date' au lieu de 'date'
+        initial['date'] = self.request.GET.get('date')  # Le formulaire attend 'date', pas 'appointment_date'
         initial['time'] = self.request.GET.get('time')
         initial['start_time'] = self.request.GET.get('start_time')
         initial['end_time'] = self.request.GET.get('end_time')

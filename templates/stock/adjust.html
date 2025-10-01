@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Ajuster {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <a href="{% url 'stock:list' %}" class="mr-4 text-gray-600 hover:text-gray-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Ajuster la quantité</h1>
+                <p class="text-gray-600 mt-1">{{ product.name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Stock Info -->
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                    Quantité actuelle en stock : <strong>{{ product.quantity }} {{ product.unit }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label for="{{ form.adjustment.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.adjustment.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.adjustment }}
+                {% if form.adjustment.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.adjustment.errors.0 }}</p>
+                {% endif %}
+                {% if form.adjustment.help_text %}
+                <p class="mt-1 text-sm text-gray-500">{{ form.adjustment.help_text }}</p>
+                {% endif %}
+
+                <!-- Quick buttons -->
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" onclick="document.getElementById('{{ form.adjustment.id_for_label }}').value = '10'" class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200">
+                        +10
+                    </button>
+                    <button type="button" onclick="document.getElementById('{{ form.adjustment.id_for_label }}').value = '5'" class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200">
+                        +5
+                    </button>
+                    <button type="button" onclick="document.getElementById('{{ form.adjustment.id_for_label }}').value = '1'" class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200">
+                        +1
+                    </button>
+                    <button type="button" onclick="document.getElementById('{{ form.adjustment.id_for_label }}').value = '-1'" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200">
+                        -1
+                    </button>
+                    <button type="button" onclick="document.getElementById('{{ form.adjustment.id_for_label }}').value = '-5'" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200">
+                        -5
+                    </button>
+                    <button type="button" onclick="document.getElementById('{{ form.adjustment.id_for_label }}').value = '-10'" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200">
+                        -10
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.note.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.note.label }}
+                </label>
+                {{ form.note }}
+                {% if form.note.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.note.errors.0 }}</p>
+                {% endif %}
+                {% if form.note.help_text %}
+                <p class="mt-1 text-sm text-gray-500">{{ form.note.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{% url 'stock:list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                    Annuler
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                    Valider l'ajustement
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Examples -->
+    <div class="mt-6 bg-gray-50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-900 mb-2">Exemples d'ajustement :</h3>
+        <ul class="text-sm text-gray-600 space-y-1">
+            <li>• <strong>+20</strong> : ajoute 20 unités (donation reçue, achat)</li>
+            <li>• <strong>-10</strong> : retire 10 unités (distribution, don)</li>
+            <li>• <strong>-5</strong> : retire 5 unités (perte, péremption)</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
