@@ -22,3 +22,5 @@ node_modules/
 .venv/
 *.pyc
 package-lock.json
+/.claude/django_server.log
+/.claude/

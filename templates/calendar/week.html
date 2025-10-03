@@ -203,7 +203,7 @@
                 {% endfor %}
             </div>
             <div class="mt-4">
-                <a href="{% url 'calendar:appointment_list' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <a href="{% url 'calendar:appointment_list' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                     Voir tous les rendez-vous →
                 </a>
             </div>
@@ -246,14 +246,14 @@
                 {% endfor %}
             </div>
             <div class="mt-4">
-                <a href="{% url 'calendar:availability_list' %}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                <a href="{% url 'calendar:availability_list' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}" class="text-green-600 hover:text-green-800 text-sm font-medium">
                     Gérer mes disponibilités →
                 </a>
             </div>
         {% else %}
             <p class="text-gray-500 text-sm">
                 Aucun créneau de disponibilité défini.
-                <a href="{% url 'calendar:availability_create' %}" class="text-green-600 hover:text-green-800 font-medium">
+                <a href="{% url 'calendar:availability_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}" class="text-green-600 hover:text-green-800 font-medium">
                     Créer le premier →
                 </a>
             </p>
@@ -440,7 +440,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     window.viewAppointment = function(appointmentId) {
-        window.location.href = `/calendrier/appointments/${appointmentId}/`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const asUser = urlParams.get('as_user');
+        let url = `/calendrier/appointments/${appointmentId}/`;
+        if (asUser) {
+            url += `?as_user=${asUser}`;
+        }
+        window.location.href = url;
     };
 
     // Fonctions pour les panels

@@ -203,11 +203,11 @@
             Actions rapides
         </h3>
         <div class="space-y-2">
-            <a href="{% url 'calendar:appointment_create' %}"
+            <a href="{% url 'calendar:appointment_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                class="w-full btn-success text-center block">
                 <i class="fas fa-plus mr-2"></i>Nouveau rendez-vous
             </a>
-            <a href="{% url 'calendar:availability_create' %}"
+            <a href="{% url 'calendar:availability_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                class="w-full btn-primary text-center block">
                 <i class="fas fa-calendar-plus mr-2"></i>Ajouter disponibilité
             </a>
@@ -228,8 +228,14 @@ function scheduleAppointment(date, time) {
 }
 
 function viewAppointment(appointmentId) {
-    // Rediriger vers détail du RDV
-    window.location.href = '/calendrier/appointments/' + appointmentId + '/';
+    // Rediriger vers détail du RDV en préservant le paramètre as_user
+    const urlParams = new URLSearchParams(window.location.search);
+    const asUser = urlParams.get('as_user');
+    let url = '/calendrier/appointments/' + appointmentId + '/';
+    if (asUser) {
+        url += '?as_user=' + asUser;
+    }
+    window.location.href = url;
 }
 </script>
 {% endblock %}

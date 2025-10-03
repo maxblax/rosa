@@ -151,7 +151,7 @@
                             <!-- RDV de cette heure -->
                             {% for appointment in hour_data.appointments %}
                             <div class="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-2 relative z-10 cursor-pointer hover:bg-blue-200 transition-colors duration-200"
-                                 onclick="event.stopPropagation(); window.location.href='{% url 'calendar:appointment_detail' appointment.id %}';">
+                                 onclick="event.stopPropagation(); goToAppointment({{ appointment.id }});">
                                 <div class="flex items-center justify-between">
                                     <div class="flex-1">
                                         <div class="font-medium text-blue-900">
@@ -178,11 +178,11 @@
                                     </div>
                                 </div>
                                 <div class="mt-2 flex space-x-2">
-                                    <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
+                                    <a href="{% url 'calendar:appointment_detail' appointment.pk %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                                        class="text-blue-600 hover:text-blue-800 text-xs">
                                         Voir
                                     </a>
-                                    <a href="{% url 'calendar:appointment_edit' appointment.pk %}"
+                                    <a href="{% url 'calendar:appointment_edit' appointment.pk %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                                        class="text-blue-600 hover:text-blue-800 text-xs">
                                         Modifier
                                     </a>
@@ -254,7 +254,7 @@
                             <div class="text-sm text-gray-500">{{ appointment.title }}</div>
                         </div>
                         <div class="ml-4">
-                            <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
+                            <a href="{% url 'calendar:appointment_detail' appointment.pk %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                                class="text-blue-600 hover:text-blue-800 text-sm">
                                 Voir
                             </a>
@@ -274,15 +274,15 @@
                 Actions rapides
             </h3>
             <div class="space-y-2">
-                <a href="{% url 'calendar:appointment_create' %}"
+                <a href="{% url 'calendar:appointment_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                    class="w-full btn-success text-center block">
                     <i class="fas fa-plus mr-2"></i>Nouveau rendez-vous
                 </a>
-                <a href="{% url 'calendar:availability_create' %}"
+                <a href="{% url 'calendar:availability_create' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                    class="w-full btn-primary text-center block">
                     <i class="fas fa-calendar-plus mr-2"></i>Ajouter disponibilité
                 </a>
-                <a href="{% url 'calendar:settings' %}"
+                <a href="{% url 'calendar:settings' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
                    class="w-full btn-secondary text-center block">
                     <i class="fas fa-cog mr-2"></i>Paramètres
                 </a>
@@ -489,7 +489,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     window.viewAppointment = function(appointmentId) {
-        window.location.href = `/calendrier/appointments/${appointmentId}/`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const asUser = urlParams.get('as_user');
+        let url = `/calendrier/appointments/${appointmentId}/`;
+        if (asUser) {
+            url += `?as_user=${asUser}`;
+        }
+        window.location.href = url;
+    };
+
+    window.goToAppointment = function(appointmentId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const asUser = urlParams.get('as_user');
+        let url = `/calendrier/appointments/${appointmentId}/`;
+        if (asUser) {
+            url += `?as_user=${asUser}`;
+        }
+        window.location.href = url;
     };
 
     // Fonctions pour les panels

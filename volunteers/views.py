@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, DetailView, UpdateView
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db import transaction
@@ -13,68 +12,14 @@ from django.utils import timezone
 from datetime import datetime, date
 from .models import Volunteer
 from .forms import VolunteerForm
+from .permissions import (
+    VolunteerRequiredMixin,
+    AdminOrEmployeeRequiredMixin,
+    CanEditVolunteerMixin
+)
 
 
-class AdminOrEmployeeRequiredMixin:
-    """Mixin pour restreindre l'accès aux ADMIN et EMPLOYEE uniquement"""
-
-    def dispatch(self, request, *args, **kwargs):
-        # Vérifier si l'utilisateur a un profil bénévole
-        if not hasattr(request.user, 'volunteer_profile'):
-            messages.error(request, 'Vous devez avoir un profil bénévole pour accéder à cette page.')
-            return redirect('volunteers:list')
-
-        volunteer = request.user.volunteer_profile
-
-        # Seuls les ADMIN et EMPLOYEE peuvent gérer les utilisateurs
-        if volunteer.role not in ['ADMIN', 'EMPLOYEE']:
-            messages.error(
-                request,
-                'Vous n\'avez pas les permissions nécessaires pour effectuer cette action. '
-                'Seuls les administrateurs et salariés peuvent gérer les utilisateurs.'
-            )
-            return redirect('volunteers:list')
-
-        return super().dispatch(request, *args, **kwargs)
-
-
-class CanEditVolunteerMixin:
-    """Mixin pour permettre aux utilisateurs de modifier leur propre profil ou pour ADMIN/EMPLOYEE de modifier n'importe quel profil"""
-
-    def dispatch(self, request, *args, **kwargs):
-        # Vérifier si l'utilisateur a un profil bénévole
-        if not hasattr(request.user, 'volunteer_profile'):
-            messages.error(request, 'Vous devez avoir un profil bénévole pour accéder à cette page.')
-            return redirect('volunteers:list')
-
-        volunteer = request.user.volunteer_profile
-
-        # Récupérer le bénévole à modifier
-        volunteer_to_edit = self.get_object()
-
-        # ADMIN et EMPLOYEE peuvent modifier n'importe quel profil
-        if volunteer.role in ['ADMIN', 'EMPLOYEE']:
-            return super().dispatch(request, *args, **kwargs)
-
-        # Les autres peuvent seulement modifier leur propre profil
-        if volunteer == volunteer_to_edit:
-            return super().dispatch(request, *args, **kwargs)
-
-        messages.error(
-            request,
-            'Vous n\'avez pas les permissions nécessaires pour modifier ce profil. '
-            'Vous pouvez uniquement modifier votre propre profil.'
-        )
-        return redirect('volunteers:detail', pk=volunteer.pk)
-
-    def get_object(self):
-        """Permet de récupérer l'objet avant dispatch"""
-        if not hasattr(self, 'object') or self.object is None:
-            self.object = super().get_object()
-        return self.object
-
-
-class VolunteerListView(LoginRequiredMixin, ListView):
+class VolunteerListView(VolunteerRequiredMixin, ListView):
     """Vue liste des bénévoles avec recherche et filtres par rôle"""
     model = Volunteer
     template_name = 'volunteers/list.html'
@@ -114,7 +59,7 @@ class VolunteerListView(LoginRequiredMixin, ListView):
         return context
 
 
-class VolunteerCreateView(LoginRequiredMixin, AdminOrEmployeeRequiredMixin, CreateView):
+class VolunteerCreateView(AdminOrEmployeeRequiredMixin, CreateView):
     """Vue de création d'un nouveau bénévole"""
     model = Volunteer
     form_class = VolunteerForm
@@ -123,6 +68,7 @@ class VolunteerCreateView(LoginRequiredMixin, AdminOrEmployeeRequiredMixin, Crea
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['is_edit'] = False
+        kwargs['current_user'] = self.request.user
         return kwargs
 
     def form_valid(self, form):
@@ -152,7 +98,7 @@ class VolunteerCreateView(LoginRequiredMixin, AdminOrEmployeeRequiredMixin, Crea
         return reverse('volunteers:detail', kwargs={'pk': self.object.pk})
 
 
-class VolunteerDetailView(LoginRequiredMixin, DetailView):
+class VolunteerDetailView(VolunteerRequiredMixin, DetailView):
     """Vue détail d'un bénévole avec statistiques des rendez-vous et disponibilités"""
     model = Volunteer
     template_name = 'volunteers/detail.html'
@@ -237,7 +183,7 @@ class VolunteerDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class VolunteerUpdateView(LoginRequiredMixin, CanEditVolunteerMixin, UpdateView):
+class VolunteerUpdateView(CanEditVolunteerMixin, UpdateView):
     """Vue d'édition d'un bénévole"""
     model = Volunteer
     form_class = VolunteerForm
@@ -247,6 +193,7 @@ class VolunteerUpdateView(LoginRequiredMixin, CanEditVolunteerMixin, UpdateView)
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['is_edit'] = True
+        kwargs['current_user'] = self.request.user
         return kwargs
 
     def form_valid(self, form):

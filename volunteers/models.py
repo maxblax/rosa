@@ -121,8 +121,23 @@ class Volunteer(models.Model):
 
     @property
     def can_manage_users(self):
-        """Vérifie si le bénévole peut créer/modifier/supprimer des utilisateurs"""
+        """Vérifie si le bénévole peut créer des utilisateurs"""
         return self.role in ['ADMIN', 'EMPLOYEE']
+
+    @property
+    def can_modify_roles(self):
+        """Vérifie si le bénévole peut modifier les rôles et statuts"""
+        return self.role == 'ADMIN'
+
+    @property
+    def can_access_analysis(self):
+        """Vérifie si le bénévole peut accéder aux analyses"""
+        return self.role in ['ADMIN', 'EMPLOYEE', 'VOLUNTEER_GOVERNANCE']
+
+    @property
+    def can_access_calendar(self):
+        """Vérifie si le bénévole peut accéder au calendrier"""
+        return self.role in ['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']
 
     @property
     def role_icon(self):

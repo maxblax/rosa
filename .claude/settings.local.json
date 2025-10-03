@@ -1,24 +1,16 @@
 {
-  "approval_mode": "auto",
-  "auto_approve": {
-    "file_edits": true,
-    "file_creation": true,
-    "command_execution": true
-  },
   "permissions": {
     "allow": [
-    "Bash(python*)",           // Au lieu de multiples "python ..."
-    "Bash(pip*)",              // Couvre pip install, pip list, etc.
-    "Bash(uv*)",               // Tous les commandes uv
-    "Bash(mkdir*)",
-    "Bash(find*)",
-    "Bash(source*)",
-    "WebFetch(domain:localhost)",
-    "WebFetch(domain:github.com)",
-    "WebSearch",
-    "mcp__playwright__browser_*"  // Tous les outils Playwright
-  ],
-    "deny": [],
-    "ask": []
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_close"
+    ]
+  },
+  "monitoring": {
+    "watch_files": [
+      ".claude/django_server.log"
+    ],
+    "auto_include_in_context": true,
+    "tail_lines": 100
   }
 }

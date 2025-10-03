@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count
@@ -91,7 +91,8 @@ class CalendarImpersonationMixin:
 
     def get_target_user(self):
         """Récupère l'utilisateur ciblé par l'impersonation"""
-        as_user_id = self.request.GET.get('as_user')
+        # Vérifier dans GET et POST pour préserver l'impersonation lors des soumissions de formulaires
+        as_user_id = self.request.GET.get('as_user') or self.request.POST.get('as_user')
 
         # Si pas d'impersonation ou pas de permission, retourner l'utilisateur actuel
         if not as_user_id or not self.can_impersonate():
@@ -157,8 +158,8 @@ class CalendarImpersonationMixin:
         """Ajoute le paramètre as_user aux liens pour préserver l'impersonation"""
         params = {}
 
-        # Préserver l'impersonation
-        as_user_id = self.request.GET.get('as_user')
+        # Préserver l'impersonation (vérifier dans GET et POST)
+        as_user_id = self.request.GET.get('as_user') or self.request.POST.get('as_user')
         if as_user_id and self.can_impersonate():
             params['as_user'] = as_user_id
 
@@ -647,7 +648,6 @@ class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calend
     model = AvailabilitySlot
     form_class = AvailabilitySlotForm
     template_name = 'calendar/availability_form.html'
-    success_url = reverse_lazy('calendar:availability_list')
 
     def get_form(self, form_class=None):
         """Personnaliser le formulaire pour pré-remplir et cacher le calendrier"""
@@ -674,53 +674,80 @@ class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calend
     def get_success_url(self):
         """Préserver le paramètre as_user dans l'URL de redirection"""
         params = self.get_query_params()
-        url = reverse_lazy('calendar:availability_list')
+        url = reverse('calendar:availability_list')
         if params:
             from urllib.parse import urlencode
             url += '?' + urlencode(params)
         return url
 
 
-class AvailabilityDetailView(LoginRequiredMixin, CalendarPermissionMixin, DetailView):
+class AvailabilityDetailView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, DetailView):
     """Détail d'un créneau de disponibilité"""
     model = AvailabilitySlot
     template_name = 'calendar/availability_detail.html'
     context_object_name = 'slot'
 
     def get_queryset(self):
-        calendar = self.get_user_calendar()
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
+        calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
 
 
-class AvailabilityEditView(LoginRequiredMixin, CalendarPermissionMixin, UpdateView):
+class AvailabilityEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, UpdateView):
     """Modifier un créneau de disponibilité"""
     model = AvailabilitySlot
+    form_class = AvailabilitySlotForm
     template_name = 'calendar/availability_form.html'
-    fields = [
-        'slot_type', 'recurrence_type', 'weekday', 'specific_date',
-        'start_time', 'end_time', 'valid_from', 'valid_until',
-        'title', 'notes', 'is_bookable', 'max_appointments', 'is_active'
-    ]
-    success_url = reverse_lazy('calendar:availability_list')
 
     def get_queryset(self):
-        calendar = self.get_user_calendar()
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
+        calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
 
+    def get_form(self, form_class=None):
+        """Personnaliser le formulaire pour cacher le calendrier"""
+        form = super().get_form(form_class)
+        # Cacher le champ volunteer_calendar car il ne doit pas être modifié
+        form.fields['volunteer_calendar'].widget = forms.HiddenInput()
+        return form
+
     def form_valid(self, form):
-        messages.success(self.request, 'Créneau de disponibilité modifié avec succès')
+        target_user = self.get_target_user()
+        if self.get_target_user() != self.request.user:
+            messages.success(self.request, f'Créneau de disponibilité modifié avec succès pour {target_user.get_full_name()}')
+        else:
+            messages.success(self.request, 'Créneau de disponibilité modifié avec succès')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        """Préserver le paramètre as_user dans l'URL de redirection"""
+        params = self.get_query_params()
+        url = reverse('calendar:availability_list')
+        if params:
+            from urllib.parse import urlencode
+            url += '?' + urlencode(params)
+        return url
 
-class AvailabilityDeleteView(LoginRequiredMixin, CalendarPermissionMixin, DeleteView):
+
+class AvailabilityDeleteView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, DeleteView):
     """Supprimer un créneau de disponibilité"""
     model = AvailabilitySlot
     template_name = 'calendar/availability_confirm_delete.html'
     success_url = reverse_lazy('calendar:availability_list')
 
     def get_queryset(self):
-        calendar = self.get_user_calendar()
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
+        calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
+
+    def get_success_url(self):
+        """Préserver le paramètre as_user dans l'URL de redirection"""
+        params = self.get_query_params()
+        url = reverse('calendar:availability_list')
+        if params:
+            from urllib.parse import urlencode
+            url += '?' + urlencode(params)
+        return url
 
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Créneau de disponibilité supprimé avec succès')
@@ -898,25 +925,11 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
         prev_week = week_start - timedelta(days=7)
         next_week = week_start + timedelta(days=7)
 
-        # Récupérer les calendriers
-        # Si on vient d'une vue calendrier (avec ou sans impersonation), filtrer uniquement le calendrier ciblé
-        # Sinon, afficher tous les calendriers actifs
-        as_user_id = self.request.GET.get('as_user')
-        target_user = self.get_target_user()
-
-        # Si l'utilisateur a un calendrier et qu'on vient probablement d'une vue calendrier,
-        # afficher uniquement son calendrier (ou celui de l'utilisateur qu'il impersonne)
-        try:
-            target_calendar = self.get_target_calendar()
-            # Afficher uniquement le calendrier de l'utilisateur ciblé
-            calendars = VolunteerCalendar.objects.filter(
-                id=target_calendar.id
-            ).select_related('volunteer__user')
-        except:
-            # Fallback : afficher tous les calendriers actifs
-            calendars = VolunteerCalendar.objects.filter(
-                volunteer__role__in=['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']
-            ).select_related('volunteer__user')
+        # Récupérer TOUS les calendriers actifs pour permettre le filtrage côté client
+        # Le champ volunteer_calendar sera pré-rempli avec le calendrier ciblé si impersonation
+        calendars = VolunteerCalendar.objects.filter(
+            volunteer__role__in=['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']
+        ).select_related('volunteer__user')
 
         # Récupérer tous les RDV et disponibilités de la semaine
         appointments = Appointment.objects.filter(
@@ -1014,7 +1027,7 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
         return url
 
 
-class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, DetailView):
+class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, DetailView):
     """Détail d'un rendez-vous"""
     model = Appointment
     template_name = 'calendar/appointment_detail.html'
@@ -1059,7 +1072,7 @@ class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, DetailV
         return Appointment.objects.none()
 
 
-class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, UpdateView):
+class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, UpdateView):
     """Modifier un rendez-vous"""
     model = Appointment
     form_class = AppointmentForm
@@ -1217,20 +1230,39 @@ class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, UpdateVie
         messages.success(self.request, 'Rendez-vous modifié avec succès')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        """Préserver le paramètre as_user dans l'URL de redirection"""
+        params = self.get_query_params()
+        url = reverse_lazy('calendar:appointment_list')
+        if params:
+            from urllib.parse import urlencode
+            url += '?' + urlencode(params)
+        return url
 
-class AppointmentDeleteView(LoginRequiredMixin, CalendarPermissionMixin, DeleteView):
+
+class AppointmentDeleteView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersonationMixin, DeleteView):
     """Supprimer un rendez-vous"""
     model = Appointment
     template_name = 'calendar/appointment_confirm_delete.html'
     success_url = reverse_lazy('calendar:appointment_list')
 
     def get_queryset(self):
-        calendar = self.get_user_calendar()
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
+        calendar = self.get_target_calendar()
         return Appointment.objects.filter(volunteer_calendar=calendar)
 
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Rendez-vous supprimé avec succès')
         return super().delete(request, *args, **kwargs)
+
+    def get_success_url(self):
+        """Préserver le paramètre as_user dans l'URL de redirection"""
+        params = self.get_query_params()
+        url = reverse_lazy('calendar:appointment_list')
+        if params:
+            from urllib.parse import urlencode
+            url += '?' + urlencode(params)
+        return url
 
 
 @login_required
@@ -1259,6 +1291,9 @@ def appointment_change_status(request, pk):
 
     if not can_edit:
         messages.error(request, "Vous n'avez pas la permission de modifier ce rendez-vous")
+        as_user = request.POST.get('as_user') or request.GET.get('as_user')
+        if as_user:
+            return redirect(f"{reverse('calendar:appointment_detail', kwargs={'pk': pk})}?as_user={as_user}")
         return redirect('calendar:appointment_detail', pk=pk)
 
     if request.method == 'POST':
@@ -1271,6 +1306,10 @@ def appointment_change_status(request, pk):
         else:
             messages.error(request, 'Statut invalide')
 
+    # Préserver le paramètre as_user dans la redirection
+    as_user = request.POST.get('as_user') or request.GET.get('as_user')
+    if as_user:
+        return redirect(f"{reverse('calendar:appointment_detail', kwargs={'pk': pk})}?as_user={as_user}")
     return redirect('calendar:appointment_detail', pk=pk)
 
 

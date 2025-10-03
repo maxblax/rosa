@@ -79,6 +79,9 @@
 
             <form method="post">
                 {% csrf_token %}
+                {% if request.GET.as_user %}
+                <input type="hidden" name="as_user" value="{{ request.GET.as_user }}">
+                {% endif %}
                 <div class="flex justify-end space-x-3">
                     <a href="{% url 'calendar:appointment_list' %}" class="btn-secondary">
                         <i class="fas fa-arrow-left mr-2"></i>Annuler

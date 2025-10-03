@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'ona.apps.OnaConfig',  # Configuration principale (admin customization)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,6 +47,8 @@ INSTALLED_APPS = [
     'partners',
     'stock',
     'news',
+    'analysis',
+    'dons',
 ]
 
 MIDDLEWARE = [
@@ -71,6 +74,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'ona.context_processors.association_info',  # Infos association
             ],
         },
     },
@@ -139,9 +143,58 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication settings
 LOGIN_URL = '/auth/login/'
-LOGIN_REDIRECT_URL = '/beneficiaires/'
+LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/auth/login/'
 
 # Mode développement (bypass authentication)
 # ATTENTION: Mettre à False pour forcer l'authentification même en développement
 DEV_MODE = False  # Toujours forcer l'authentification
+
+# Association Configuration
+# Nom de l'association affiché dans l'application (navbar, admin, login)
+# Par défaut: "ROSA" (Réseau Ouvert de Solidarité et d'Assistance)
+# Changez cette valeur pour personnaliser selon votre association
+ASSOCIATION_NAME = 'ROSA'
+ASSOCIATION_FULL_NAME = 'Réseau Ouvert de Solidarité et d\'Assistance'
+
+# HelloAsso Integration Settings
+ENABLE_HELLOASSO_INTEGRATION = True  # Set to True to enable HelloAsso API integration
+HELLOASSO_API_KEY = 'e68c68ac00654206b8a4057c78dcb285'  # Client ID for HelloAsso API
+HELLOASSO_API_SECRET = '9G+Zctzo8ZUT0iWaBcJKzTh5YYuHIVbY'  # Client Secret for HelloAsso API
+HELLOASSO_ORGANIZATION_SLUG = 'association-protestante-d-assistance'  # Your organization slug on HelloAsso
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '.claude/django_server.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

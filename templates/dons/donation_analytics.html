@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Analyses des Dons - ONA{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center justify-between w-full">
+    <h1 class="text-2xl font-bold text-gray-900">Analyses Financieres - Dons</h1>
+    <a href="{% url 'dons:list' %}" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition">
+        &larr; Retour a la liste
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+    <!-- Comparaison Mois par Mois -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Comparaison Mois par Mois ({{ yearly_comparison.current_year }} vs {{ yearly_comparison.last_year }})</h2>
+        <canvas id="comparisonChart" height="80"></canvas>
+    </div>
+
+    <!-- Evolution Mensuelle (12 derniers mois) -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Evolution Mensuelle (12 derniers mois)</h2>
+        <canvas id="monthlyChart" height="80"></canvas>
+    </div>
+
+    <!-- Top 10 Donateurs -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Top 10 Donateurs</h2>
+        <div class="space-y-3">
+            {% for donor in donor_distribution %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex-1">
+                    <div class="font-semibold text-gray-900">{{ donor.name }}</div>
+                    <div class="text-sm text-gray-600">{{ donor.count }} don{{ donor.count|pluralize }}</div>
+                </div>
+                <div class="text-lg font-bold text-blue-600">{{ donor.amount|floatformat:2 }} &euro;</div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-center py-4">Aucune donnee disponible</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Donnees de comparaison annuelle
+const currentYear = {{ yearly_comparison.current_year }};
+const lastYear = {{ yearly_comparison.last_year }};
+const currentYearData = {{ yearly_comparison.current.by_month|safe }};
+const lastYearData = {{ yearly_comparison.last.by_month|safe }};
+
+const months = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'];
+const comparisonCurrentAmounts = months.map((_, idx) => currentYearData[idx + 1]?.amount || 0);
+const comparisonLastAmounts = months.map((_, idx) => lastYearData[idx + 1]?.amount || 0);
+
+// Graphique de comparaison mois par mois
+const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+new Chart(comparisonCtx, {
+    type: 'bar',
+    data: {
+        labels: months,
+        datasets: [
+            {
+                label: currentYear,
+                data: comparisonCurrentAmounts,
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                borderColor: 'rgb(59, 130, 246)',
+                borderWidth: 1
+            },
+            {
+                label: lastYear,
+                data: comparisonLastAmounts,
+                backgroundColor: 'rgba(156, 163, 175, 0.5)',
+                borderColor: 'rgb(156, 163, 175)',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value + ' EUR';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Donnees pour le graphique mensuel (12 derniers mois)
+const monthlyData = JSON.parse('{{ monthly_data|escapejs }}');
+const monthLabels = monthlyData.map(d => {
+    const months = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[d.month - 1] + ' ' + d.year;
+});
+const monthlyAmounts = monthlyData.map(d => d.amount);
+const monthlyCounts = monthlyData.map(d => d.count);
+
+// Graphique mensuel
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: monthLabels,
+        datasets: [{
+            label: 'Montant (euros)',
+            data: monthlyAmounts,
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(context) {
+                        return monthlyCounts[context.dataIndex] + ' don(s)';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value + ' EUR';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

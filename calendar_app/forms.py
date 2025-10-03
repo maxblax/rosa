@@ -278,7 +278,7 @@ class AvailabilitySlotForm(forms.ModelForm):
         fields = [
             'volunteer_calendar', 'title', 'slot_type', 'recurrence_type', 'weekday',
             'specific_date', 'start_time', 'end_time', 'valid_from', 'valid_until',
-            'notes', 'is_bookable', 'max_appointments'
+            'notes', 'is_bookable', 'max_appointments', 'is_active'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -293,10 +293,13 @@ class AvailabilitySlotForm(forms.ModelForm):
             'weekday': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
-            'specific_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-            }),
+            'specific_date': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={
+                    'type': 'date',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }
+            ),
             'start_time': forms.TimeInput(attrs={
                 'type': 'time',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -305,14 +308,20 @@ class AvailabilitySlotForm(forms.ModelForm):
                 'type': 'time',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
-            'valid_from': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-            }),
-            'valid_until': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-            }),
+            'valid_from': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={
+                    'type': 'date',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }
+            ),
+            'valid_until': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={
+                    'type': 'date',
+                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }
+            ),
             'notes': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 3
@@ -323,6 +332,9 @@ class AvailabilitySlotForm(forms.ModelForm):
             'max_appointments': forms.NumberInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'min': '1', 'max': '10'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
             }),
         }
 

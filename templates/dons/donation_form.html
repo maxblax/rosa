@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Modifier{% else %}Creer{% endif %} un don - ONA{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <div class="mb-6">
+        <a href="{% url 'dons:list' %}" class="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4">
+            &larr; Retour a la liste des dons
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">
+            {% if object %}Modifier le don{% else %}Enregistrer un nouveau don{% endif %}
+        </h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Donor Name -->
+            <div>
+                <label for="{{ form.donor_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Nom du donateur
+                </label>
+                {{ form.donor_name }}
+                {% if form.donor_name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.donor_name.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">Laisser vide pour un don anonyme</p>
+            </div>
+
+            <!-- Is Anonymous -->
+            <div class="flex items-center">
+                {{ form.is_anonymous }}
+                <label for="{{ form.is_anonymous.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700">
+                    Don anonyme
+                </label>
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Montant <span class="text-red-500">*</span>
+                </label>
+                {{ form.amount }}
+                {% if form.amount.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.amount.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Payment Type -->
+            <div>
+                <label for="{{ form.payment_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Type de paiement <span class="text-red-500">*</span>
+                </label>
+                {{ form.payment_type }}
+                {% if form.payment_type.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.payment_type.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Date -->
+            <div>
+                <label for="{{ form.date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Date du don <span class="text-red-500">*</span>
+                </label>
+                {{ form.date }}
+                {% if form.date.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.date.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Notes ou commentaires
+                </label>
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-4 pt-4">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition">
+                    {% if object %}Modifier{% else %}Enregistrer{% endif %}
+                </button>
+                <a href="{% url 'dons:list' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition">
+                    Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

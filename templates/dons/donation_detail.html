@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Details du don - ONA{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+        <a href="{% url 'dons:list' %}" class="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4">
+            &larr; Retour a la liste des dons
+        </a>
+        <div class="flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-900">Details du don</h1>
+            <div class="flex gap-2">
+                <a href="{% url 'dons:edit' donation.pk %}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                    Modifier
+                </a>
+                <a href="{% url 'dons:delete' donation.pk %}" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
+                    Supprimer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm opacity-90 mb-1">Donateur</div>
+                    <div class="text-3xl font-bold">
+                        {% if donation.is_anonymous or not donation.donor_name %}
+                            Anonyme
+                        {% else %}
+                            {{ donation.donor_name }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm opacity-90 mb-1">Montant</div>
+                    <div class="text-4xl font-bold">
+                        {{ donation.amount|floatformat:2 }} &euro;
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <div class="text-sm font-medium text-gray-500 mb-1">Type de paiement</div>
+                    <div class="text-lg text-gray-900">{{ donation.get_payment_type_display }}</div>
+                </div>
+
+                <div>
+                    <div class="text-sm font-medium text-gray-500 mb-1">Date du don</div>
+                    <div class="text-lg text-gray-900">{{ donation.date|date:"d/m/Y" }}</div>
+                </div>
+
+                <div>
+                    <div class="text-sm font-medium text-gray-500 mb-1">Enregistre par</div>
+                    <div class="text-lg text-gray-900">
+                        {% if donation.created_by %}
+                            {{ donation.created_by.username }}
+                        {% else %}
+                            Non renseigne
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-sm font-medium text-gray-500 mb-1">Date d'enregistrement</div>
+                    <div class="text-lg text-gray-900">{{ donation.created_at|date:"d/m/Y H:i" }}</div>
+                </div>
+            </div>
+
+            {% if donation.notes %}
+            <div class="pt-4 border-t border-gray-200">
+                <div class="text-sm font-medium text-gray-500 mb-2">Notes</div>
+                <div class="text-gray-900 bg-gray-50 rounded-md p-4">
+                    {{ donation.notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="pt-4 border-t border-gray-200">
+                <div class="text-sm font-medium text-gray-500 mb-1">Derniere modification</div>
+                <div class="text-sm text-gray-600">{{ donation.updated_at|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

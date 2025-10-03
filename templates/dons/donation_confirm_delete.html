@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer un don - ONA{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <div class="mb-6">
+        <a href="{% url 'dons:list' %}" class="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4">
+            &larr; Retour a la liste des dons
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Confirmer la suppression</h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-red-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <h3 class="text-red-800 font-semibold">Attention !</h3>
+                    <p class="text-red-700 text-sm">Cette action est irreversible. Le don sera definitivement supprime.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Don a supprimer :</h3>
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Donateur</dt>
+                    <dd class="text-lg text-gray-900">
+                        {% if donation.is_anonymous or not donation.donor_name %}
+                            Anonyme
+                        {% else %}
+                            {{ donation.donor_name }}
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Montant</dt>
+                    <dd class="text-lg font-bold text-gray-900">{{ donation.amount|floatformat:2 }} &euro;</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Date</dt>
+                    <dd class="text-lg text-gray-900">{{ donation.date|date:"d/m/Y" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Type</dt>
+                    <dd class="text-lg text-gray-900">{{ donation.get_payment_type_display }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <form method="post" class="flex gap-4">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition">
+                Confirmer la suppression
+            </button>
+            <a href="{% url 'dons:list' %}" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition">
+                Annuler
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

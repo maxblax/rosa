@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ONA - Open Network Aid{% endblock %}</title>
+    <title>{% block title %}{{ ASSOCIATION_NAME }} - {{ ASSOCIATION_FULL_NAME }}{% endblock %}</title>
     
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -98,7 +98,7 @@
         <div id="sidebar" class="bg-slate-800 text-white h-screen flex-shrink-0 transition-all duration-300 fixed left-0 top-0 z-10">
             <div class="p-4 h-full flex flex-col">
                 <div class="flex items-center justify-between mb-8">
-                    <h1 class="text-xl font-bold sidebar-text">Association APA30</h1>
+                    <h1 class="text-xl font-bold sidebar-text">{{ ASSOCIATION_NAME }}</h1>
                     <button id="sidebar-toggle" class="text-white hover:bg-slate-700 p-2 rounded flex-shrink-0">
                         <i class="fas fa-chevron-left" id="toggle-icon"></i>
                     </button>
@@ -106,46 +106,61 @@
                 
                 <nav class="flex-1 space-y-2">
                     <a href="{% url 'home' %}"
-                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.url_name == 'home' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.url_name == 'home' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Home">
-                        <i class="fas fa-home sidebar-icon"></i>
+                        <i class="fas fa-home sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Home</span>
                     </a>
+                    {% if not user.volunteer_profile or user.volunteer_profile.role != 'VOLUNTEER_GOVERNANCE' %}
                     <a href="{% url 'beneficiaries:list' %}"
-                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'beneficiaries' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'beneficiaries' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Bénéficiaires">
-                        <i class="fas fa-users sidebar-icon"></i>
+                        <i class="fas fa-users sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Bénéficiaires</span>
                     </a>
+                    {% endif %}
                     <a href="{% url 'volunteers:list' %}"
-                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'volunteers' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'volunteers' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Bénévoles">
-                        <i class="fas fa-hands-helping sidebar-icon"></i>
+                        <i class="fas fa-hands-helping sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Bénévoles</span>
                     </a>
                     <a href="{% url 'partners:list' %}"
-                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'partners' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'partners' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Partenaires">
-                        <i class="fas fa-handshake sidebar-icon"></i>
+                        <i class="fas fa-handshake sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Partenaires</span>
                     </a>
+                    {% if not user.volunteer_profile or user.volunteer_profile.role != 'VOLUNTEER_GOVERNANCE' %}
                     <a href="{% url 'calendar:main' %}"
-                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'calendar' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'calendar' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Calendrier">
-                        <i class="fas fa-calendar sidebar-icon"></i>
+                        <i class="fas fa-calendar sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Calendrier</span>
                     </a>
-                    <a href="#" class="flex items-center justify-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors"
+                    {% endif %}
+                    {% if user.is_superuser or user.volunteer_profile and user.volunteer_profile.can_access_analysis %}
+                    <a href="{% url 'analysis:dashboard' %}"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'analysis' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Analyses">
-                        <i class="fas fa-chart-bar sidebar-icon"></i>
+                        <i class="fas fa-chart-bar sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Analyses</span>
                     </a>
+                    {% endif %}
                     <a href="{% url 'stock:list' %}"
-                       class="flex items-center justify-center px-4 py-3 {% if request.resolver_match.app_name == 'stock' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'stock' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Stock">
-                        <i class="fas fa-box sidebar-icon"></i>
+                        <i class="fas fa-box sidebar-icon w-5"></i>
                         <span class="sidebar-text ml-3">Stock</span>
                     </a>
+                    {% if user.is_superuser or user.volunteer_profile and user.volunteer_profile.can_manage_users %}
+                    <a href="{% url 'dons:list' %}"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'dons' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       title="Dons">
+                        <i class="fas fa-hand-holding-heart sidebar-icon w-5"></i>
+                        <span class="sidebar-text ml-3">Dons</span>
+                    </a>
+                    {% endif %}
                 </nav>
                 
                 <div class="mt-auto">
@@ -186,9 +201,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <a href="{% url 'auth:logout' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
-                                <i class="fas fa-sign-out-alt mr-2"></i>
-                                <span>Déconnexion</span>
+                            <a href="{% url 'auth:logout' %}" class="w-full flex items-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                                <i class="fas fa-sign-out-alt w-5"></i>
+                                <span class="ml-3">Déconnexion</span>
                             </a>
                         </div>
                     {% else %}
@@ -205,9 +220,9 @@
 
                         <!-- Mode normal -->
                         <div class="sidebar-expanded-only">
-                            <a href="{% url 'auth:login' %}" class="w-full flex items-center justify-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
-                                <i class="fas fa-sign-in-alt mr-2"></i>
-                                <span>Connexion</span>
+                            <a href="{% url 'auth:login' %}" class="w-full flex items-center px-3 py-2 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors">
+                                <i class="fas fa-sign-in-alt w-5"></i>
+                                <span class="ml-3">Connexion</span>
                             </a>
                         </div>
                     {% endif %}
@@ -216,7 +231,7 @@
         </div>
 
         <!-- Main content area -->
-        <div class="w-full flex flex-col h-screen transition-all duration-300" style="margin-left: 238px;" id="main-content">
+        <div class="w-full flex flex-col h-screen transition-all duration-300" style="margin-left: 213px;" id="main-content">
             <!-- Top header -->
             <header class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
                 <div class="px-6 py-4">

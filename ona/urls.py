@@ -28,5 +28,7 @@ urlpatterns = [
     path('calendrier/', include('calendar_app.urls')),
     path('partenaires/', include('partners.urls')),
     path('stock/', include('stock.urls')),
+    path('analyses/', include('analysis.urls')),
+    path('dons/', include('dons.urls')),
     path('', home, name='home'),
 ]

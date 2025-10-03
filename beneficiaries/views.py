@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, DetailView, UpdateView
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse
 from django.db import transaction
@@ -12,9 +11,10 @@ from django.utils import timezone
 from datetime import datetime
 from .models import Beneficiary, FinancialSnapshot, Child, Interaction
 from .forms import BeneficiaryForm, FinancialSnapshotForm, ChildForm, ChildFormSet, InteractionForm
+from volunteers.permissions import CanModifyBeneficiariesMixin
 
 
-class BeneficiaryListView(LoginRequiredMixin, ListView):
+class BeneficiaryListView(CanModifyBeneficiariesMixin, ListView):
     """Vue liste des bénéficiaires avec recherche"""
     model = Beneficiary
     template_name = 'beneficiaries/list.html'
@@ -41,7 +41,7 @@ class BeneficiaryListView(LoginRequiredMixin, ListView):
         return context
 
 
-class BeneficiaryCreateView(LoginRequiredMixin, CreateView):
+class BeneficiaryCreateView(CanModifyBeneficiariesMixin, CreateView):
     """Vue de création d'un nouveau bénéficiaire avec snapshot financier initial"""
     model = Beneficiary
     form_class = BeneficiaryForm
@@ -81,7 +81,7 @@ class BeneficiaryCreateView(LoginRequiredMixin, CreateView):
         return reverse('beneficiaries:detail', kwargs={'pk': self.object.pk})
 
 
-class BeneficiaryDetailView(LoginRequiredMixin, DetailView):
+class BeneficiaryDetailView(CanModifyBeneficiariesMixin, DetailView):
     """Vue détail d'un bénéficiaire avec historique financier"""
     model = Beneficiary
     template_name = 'beneficiaries/detail.html'
@@ -96,7 +96,7 @@ class BeneficiaryDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class BeneficiaryUpdateView(LoginRequiredMixin, UpdateView):
+class BeneficiaryUpdateView(CanModifyBeneficiariesMixin, UpdateView):
     """Vue d'édition d'un bénéficiaire"""
     model = Beneficiary
     form_class = BeneficiaryForm
@@ -243,7 +243,7 @@ def beneficiary_search_autocomplete(request):
     return JsonResponse({'results': results})
 
 
-class InteractionCreateView(LoginRequiredMixin, CreateView):
+class InteractionCreateView(CanModifyBeneficiariesMixin, CreateView):
     """Vue pour créer une nouvelle interaction avec un bénéficiaire"""
     model = Interaction
     form_class = InteractionForm
@@ -339,7 +339,7 @@ class InteractionCreateView(LoginRequiredMixin, CreateView):
         return reverse('beneficiaries:detail', kwargs={'pk': self.beneficiary.pk})
 
 
-class InteractionDetailView(LoginRequiredMixin, DetailView):
+class InteractionDetailView(CanModifyBeneficiariesMixin, DetailView):
     """Vue détail d'une interaction"""
     model = Interaction
     template_name = 'beneficiaries/interaction_detail.html'
@@ -353,7 +353,7 @@ class InteractionDetailView(LoginRequiredMixin, DetailView):
         )
 
 
-class InteractionUpdateView(LoginRequiredMixin, UpdateView):
+class InteractionUpdateView(CanModifyBeneficiariesMixin, UpdateView):
     """Vue pour modifier une interaction"""
     model = Interaction
     form_class = InteractionForm

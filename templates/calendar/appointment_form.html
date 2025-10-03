@@ -59,6 +59,9 @@
     <div class="xl:col-span-1">
         <form method="post" class="space-b-4">
             {% csrf_token %}
+            {% if request.GET.as_user %}
+            <input type="hidden" name="as_user" value="{{ request.GET.as_user }}">
+            {% endif %}
 
             <!-- Informations principales -->
             <div class="bg-white shadow rounded-lg">
@@ -270,7 +273,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for calendar in calendars %}
-                        <tr class="hover:bg-gray-50 volunteer-row" data-volunteer-id="{{ calendar.volunteer.id }}" data-volunteer-name="{{ calendar.volunteer.user.get_full_name }}">
+                        <tr class="hover:bg-gray-50 volunteer-row" data-calendar-id="{{ calendar.id }}" data-volunteer-id="{{ calendar.volunteer.id }}" data-volunteer-name="{{ calendar.volunteer.user.get_full_name }}">
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-8 w-8">
@@ -440,8 +443,8 @@ function filterCalendarByVolunteer() {
     const volunteerSelect = document.getElementById('{{ form.volunteer_calendar.id_for_label }}');
     const selectedVolunteerId = volunteerSelect.value;
 
-    // Si aucun bénévole sélectionné, afficher toutes les lignes
-    if (!selectedVolunteerId) {
+    // Si aucun bénévole sélectionné (vide ou null), afficher toutes les lignes
+    if (!selectedVolunteerId || selectedVolunteerId === '' || selectedVolunteerId === 'null') {
         document.querySelectorAll('.volunteer-row').forEach(row => {
             row.style.display = 'table-row';
         });
@@ -450,7 +453,8 @@ function filterCalendarByVolunteer() {
 
     // Masquer toutes les lignes puis afficher seulement celle du bénévole sélectionné
     document.querySelectorAll('.volunteer-row').forEach(row => {
-        const rowCalendarId = row.querySelector('[data-calendar-id]')?.dataset.calendarId;
+        // Chercher data-calendar-id directement sur la ligne <tr>
+        const rowCalendarId = row.dataset.calendarId;
         if (rowCalendarId === selectedVolunteerId) {
             row.style.display = 'table-row';
         } else {
@@ -466,7 +470,7 @@ function createAppointmentPreview(clickedSlot, calendarId, date, startTime, endT
     let targetCell = null;
 
     calendarRows.forEach(row => {
-        const rowCalendarId = row.querySelector('[data-calendar-id]')?.dataset.calendarId;
+        const rowCalendarId = row.dataset.calendarId;
         if (rowCalendarId === calendarId) {
             // Trouver la cellule pour la bonne date
             const cells = row.querySelectorAll('td');
@@ -531,7 +535,7 @@ function checkAvailabilityConflict() {
     }
 
     // Trouver les créneaux de disponibilité pour ce bénévole et cette date
-    const volunteerRow = document.querySelector(`.volunteer-row [data-calendar-id="${volunteerId}"]`)?.closest('.volunteer-row');
+    const volunteerRow = document.querySelector(`.volunteer-row[data-calendar-id="${volunteerId}"]`);
     if (!volunteerRow) return;
 
     // Chercher dans toutes les cellules de la ligne du bénévole
@@ -587,7 +591,7 @@ function createPreviewFromForm() {
         let targetCell = null;
 
         calendarRows.forEach(row => {
-            const rowCalendarId = row.querySelector('[data-calendar-id]')?.dataset.calendarId;
+            const rowCalendarId = row.dataset.calendarId;
             if (rowCalendarId === volunteerId) {
                 // Trouver la cellule pour la bonne date
                 const cells = row.querySelectorAll('td');
@@ -757,6 +761,8 @@ document.addEventListener('DOMContentLoaded', function() {
         validateRequiredFields();
         // Créer le preview initial si les champs sont pré-remplis (depuis URL params ou édition)
         createPreviewFromForm();
+        // Filtrer le calendrier si un bénévole est déjà sélectionné au chargement
+        filterCalendarByVolunteer();
     }, 500);
 });
 </script>
