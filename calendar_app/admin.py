@@ -136,7 +136,7 @@ class AvailabilitySlotAdmin(admin.ModelAdmin):
 
 
 @admin.register(AvailabilityException)
-class AvailabilityExceptionAdmin(admin.ModelAdmin):
+class AvailabilityExceptirosadmin(admin.ModelAdmin):
     list_display = [
         'availability_slot', 'exception_date', 'exception_type',
         'time_change', 'reason', 'created_at'

@@ -20,7 +20,7 @@ class Donation(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        verbose_name="Nom du donateur",
+        verbose_name="Nom du drosateur",
         help_text="Laisser vide pour un don anonyme"
     )
 

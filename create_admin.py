@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script pour créer un superuser admin pour ONA
+Script pour créer un superuser admin pour rosa
 """
 
 import os
@@ -8,8 +8,8 @@ import sys
 import django
 
 # Configuration de Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ona.settings')
-sys.path.append('/Users/max/Data/dev/ona')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rosa.settings')
+sys.path.append('/Users/max/Data/dev/rosa')
 
 django.setup()
 

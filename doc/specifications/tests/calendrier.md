@@ -9,17 +9,17 @@
 6. [Tests de création de rendez-vous](#tests-de-création-de-rendez-vous)
 7. [Tests d'édition de rendez-vous](#tests-dédition-de-rendez-vous)
 8. [Tests de changement de statut](#tests-de-changement-de-statut)
-9. [Tests d'impersonation](#tests-dimpersonation)
+9. [Tests d'impersrosation](#tests-dimpersrosation)
 10. [Tests d'interface et UX](#tests-dinterface-et-ux)
 
 ---
 
 ## Vue d'ensemble
 
-Cette spécification couvre l'ensemble des fonctionnalités de l'application Calendrier d'ONA, incluant :
+Cette spécification couvre l'ensemble des fonctionnalités de l'application Calendrier d'rosa, incluant :
 - La gestion des disponibilités (créneaux récurrents et ponctuels)
 - La gestion des rendez-vous avec bénéficiaires
-- Les fonctionnalités d'impersonation (admin/salarié gérant les calendriers des bénévoles)
+- Les fonctionnalités d'impersrosation (admin/salarié gérant les calendriers des bénévoles)
 - Les vues multiples (semaine, jour, mois, listes)
 - Les changements de statut et workflows
 
@@ -38,7 +38,7 @@ Cette spécification couvre l'ensemble des fonctionnalités de l'application Cal
 **Salarié**
 - Username: `salarie_test`
 - Role: `EMPLOYEE`
-- Permissions: Impersonation, modification complète
+- Permissions: Impersrosation, modification complète
 - Calendrier: Actif
 
 **Bénévole Entretien**
@@ -126,43 +126,43 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-PERM-004 : Impersonation - Administrateur
+### TEST-PERM-004 : Impersrosation - Administrateur
 **Objectif** : Vérifier que l'admin peut voir/gérer les calendriers des autres
 
 **Étapes** :
 1. Se connecter en tant que `admin_test`
 2. Naviguer vers `/calendrier/week/`
-3. Vérifier présence du dropdown d'impersonation dans l'en-tête
+3. Vérifier présence du dropdown d'impersrosation dans l'en-tête
 4. Sélectionner `benevole1_test` dans le dropdown
 5. Vérifier que l'URL contient `?as_user=<id_benevole1>`
 6. Vérifier que le titre indique "Calendrier de [Nom Bénévole]"
 7. Vérifier que les disponibilités affichées sont celles du bénévole
 
-**Résultat attendu** : Impersonation fonctionne, affichage correct
+**Résultat attendu** : Impersrosation fonctionne, affichage correct
 
 ---
 
-### TEST-PERM-005 : Impersonation - Salarié
+### TEST-PERM-005 : Impersrosation - Salarié
 **Objectif** : Vérifier que le salarié peut voir/gérer les calendriers des autres
 
 **Étapes** :
 1. Se connecter en tant que `salarie_test`
 2. Naviguer vers `/calendrier/week/`
-3. Vérifier présence du dropdown d'impersonation
+3. Vérifier présence du dropdown d'impersrosation
 4. Sélectionner `benevole1_test`
 5. Vérifier comportement identique à TEST-PERM-004
 
-**Résultat attendu** : Impersonation fonctionne pour salarié
+**Résultat attendu** : Impersrosation fonctionne pour salarié
 
 ---
 
-### TEST-PERM-006 : Absence d'impersonation - Bénévole
-**Objectif** : Vérifier que le bénévole ne voit pas le dropdown d'impersonation
+### TEST-PERM-006 : Absence d'impersrosation - Bénévole
+**Objectif** : Vérifier que le bénévole ne voit pas le dropdown d'impersrosation
 
 **Étapes** :
 1. Se connecter en tant que `benevole1_test`
 2. Naviguer vers `/calendrier/week/`
-3. Vérifier absence du dropdown d'impersonation dans l'en-tête
+3. Vérifier absence du dropdown d'impersrosation dans l'en-tête
 
 **Résultat attendu** : Dropdown non présent
 
@@ -422,7 +422,7 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-DISPO-EDIT-006 : Édition avec impersonation
+### TEST-DISPO-EDIT-006 : Édition avec impersrosation
 **Objectif** : Admin/salarié modifie la dispo d'un bénévole
 
 **Étapes** :
@@ -581,7 +581,7 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-RDV-008 : Création avec impersonation
+### TEST-RDV-008 : Création avec impersrosation
 **Objectif** : Admin crée un RDV pour un bénévole
 
 **Étapes** :
@@ -655,7 +655,7 @@ Les tests doivent utiliser des dates relatives :
 ---
 
 ### TEST-RDV-EDIT-004 : Édition avec préservation de as_user
-**Objectif** : Admin édite RDV d'un bénévole en impersonation
+**Objectif** : Admin édite RDV d'un bénévole en impersrosation
 
 **Étapes** :
 1. Se connecter en tant que `admin_test`
@@ -830,9 +830,9 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-## Tests d'impersonation
+## Tests d'impersrosation
 
-### TEST-IMPERS-001 : Création dispo en impersonation - vue semaine
+### TEST-IMPERS-001 : Création dispo en impersrosation - vue semaine
 **Objectif** : Admin crée une dispo pour un bénévole via clic calendrier
 
 **Étapes** :
@@ -850,11 +850,11 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-IMPERS-002 : Création dispo en impersonation - plage horaire
+### TEST-IMPERS-002 : Création dispo en impersrosation - plage horaire
 **Objectif** : Admin crée dispo via clic-glisser pour un bénévole
 
 **Étapes** :
-1. Admin connecté, impersonant `benevole1_test`
+1. Admin connecté, impersrosant `benevole1_test`
 2. Vue semaine avec `as_user`
 3. Cliquer-glisser de Jeudi 14h à 17h
 4. Vérifier panel avec `as_user` dans URL
@@ -865,7 +865,7 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-IMPERS-003 : Édition dispo en impersonation
+### TEST-IMPERS-003 : Édition dispo en impersrosation
 **Objectif** : Admin modifie dispo existante d'un bénévole
 
 **Prérequis** : `benevole1_test` a une dispo "Lundi 9h-12h"
@@ -884,11 +884,11 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-IMPERS-004 : Suppression dispo en impersonation
+### TEST-IMPERS-004 : Suppression dispo en impersrosation
 **Objectif** : Admin supprime dispo d'un bénévole
 
 **Étapes** :
-1. Admin impersonant bénévole
+1. Admin impersrosant bénévole
 2. Vue semaine avec `as_user`
 3. Cliquer sur une dispo
 4. Cliquer "Supprimer"
@@ -900,11 +900,11 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-IMPERS-005 : Création RDV depuis dispo en impersonation
+### TEST-IMPERS-005 : Création RDV depuis dispo en impersrosation
 **Objectif** : Admin crée un RDV pour un bénévole depuis sa dispo
 
 **Étapes** :
-1. Admin impersonant `benevole1_test`
+1. Admin impersrosant `benevole1_test`
 2. Vue semaine avec `as_user`
 3. Cliquer sur une dispo du bénévole
 4. Cliquer "Créer un rendez-vous sur cette disponibilité"
@@ -935,7 +935,7 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-IMPERS-007 : Dropdown impersonation - changement d'utilisateur
+### TEST-IMPERS-007 : Dropdown impersrosation - changement d'utilisateur
 **Objectif** : Changer d'utilisateur via le dropdown
 
 **Étapes** :
@@ -953,10 +953,10 @@ Les tests doivent utiliser des dates relatives :
 ---
 
 ### TEST-IMPERS-008 : Retour au calendrier propre
-**Objectif** : Admin revient à son propre calendrier depuis impersonation
+**Objectif** : Admin revient à son propre calendrier depuis impersrosation
 
 **Étapes** :
-1. Admin en impersonation
+1. Admin en impersrosation
 2. Cliquer dropdown
 3. Sélectionner "Mon calendrier" (ou premier choix = soi-même)
 4. Vérifier URL sans `as_user`
@@ -967,7 +967,7 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-IMPERS-009 : Filtrage preview planning en impersonation
+### TEST-IMPERS-009 : Filtrage preview planning en impersrosation
 **Objectif** : Vérifier que le preview du planning affiche uniquement les dispos du bénévole impersonné
 
 **Étapes** :
@@ -1204,17 +1204,17 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### TEST-REGR-003 : Impersonation préservée après création
+### TEST-REGR-003 : Impersrosation préservée après création
 **Objectif** : Vérifier que `as_user` reste après création d'entité
 
 **Étapes** :
-1. Admin en impersonation (`as_user=X`)
+1. Admin en impersrosation (`as_user=X`)
 2. Créer une dispo
 3. Après soumission, vérifier URL de retour contient `as_user=X`
 4. Créer un RDV
 5. Vérifier même comportement
 
-**Résultat attendu** : Impersonation maintenue
+**Résultat attendu** : Impersrosation maintenue
 
 ---
 
@@ -1252,7 +1252,7 @@ Les tests doivent utiliser des dates relatives :
 
 ---
 
-### SCENARIO-E2E-002 : Parcours complet admin avec impersonation
+### SCENARIO-E2E-002 : Parcours complet admin avec impersrosation
 **Objectif** : Admin gère le calendrier d'un bénévole
 
 **Étapes** :
@@ -1295,7 +1295,7 @@ Ce document couvre l'ensemble des fonctionnalités de l'application Calendrier a
 - Des prérequis clairs
 - Des étapes numérotées
 - Des résultats attendus vérifiables
-- Des cas de permissions, création, édition, suppression, impersonation, UI/UX
+- Des cas de permissions, création, édition, suppression, impersrosation, UI/UX
 
 Les tests couvrent :
 - ✅ Permissions et accès (6 tests)
@@ -1304,7 +1304,7 @@ Les tests couvrent :
 - ✅ Création de rendez-vous (8 tests)
 - ✅ Édition de rendez-vous (6 tests)
 - ✅ Changements de statut (8 tests)
-- ✅ Impersonation (9 tests)
+- ✅ Impersrosation (9 tests)
 - ✅ Interface et UX (12 tests)
 - ✅ Régression (4 tests)
 - ✅ Scénarios E2E (3 tests)

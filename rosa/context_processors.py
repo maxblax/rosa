@@ -1,5 +1,5 @@
 """
-Context processors pour ONA/LIEN
+Context processors pour rosa/LIEN
 Rend les variables globales disponibles dans tous les templates
 """
 from django.conf import settings

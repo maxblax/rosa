@@ -84,7 +84,7 @@ def analysis_dashboard(request):
         sections_data[section_key]['charts'].append(chart_info)
 
     # Ordre des sections pour l'affichage
-    section_order = ['IMPACT', 'DEMOGRAPHIC', 'FINANCIAL', 'OPERATIONAL', 'TRENDS', 'ADVANCED']
+    section_order = ['IMPACT', 'DEMOGRAPHIC', 'FINANCIAL', 'OPERATIrosaL', 'TRENDS', 'ADVANCED']
     ordered_sections = [
         {'key': key, 'label': sections_data[key]['label'], 'charts': sections_data[key]['charts']}
         for key in section_order if key in sections_data

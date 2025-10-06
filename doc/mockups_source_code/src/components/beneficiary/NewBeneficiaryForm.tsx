@@ -10,7 +10,7 @@ interface FormData {
   phone: string;
   email: string;
   profession: string;
-  domiciliationAddress: string;
+  domiciliatirosaddress: string;
   residenceAddress: string;
   housing: string[];
   otherHousing: string;
@@ -44,7 +44,7 @@ const initialFormData: FormData = {
   phone: '',
   email: '',
   profession: '',
-  domiciliationAddress: '',
+  domiciliatirosaddress: '',
   residenceAddress: '',
   housing: [],
   otherHousing: '',
@@ -189,7 +189,7 @@ const NewBeneficiaryForm: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
+          {/* Persrosal Information */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-6">Informations Personnelles</h2>
             <div className="grid grid-cols-2 gap-6">
@@ -270,8 +270,8 @@ const NewBeneficiaryForm: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Adresse de domiciliation</label>
                 <input
                   type="text"
-                  value={formData.domiciliationAddress}
-                  onChange={e => setFormData(prev => ({ ...prev, domiciliationAddress: e.target.value }))}
+                  value={formData.domiciliatirosaddress}
+                  onChange={e => setFormData(prev => ({ ...prev, domiciliatirosaddress: e.target.value }))}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>

@@ -1,5 +1,5 @@
 """
-Vue home du projet ONA
+Vue home du projet rosa
 """
 import json
 from django.shortcuts import render

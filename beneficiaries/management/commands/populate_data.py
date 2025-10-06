@@ -13,6 +13,7 @@ Usage: python manage.py populate_data [--clear]
 
 import random
 from datetime import datetime, date, timedelta, time
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
@@ -137,43 +138,55 @@ class Command(BaseCommand):
         """Crée des utilisateurs avec différents rôles"""
         users = []
 
-        # Définir la répartition des rôles
-        roles_distribution = [
-            ('ADMIN', 1),
-            ('EMPLOYEE', 2),
-            ('VOLUNTEER_INTERVIEW', count - 4),
-            ('VOLUNTEER_GOVERNANCE', 1),
+        # Liste prédéfinie d'utilisateurs (noms fixes pour faciliter la connexion)
+        predefined_users = [
+            # ADMIN
+            {'first_name': 'Marie', 'last_name': 'DUBOIS', 'civility': 'MME', 'role': 'ADMIN'},
+            # EMPLOYEES
+            {'first_name': 'Pierre', 'last_name': 'MARTIN', 'civility': 'M', 'role': 'EMPLOYEE'},
+            {'first_name': 'Sophie', 'last_name': 'BERNARD', 'civility': 'MME', 'role': 'EMPLOYEE'},
+            # VOLUNTEER_INTERVIEW
+            {'first_name': 'Jean', 'last_name': 'PETIT', 'civility': 'M', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Anne', 'last_name': 'DURAND', 'civility': 'MME', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Luc', 'last_name': 'LEROY', 'civility': 'M', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Claire', 'last_name': 'MOREAU', 'civility': 'MME', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Thomas', 'last_name': 'SIMON', 'civility': 'M', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Julie', 'last_name': 'LAURENT', 'civility': 'MME', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Marc', 'last_name': 'LEFEBVRE', 'civility': 'M', 'role': 'VOLUNTEER_INTERVIEW'},
+            {'first_name': 'Isabelle', 'last_name': 'ROUX', 'civility': 'MME', 'role': 'VOLUNTEER_INTERVIEW'},
+            # VOLUNTEER_GOVERNANCE
+            {'first_name': 'François', 'last_name': 'DAVID', 'civility': 'M', 'role': 'VOLUNTEER_GOVERNANCE'},
         ]
 
-        for role, role_count in roles_distribution:
-            for i in range(role_count):
-                # Générer un utilisateur
-                first_name = fake.first_name()
-                last_name = fake.last_name().upper()  # Nom de famille en majuscules
-                username = f"{first_name.lower()}.{last_name.lower()}"
-                email = f"{username}@ona-demo.fr"
+        # Utiliser les utilisateurs prédéfinis jusqu'à atteindre le count demandé
+        for i in range(min(count, len(predefined_users))):
+            user_data = predefined_users[i]
+            first_name = user_data['first_name']
+            last_name = user_data['last_name']
+            username = f"{first_name.lower()}.{last_name.lower()}"
+            email = f"{username}@rosa-demo.fr"
 
-                user = User.objects.create_user(
-                    username=username,
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                    password='demo123',  # Mot de passe simple pour la démo
-                )
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                password='demo123',  # Mot de passe simple pour la démo
+            )
 
-                # Créer le profil de bénévole associé
-                volunteer = Volunteer.objects.create(
-                    user=user,
-                    civility=random.choice(['M', 'MME']),
-                    birth_date=fake.date_of_birth(minimum_age=25, maximum_age=70),
-                    phone=fake.phone_number(),
-                    address=fake.address(),
-                    role=role,
-                    skills=self.generate_skills(),
-                    join_date=fake.date_between(start_date='-2y', end_date='today'),
-                )
+            # Créer le profil de bénévole associé
+            volunteer = Volunteer.objects.create(
+                user=user,
+                civility=user_data['civility'],
+                birth_date=fake.date_of_birth(minimum_age=25, maximum_age=70),
+                phone=fake.phone_number(),
+                address=fake.address(),
+                role=user_data['role'],
+                skills=self.generate_skills(),
+                join_date=fake.date_between(start_date='-2y', end_date='today'),
+            )
 
-                users.append(user)
+            users.append(user)
 
         return users
 
@@ -236,24 +249,47 @@ class Command(BaseCommand):
             )
 
     def create_financial_snapshots(self, beneficiaries):
-        """Crée des snapshots financiers avec données partielles"""
+        """Crée des snapshots financiers avec données partielles (1 par mois maximum)"""
         snapshots_count = 0
 
         for beneficiary in beneficiaries:
             # Créer entre 1 et 6 mois d'historique
             months_back = random.randint(1, 6)
 
-            for i in range(months_back):
-                # Date du snapshot (premier jour du mois)
-                snapshot_date = timezone.now() - timedelta(days=30*i)
-                snapshot_date = snapshot_date.replace(day=1, hour=10, minute=0, second=0)
+            # Date de référence (aujourd'hui)
+            today = timezone.now().date()
+            current_month_first_day = today.replace(day=1)
 
-                snapshot = FinancialSnapshot.objects.create(
-                    beneficiary=beneficiary,
-                    date=snapshot_date,
-                    **self.generate_financial_data()
+            for i in range(months_back):
+                # Calculer le premier jour du mois (i mois en arrière)
+                snapshot_month = current_month_first_day - relativedelta(months=i)
+
+                # Créer le snapshot avec timezone aware datetime
+                snapshot_datetime = timezone.make_aware(
+                    datetime.combine(snapshot_month, time(10, 0, 0))
                 )
-                snapshots_count += 1
+
+                # Vérifier qu'il n'existe pas déjà un snapshot pour ce mois
+                # (principe: 1 snapshot par mois par bénéficiaire)
+                existing = FinancialSnapshot.objects.filter(
+                    beneficiary=beneficiary,
+                    date__year=snapshot_month.year,
+                    date__month=snapshot_month.month
+                ).exists()
+
+                if not existing:
+                    snapshot = FinancialSnapshot.objects.create(
+                        beneficiary=beneficiary,
+                        **self.generate_financial_data()
+                    )
+
+                    # Antidater manuellement le snapshot (bypass auto_now_add)
+                    # On utilise .update() pour contourner les contraintes auto_now_add
+                    FinancialSnapshot.objects.filter(pk=snapshot.pk).update(
+                        date=snapshot_datetime
+                    )
+
+                    snapshots_count += 1
 
         return snapshots_count
 
@@ -414,7 +450,7 @@ class Command(BaseCommand):
                 ]),
                 title=self.generate_appointment_title(),
                 description=fake.sentence(nb_words=10),
-                location="Association ONA" if random.choice([True, False]) else fake.address(),
+                location="Association rosa" if random.choice([True, False]) else fake.address(),
                 status=status,
                 preparation_notes=fake.sentence() if random.choice([True, False]) else '',
                 completion_notes=fake.paragraph() if status == 'COMPLETED' else '',
@@ -473,8 +509,13 @@ class Command(BaseCommand):
                         end_date='+30d'
                     ) if random.choice([True, False]) else None,
                     follow_up_notes=fake.sentence() if random.choice([True, False]) else '',
-                    created_at=interaction_date,
                 )
+
+                # Antidater manuellement l'interaction (bypass auto_now_add)
+                Interaction.objects.filter(pk=interaction.pk).update(
+                    created_at=interaction_date
+                )
+
                 interactions_count += 1
 
         return interactions_count
@@ -731,10 +772,10 @@ result = {
 }
 '''
             },
-            # OPERATIONAL
+            # OPERATIrosaL
             {
                 'title': 'Volume d\'interactions mensuelles',
-                'section': 'OPERATIONAL',
+                'section': 'OPERATIrosaL',
                 'chart_type': 'bar',
                 'size': 'full',
                 'display_order': 4,
@@ -796,10 +837,10 @@ result = {
 }
 '''
             },
-            # OPERATIONAL
+            # OPERATIrosaL
             {
                 'title': 'Répartition des types d\'interaction',
-                'section': 'OPERATIONAL',
+                'section': 'OPERATIrosaL',
                 'chart_type': 'bar',
                 'size': 'full',
                 'display_order': 6,
@@ -1083,10 +1124,10 @@ result = {
 }
 '''
             },
-            # OPERATIONAL - Taux de présence RDV
+            # OPERATIrosaL - Taux de présence RDV
             {
                 'title': 'Statut des rendez-vous',
-                'section': 'OPERATIONAL',
+                'section': 'OPERATIrosaL',
                 'chart_type': 'bar',
                 'size': 'full',
                 'display_order': 14,
@@ -1114,10 +1155,10 @@ result = {
 }
 '''
             },
-            # OPERATIONAL - Interactions par bénéficiaire
+            # OPERATIrosaL - Interactions par bénéficiaire
             {
                 'title': 'Nombre moyen d\'interactions par bénéficiaire',
-                'section': 'OPERATIONAL',
+                'section': 'OPERATIrosaL',
                 'chart_type': 'bar',
                 'size': 'half',
                 'display_order': 15,
@@ -1298,10 +1339,10 @@ result = {
 }
 '''
             },
-            # OPERATIONAL - Délai de réponse
+            # OPERATIrosaL - Délai de réponse
             {
                 'title': 'Délai moyen entre création et premier contact',
-                'section': 'OPERATIONAL',
+                'section': 'OPERATIrosaL',
                 'chart_type': 'bar',
                 'size': 'full',
                 'display_order': 21,
@@ -1453,10 +1494,10 @@ result = {
 }
 '''
             },
-            # OPERATIONAL - Types de suivis
+            # OPERATIrosaL - Types de suivis
             {
                 'title': 'Répartition des suivis par type d\'aide',
-                'section': 'OPERATIONAL',
+                'section': 'OPERATIrosaL',
                 'chart_type': 'bar',
                 'size': 'full',
                 'display_order': 25,

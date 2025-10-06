@@ -16,10 +16,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Donation',
+            name='donation',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('donor_name', models.CharField(blank=True, help_text='Laisser vide pour un don anonyme', max_length=255, null=True, verbose_name='Nom du donateur')),
+                ('donor_name', models.CharField(blank=True, help_text='Laisser vide pour un don anonyme', max_length=255, null=True, verbose_name='Nom du drosateur')),
                 ('amount', models.DecimalField(decimal_places=2, help_text='Montant du don en euros', max_digits=10, verbose_name='Montant')),
                 ('payment_type', models.CharField(choices=[('CASH', 'Espèces'), ('TRANSFER', 'Virement bancaire'), ('CARD', 'Paiement par carte'), ('CHECK', 'Chèque')], max_length=20, verbose_name='Type de paiement')),
                 ('date', models.DateField(default=django.utils.timezone.now, verbose_name='Date du don')),

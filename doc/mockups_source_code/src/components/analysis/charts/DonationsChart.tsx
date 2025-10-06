@@ -10,10 +10,10 @@ const mockData = [
   { month: 'Jun', donations: 3800 }
 ];
 
-const DonationsChart: React.FC = () => {
+const donationsChart: React.FC = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold mb-4">Récolte de Donateurs (en €)</h2>
+      <h2 className="text-lg font-semibold mb-4">Récolte de Drosateurs (en €)</h2>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={mockData}>
@@ -30,4 +30,4 @@ const DonationsChart: React.FC = () => {
   );
 };
 
-export default DonationsChart;
+export default donationsChart;

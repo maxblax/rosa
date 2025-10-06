@@ -22,7 +22,7 @@ class ChartConfig(models.Model):
         ('IMPACT', 'Impact Social'),
         ('DEMOGRAPHIC', 'Démographie & Profils'),
         ('FINANCIAL', 'Données Financières'),
-        ('OPERATIONAL', 'Opérationnel'),
+        ('OPERATIrosaL', 'Opérationnel'),
         ('TRENDS', 'Tendances'),
         ('ADVANCED', 'Visualisations Avancées'),
     ]
@@ -34,7 +34,7 @@ class ChartConfig(models.Model):
         'Section',
         max_length=20,
         choices=SECTION_CHOICES,
-        default='OPERATIONAL',
+        default='OPERATIrosaL',
         help_text='Catégorie de classement du graphique'
     )
 

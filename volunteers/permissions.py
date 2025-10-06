@@ -1,5 +1,5 @@
 """
-Système de permissions RBAC (Role-Based Access Control) pour ONA
+Système de permissions RBAC (Role-Based Access Control) pour rosa
 Hiérarchie des rôles:
 - ADMIN > EMPLOYEE > (VOLUNTEER_INTERVIEW & VOLUNTEER_GOVERNANCE)
 """

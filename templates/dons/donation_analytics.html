@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}Analyses des Dons - ONA{% endblock %}
+{% block title %}Analyses des Dons - rosa{% endblock %}
 
 {% block page_header %}
 <div class="flex items-center justify-between w-full">
@@ -27,9 +27,9 @@
         <canvas id="monthlyChart" height="80"></canvas>
     </div>
 
-    <!-- Top 10 Donateurs -->
+    <!-- Top 10 Drosateurs -->
     <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">Top 10 Donateurs</h2>
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Top 10 Drosateurs</h2>
         <div class="space-y-3">
             {% for donor in donor_distribution %}
             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

@@ -20,8 +20,18 @@ class HelloAssoService:
         self.client_id = settings.HELLOASSO_API_KEY
         self.client_secret = settings.HELLOASSO_API_SECRET
         self.organization_slug = settings.HELLOASSO_ORGANIZATION_SLUG
+        logger.debug(f"{self.client_id} | {self.client_secret} | {self.organization_slug}")
         self.access_token = None
         self.token_expires_at = None
+
+        # DEBUG: Log les credentials au démarrage
+        logger.info("=" * 80)
+        logger.info("HelloAsso Service Initialized")
+        logger.info(f"ENABLE_HELLOASSO_INTEGRATION: {settings.ENABLE_HELLOASSO_INTEGRATION}")
+        logger.info(f"HELLOASSO_API_KEY: {self.client_id[:10] if self.client_id else 'NOT SET'}...")
+        logger.info(f"HELLOASSO_API_SECRET: {'SET' if self.client_secret else 'NOT SET'} (length: {len(self.client_secret) if self.client_secret else 0})")
+        logger.info(f"HELLOASSO_ORGANIZATION_SLUG: {self.organization_slug}")
+        logger.info("=" * 80)
 
     def is_enabled(self):
         """Verifie si l integration HelloAsso est activee et configuree"""
@@ -43,6 +53,7 @@ class HelloAssoService:
             return True
 
         try:
+            logger.info(f"Attempting HelloAsso authentication with client_id: {self.client_id[:10]}...")
             response = requests.post(
                 self.OAUTH_URL,
                 data={
@@ -53,6 +64,9 @@ class HelloAssoService:
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 timeout=10,
             )
+
+            logger.info(f"OAuth response status: {response.status_code}")
+
             response.raise_for_status()
 
             data = response.json()
@@ -62,11 +76,13 @@ class HelloAssoService:
             # On retire 5 minutes pour avoir une marge de securite
             self.token_expires_at = datetime.now() + timedelta(seconds=expires_in - 300)
 
-            logger.info("Successfully authenticated with HelloAsso API")
+            logger.info(f"Successfully authenticated with HelloAsso API - Token: {self.access_token[:20] if self.access_token else 'NONE'}...")
             return True
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to authenticate with HelloAsso API: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
             return False
 
     def get_donations(self, from_date=None, to_date=None, page_size=100):

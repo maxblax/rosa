@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pencil } from 'lucide-react';
 
-interface PersonalInfoProps {
+interface PersrosalInfoProps {
   isEditing: boolean;
   onEditToggle: () => void;
   familyStatus: string;
@@ -22,7 +22,7 @@ const housingOptions = [
   { value: 'AUTRE', label: 'Autre' }
 ];
 
-const PersonalInfo: React.FC<PersonalInfoProps> = ({
+const PersrosalInfo: React.FC<PersrosalInfoProps> = ({
   isEditing,
   onEditToggle,
   familyStatus,
@@ -154,4 +154,4 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({
   );
 };
 
-export default PersonalInfo;
+export default PersrosalInfo;

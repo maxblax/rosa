@@ -1,10 +1,10 @@
-# CLAUDE.md - ONA Project Development Guide
+# CLAUDE.md - rosa Project Development Guide
 
 ## 🎯 Project Scope
-**ONA (Open Network Aid)** is an open-source Django + HTMX web application designed for associations that provide social aid. It focuses on simplicity, maintainability, and forkability.
+**rosa (Open Network Aid)** is an open-source Django + HTMX web application designed for associations that provide social aid. It focuses on simplicity, maintainability, and forkability.
 
 ### Mission Statement
-ONA est une application web open-source destinée aux associations d'aide sociale (associations de quartier, ONG locales, structures caritatives). Elle permet :
+rosa est une application web open-source destinée aux associations d'aide sociale (associations de quartier, ONG locales, structures caritatives). Elle permet :
 - la gestion des bénéficiaires (suivi des personnes aidées)
 - la gestion des interventions et aides (alimentaires, financières, sociales, administratives)
 - le suivi statistique et administratif (rapports, synthèses, indicateurs)
@@ -14,7 +14,7 @@ L'application doit être simple à déployer, maintenable, et réutilisable par 
 
 ### Tech Stack
 - **Backend**: Django 5 + django-htmx + TailwindCSS
-- **Frontend**: Django templates + HTMX (+ optional AlpineJS)
+- **Frontend**: Django templates + HTMX (+ optirosal AlpineJS)
 - **Database**: PostgreSQL
 - **Tooling**: uv for virtualenv & dependency management
 - **Auth**: Django auth natif (avec rôles : admin, bénévole, invité)
@@ -26,7 +26,7 @@ L'application doit être simple à déployer, maintenable, et réutilisable par 
 
 ### Django Apps Organization
 ```
-ona/                    # Main Django project
+rosa/                    # Main Django project
 ├── beneficiaries/      # Core beneficiary management
 ├── users/              # Authentication & user management
 ├── templates/          # Global templates
@@ -35,7 +35,7 @@ ona/                    # Main Django project
 ```
 
 ### Database Design Patterns
-- **Beneficiary**: Core entity with personal info, housing, family status
+- **Beneficiary**: Core entity with persrosal info, housing, family status
 - **FinancialSnapshot**: Time-based financial data (monthly snapshots)
 - **Interaction**: Event logging with beneficiaries
 - **Child**: Related entity for dependents
@@ -69,7 +69,7 @@ ona/                    # Main Django project
 ### Git Workflow
 - Main branch = production
 - Feature branches for dev
-- Use conventional commits (feat:, fix:, refactor:)
+- Use conventirosal commits (feat:, fix:, refactor:)
 
 ### Server Running
 - No need to restart the server, assume the server is running with `python manage.py runserver` on port 5678 on a separate user terminal
@@ -102,7 +102,7 @@ def financial_snapshot_create_view(request, pk):
 ```
 
 ### Form Design Patterns
-1. **All Fields Optional by Default**: Except essential fields (first_name, last_name)
+1. **All Fields Optirosal by Default**: Except essential fields (first_name, last_name)
 2. **Organized Field Groups**: Use methods like `get_revenue_categories()`
 3. **TailwindCSS Classes**: Apply consistent styling via form widgets
 4. **Dynamic Initial Values**: Clear zero values, show as empty/null
@@ -178,7 +178,7 @@ templates/
 - **User Attribution**: Track which user created interactions
 - **Flexible Typing**: Multiple interaction types with icons
 - **Follow-up System**: Built-in task tracking with dates
-- **Financial Linking**: Optional snapshot attachment per interaction
+- **Financial Linking**: Optirosal snapshot attachment per interaction
 
 ### Search & Filtering
 ```python
@@ -196,7 +196,7 @@ queryset.filter(
 
 ### Form Processing Patterns
 1. **Transaction Atomicity**: Use `@transaction.atomic()` for multi-model saves
-2. **Graceful Degradation**: Never block main actions for optional data
+2. **Graceful Degradation**: Never block main actions for optirosal data
 3. **User Feedback**: Always provide success/error messages
 4. **Redirect After POST**: Follow PRG pattern consistently
 
@@ -268,7 +268,7 @@ context['interactions'] = self.object.interactions.all()[:10]
 
 ---
 
-## 📋 MVP Functionalities
+## 📋 MVP Functirosalities
 
 ### 1. Authentification & rôles
 - Login / Logout / Register
@@ -328,7 +328,7 @@ context['interactions'] = self.object.interactions.all()[:10]
 
 ### Planned Enhancements
 - **Stock Management**: Food/supply inventory tracking (gestion des stocks)
-- **Financial Donations**: Monetary donation tracking (suivi des dons financiers)
+- **Financial donations**: Monetary donation tracking (suivi des dons financiers)
 - **Volunteer Scheduling**: Time management system (planning des bénévoles)
 - **Public API**: REST API for external integrations
 - **Multi-language**: i18n beyond French
@@ -384,8 +384,8 @@ context['interactions'] = self.object.interactions.all()[:10]
 1. Add `HX-Request` header detection in views
 2. Create partial templates in `partials/` directory
 3. Use appropriate HTMX attributes in templates
-4. Test both JS and non-JS functionality
+4. Test both JS and non-JS functirosality
 
 ---
 
-*This file serves as the authoritative guide for ONA development patterns and should be updated as the project evolves.*
+*This file serves as the authoritative guide for rosa development patterns and should be updated as the project evolves.*

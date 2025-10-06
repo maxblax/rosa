@@ -4,3 +4,6 @@ psycopg2-binary
 Pillow
 faker
 python-dateutil
+gunicorn
+requests
+PyYAML

@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    hostname: postgres
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - APP_DB=${APP_DB}
+      - APP_USER=${APP_USER}
+      - APP_USER_PWD=${APP_USER_PWD}
+    networks:
+      - internal
+    restart: on-failure
+    volumes:
+      - rosa-postgresql-data:/var/lib/postgresql/data
+      - ./pg_init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=rosa.settings
+      - DEBUG=${DEBUG:-False}
+    build: .
+    command:
+      - /bin/bash
+      - -c
+      - |
+        wait-for postgres:5432 -- echo 'Postgres Ready'
+        python manage.py collectstatic --noinput
+        python manage.py migrate
+        gunicorn rosa.wsgi:application --bind 0.0.0.0:9000 --workers 3 --timeout 120
+    depends_on:
+      postgres:
+        condition: service_healthy
+    hostname: app
+    image: rosa-app-image
+    networks:
+      - internal
+      - external
+    ports:
+      - "${APP_PORT:-9000}:9000"
+    restart: on-failure
+    volumes:
+      - rosa-static-files:/usr/src/app/static_collected
+      - rosa-media-files:/usr/src/app/media
+
+  nginx:
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-localhost}
+      - APP_HOST=app
+      - APP_PORT=9000
+    container_name: rosa-nginx
+    command: >
+      /bin/sh -c "envsubst '
+      $${SERVER_NAME}
+      $${APP_HOST}
+      $${APP_PORT}
+      '< /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      && cat /etc/nginx/nginx.conf
+      && wait-for app:9000 -- nginx -g 'daemon off;'"
+    depends_on:
+      - app
+    image: nginx:alpine
+    networks:
+      - internal
+      - external
+    ports:
+      - "${NGINX_HTTP_PORT:-9080}:80"
+      - "${NGINX_HTTPS_PORT:-9443}:443"
+    restart: on-failure
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/nginx.conf.template
+      - ./wait-for:/bin/wait-for
+      - rosa-static-files:/var/www/app/static
+      - rosa-media-files:/var/www/app/media
+
+networks:
+  internal:
+    internal: true
+  external:
+
+volumes:
+  rosa-postgresql-data:
+  rosa-static-files:
+  rosa-media-files:

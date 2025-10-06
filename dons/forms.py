@@ -4,7 +4,7 @@ from datetime import date
 from .models import Donation
 
 
-class DonationForm(forms.ModelForm):
+class donationForm(forms.ModelForm):
     """Formulaire pour creer/modifier un don manuel"""
 
     class Meta:
@@ -13,7 +13,7 @@ class DonationForm(forms.ModelForm):
         widgets = {
             'donor_name': forms.TextInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'placeholder': 'Nom du donateur (laisser vide pour anonyme)'
+                'placeholder': 'Nom du drosateur (laisser vide pour anonyme)'
             }),
             'amount': forms.NumberInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',

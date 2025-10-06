@@ -3,7 +3,10 @@
     "allow": [
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_evaluate",
-      "mcp__playwright__browser_close"
+      "mcp__playwright__browser_close",
+      "Bash(chmod:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker exec:*)"
     ]
   },
   "monitoring": {

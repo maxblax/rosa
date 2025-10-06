@@ -1,8 +1,8 @@
-📄 Spécification générale – Projet ONA (Open Network Aid)
+📄 Spécification générale – Projet rosa (Open Network Aid)
 
 🎯 Objectif
 
-ONA est une application web open-source destinée aux associations d’aide sociale (associations de quartier, ONG locales, structures caritatives).
+rosa est une application web open-source destinée aux associations d’aide sociale (associations de quartier, ONG locales, structures caritatives).
 Elle permet :
 	•	la gestion des bénéficiaires (suivi des personnes aidées),
 	•	la gestion des interventions et aides (alimentaires, financières, sociales, administratives),

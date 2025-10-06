@@ -12,11 +12,11 @@ from collections import defaultdict
 
 from volunteers.permissions import AdminOrEmployeeRequiredMixin
 from .models import Donation
-from .forms import DonationForm
+from .forms import donationForm
 from .services import helloasso_service
 
 
-class DonationListView(AdminOrEmployeeRequiredMixin, ListView):
+class donationListView(AdminOrEmployeeRequiredMixin, ListView):
     """
     Vue principale listant TOUS les dons (manuels + HelloAsso)
     avec statistiques et groupement par mois
@@ -178,10 +178,10 @@ class DonationListView(AdminOrEmployeeRequiredMixin, ListView):
         return stats
 
 
-class DonationCreateView(AdminOrEmployeeRequiredMixin, CreateView):
+class donationCreateView(AdminOrEmployeeRequiredMixin, CreateView):
     """Créer un don manuel"""
     model = Donation
-    form_class = DonationForm
+    form_class = donationForm
     template_name = 'dons/donation_form.html'
     success_url = reverse_lazy('dons:list')
 
@@ -191,10 +191,10 @@ class DonationCreateView(AdminOrEmployeeRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class DonationUpdateView(AdminOrEmployeeRequiredMixin, UpdateView):
+class donationUpdateView(AdminOrEmployeeRequiredMixin, UpdateView):
     """Modifier un don manuel"""
     model = Donation
-    form_class = DonationForm
+    form_class = donationForm
     template_name = 'dons/donation_form.html'
     success_url = reverse_lazy('dons:list')
 
@@ -203,14 +203,14 @@ class DonationUpdateView(AdminOrEmployeeRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class DonationDetailView(AdminOrEmployeeRequiredMixin, DetailView):
+class donationDetailView(AdminOrEmployeeRequiredMixin, DetailView):
     """Voir les détails d'un don manuel"""
     model = Donation
     template_name = 'dons/donation_detail.html'
     context_object_name = 'donation'
 
 
-class DonationDeleteView(AdminOrEmployeeRequiredMixin, DeleteView):
+class donationDeleteView(AdminOrEmployeeRequiredMixin, DeleteView):
     """Supprimer un don manuel"""
     model = Donation
     template_name = 'dons/donation_confirm_delete.html'
@@ -221,7 +221,7 @@ class DonationDeleteView(AdminOrEmployeeRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-class DonationAnalyticsView(AdminOrEmployeeRequiredMixin, ListView):
+class DrosatirosanalyticsView(AdminOrEmployeeRequiredMixin, ListView):
     """Vue d'analyse financière des dons"""
     model = Donation
     template_name = 'dons/donation_analytics.html'
@@ -338,7 +338,7 @@ class DonationAnalyticsView(AdminOrEmployeeRequiredMixin, ListView):
         }
 
     def _get_donor_distribution(self, donations):
-        """Distribution par donateur"""
+        """Distribution par drosateur"""
         donor_stats = defaultdict(lambda: {'amount': 0, 'count': 0})
 
         for donation in donations:
@@ -353,4 +353,4 @@ class DonationAnalyticsView(AdminOrEmployeeRequiredMixin, ListView):
             reverse=True
         )
 
-        return sorted_donors[:10]  # Top 10 donateurs
+        return sorted_donors[:10]  # Top 10 drosateurs

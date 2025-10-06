@@ -11,11 +11,11 @@ interface GanttViewProps {
     end: Date;
     type: string;
   }[];
-  onAddEvent: (start: Date, end: Date, beneficiaryId: string) => void;
+  rosaddEvent: (start: Date, end: Date, beneficiaryId: string) => void;
   view: 'week' | 'month';
 }
 
-const GanttView: React.FC<GanttViewProps> = ({ events, onAddEvent, view }) => {
+const GanttView: React.FC<GanttViewProps> = ({ events, rosaddEvent, view }) => {
   const ganttContainer = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const GanttView: React.FC<GanttViewProps> = ({ events, onAddEvent, view }) => {
       // Handle event creation
       gantt.attachEvent('onTaskCreated', (id) => {
         const task = gantt.getTask(id);
-        onAddEvent(new Date(task.start_date), new Date(task.end_date), '');
+        rosaddEvent(new Date(task.start_date), new Date(task.end_date), '');
         return true;
       });
     }

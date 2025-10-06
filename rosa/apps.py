@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class OnaConfig(AppConfig):
-    name = 'ona'
-    verbose_name = 'ONA Configuration'
+class rosaConfig(AppConfig):
+    name = 'rosa'
+    verbose_name = 'rosa Configuration'
 
     def ready(self):
         """Configure Django admin site when app is ready"""

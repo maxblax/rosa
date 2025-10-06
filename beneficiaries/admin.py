@@ -74,7 +74,7 @@ class ChildAdmin(admin.ModelAdmin):
 
 
 @admin.register(Interaction)
-class InteractionAdmin(admin.ModelAdmin):
+class Interactirosadmin(admin.ModelAdmin):
     list_display = ('title', 'beneficiary', 'interaction_type', 'user', 'created_at', 'follow_up_required')
     list_filter = ('interaction_type', 'follow_up_required', 'created_at', 'user')
     search_fields = ('title', 'description', 'beneficiary__first_name', 'beneficiary__last_name')

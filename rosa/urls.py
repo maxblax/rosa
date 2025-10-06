@@ -1,5 +1,5 @@
 """
-URL configuration for ona project.
+URL configuration for rosa project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -16,13 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
 
 # Import for home view
-from ona.views import home
+from rosa.views import home
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('auth/', include('ona.auth_urls')),
+    path(f'{settings.ADMIN_URL}/', admin.site.urls),
+    path('auth/', include('rosa.auth_urls')),
     path('beneficiaires/', include('beneficiaries.urls')),
     path('benevoles/', include('volunteers.urls')),
     path('calendrier/', include('calendar_app.urls')),

@@ -52,14 +52,14 @@ Un nouveau système de couleur (vert, orange, rouge) a été proposé pour alert
 
 La réunion s'est conclue par l'organisation de sessions futures afin de finaliser les détails de la maquette avant de passer au développement complet du logiciel. Des documents auxiliaires seront produits pour s'assurer que tous les intervenants soient alignés sur les prochaines étapes.
 
-# Software Functional Specification
+# Software Functirosal Specification
 
 ## 1. Overview
-This document defines the key functionalities and access control levels for a digital system aimed at replacing paper-based processes in an association. The system will support data management for beneficiaries, volunteers, and employees while ensuring privacy and access control.
+This document defines the key functirosalities and access control levels for a digital system aimed at replacing paper-based processes in an association. The system will support data management for beneficiaries, volunteers, and employees while ensuring privacy and access control.
 
-## 2. Functional Requirements
+## 2. Functirosal Requirements
 ### 2.1 Beneficiary Management
-- **Create Beneficiary Profile**: Capture personal details, family structure, and unique identifiers.
+- **Create Beneficiary Profile**: Capture persrosal details, family structure, and unique identifiers.
 - **Modify Beneficiary Profile**: Update administrative data such as address, phone number, and household members.
 - **Search Beneficiaries**: Look up individuals using name-based queries.
 - **List Beneficiaries**: Restricted listing based on access rights.
@@ -71,7 +71,7 @@ This document defines the key functionalities and access control levels for a di
 - **View History**: View a chronological record of previous interactions.
 
 ### 2.3 Financial and Social Reports
-- **Track Financial Situation**: Income, expenses, and exceptional charges.
+- **Track Financial Situation**: Income, expenses, and exceptirosal charges.
 - **Generate Statistics**: Extract anonymized reports for governance and funding partners.
 - **Analyze Demographics**: Statistical overview of beneficiaries’ socio-economic background.
 

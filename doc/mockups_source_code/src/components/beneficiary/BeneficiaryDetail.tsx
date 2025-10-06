@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import FinancialTracking from './financial/FinancialTracking';
-import PersonalInfo from './PersonalInfo';
+import PersrosalInfo from './PersrosalInfo';
 import ChildCard from './ChildCard';
 import InteractionTimeline from './interactions/InteractionTimeline';
 
@@ -94,7 +94,7 @@ const BeneficiaryDetail: React.FC = () => {
   return (
     <div className="flex gap-6 p-6">
       <div className="w-[65%] space-y-6">
-        <PersonalInfo
+        <PersrosalInfo
           isEditing={isEditing}
           onEditToggle={() => setIsEditing(!isEditing)}
           familyStatus={familyStatus}

@@ -4,7 +4,7 @@ import DisposableIncomeChart from './charts/DisposableIncomeChart';
 import BeneficiaryCountChart from './charts/BeneficiaryCountChart';
 import InteractionCountChart from './charts/InteractionCountChart';
 import PartnerDeliveriesChart from './charts/PartnerDeliveriesChart';
-import DonationsChart from './charts/DonationsChart';
+import donationsChart from './charts/donationsChart';
 import NewBeneficiariesChart from './charts/NewBeneficiariesChart';
 import FollowUpDurationChart from './charts/FollowUpDurationChart';
 
@@ -24,7 +24,7 @@ const AnalysisPage: React.FC = () => {
         <BeneficiaryCountChart />
         <InteractionCountChart />
         <PartnerDeliveriesChart />
-        <DonationsChart />
+        <donationsChart />
         <NewBeneficiariesChart />
         <FollowUpDurationChart className="col-span-2" />
       </div>
