@@ -135,6 +135,23 @@ See [README_POPULATE_DATA.md](README_POPULATE_DATA.md) for the complete list of 
 
 ## 🐳 Docker Deployment
 
+### Building Docker Images
+
+**⚠️ IMPORTANT: Multi-Architecture Build**
+
+If you're building on a Mac (Apple Silicon M1/M2/M3) or any ARM-based system but deploying to an **amd64/x86_64 server**, you **MUST** specify the target platform:
+
+```bash
+# Build for amd64 (most cloud servers, VPS, dedicated servers)
+docker build --platform linux/amd64 -t yourregistry/rosa:latest .
+docker push yourregistry/rosa:latest
+
+# Or build for multiple architectures at once
+docker buildx build --platform linux/amd64,linux/arm64 -t yourregistry/rosa:latest --push .
+```
+
+**Why?** Docker images built on ARM Macs will only work on ARM servers. Most production servers are **amd64/x86_64**, so you'll get **"unsupported platform"** errors if you forget `--platform linux/amd64`.
+
 ### Production Deployment
 
 ```bash
@@ -226,6 +243,57 @@ HELLOASSO_ORGANIZATION_SLUG=your-org-slug
 **⚠️ Security Note**: The admin panel is NOT at `/admin/` by default. Set `ADMIN_URL` to a random string in your `.env` file. Access it at `http://yourdomain.com/{ADMIN_URL}/`
 
 See `.env.example` for all available options.
+
+## 🔄 Forking for Your Association
+
+rosa is designed to be **easily forkable and customizable** for any association. You don't need to change any code - just configure a few environment variables!
+
+### Personalizing Your Instance
+
+When you fork rosa for your own association, simply edit these variables in your `.env` file:
+
+```bash
+# Change these to your association's name
+ASSOCIATION_NAME="Your Association Name"
+ASSOCIATION_FULL_NAME="Your Full Association Name or Tagline"
+```
+
+**These names will automatically appear everywhere:**
+- ✅ Login page title and header
+- ✅ Navigation bar (top-left corner)
+- ✅ Browser tab title
+- ✅ Django admin interface header
+- ✅ All page titles throughout the application
+
+### Example Configurations
+
+**Example 1: Secours Populaire**
+```bash
+ASSOCIATION_NAME="Secours Populaire"
+ASSOCIATION_FULL_NAME="Secours Populaire Français - Comité de Lyon"
+```
+
+**Example 2: Les Restos du Cœur**
+```bash
+ASSOCIATION_NAME="Les Restos du Cœur"
+ASSOCIATION_FULL_NAME="Les Restos du Cœur - Antenne de Paris 15ème"
+```
+
+**Example 3: Neighbourhood Association**
+```bash
+ASSOCIATION_NAME="APA Solidarité"
+ASSOCIATION_FULL_NAME="Association Protestante d'Assistance"
+```
+
+### No Code Changes Required!
+
+That's it! You don't need to:
+- ❌ Modify any Django templates
+- ❌ Change any Python code
+- ❌ Edit database schemas
+- ❌ Customize CSS or JavaScript
+
+Just set those two variables, and your entire application is branded for your association. **This is the power of rosa's design.**
 
 ## 🧑‍💻 Development
 

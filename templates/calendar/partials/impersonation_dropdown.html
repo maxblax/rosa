@@ -1,4 +1,4 @@
-{% if can_impersrosate %}
+{% if can_impersonate %}
 <div class="relative">
     <label for="user-selector" class="sr-only">Voir le calendrier de</label>
     <select id="user-selector"
@@ -14,8 +14,8 @@
     </select>
 </div>
 
-{% if is_impersrosating %}
-<!-- Badge d'alerte en mode impersrosation -->
+{% if is_impersonating %}
+<!-- Badge d'alerte en mode impersonation -->
 <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
     <i class="fas fa-exclamation-triangle mr-1"></i>
     <span>Vous gérez le calendrier de <strong>{{ target_user.first_name }} {{ target_user.last_name|upper }}</strong></span>

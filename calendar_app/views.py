@@ -75,11 +75,11 @@ class CalendarPermissionMixin:
         raise ValueError("Aucun calendrier disponible")
 
 
-class CalendarImpersrosationMixin:
-    """Mixin pour gérer l'impersrosation des calendriers (admin/salarié uniquement)"""
+class CalendarimpersonationMixin:
+    """Mixin pour gérer l'impersonation des calendriers (admin/salarié uniquement)"""
 
-    def can_impersrosate(self):
-        """Vérifie si l'utilisateur peut faire de l'impersrosation"""
+    def can_impersonate(self):
+        """Vérifie si l'utilisateur peut faire de l'impersonation"""
         if self.request.user.is_superuser:
             return True
 
@@ -90,12 +90,12 @@ class CalendarImpersrosationMixin:
             return False
 
     def get_target_user(self):
-        """Récupère l'utilisateur ciblé par l'impersrosation"""
-        # Vérifier dans GET et POST pour préserver l'impersrosation lors des soumissions de formulaires
+        """Récupère l'utilisateur ciblé par l'impersonation"""
+        # Vérifier dans GET et POST pour préserver l'impersonation lors des soumissions de formulaires
         as_user_id = self.request.GET.get('as_user') or self.request.POST.get('as_user')
 
-        # Si pas d'impersrosation ou pas de permission, retourner l'utilisateur actuel
-        if not as_user_id or not self.can_impersrosate():
+        # Si pas d'impersonation ou pas de permission, retourner l'utilisateur actuel
+        if not as_user_id or not self.can_impersonate():
             return self.request.user
 
         # Récupérer l'utilisateur ciblé
@@ -135,16 +135,16 @@ class CalendarImpersrosationMixin:
         raise ValueError("Aucun calendrier disponible pour l'utilisateur ciblé")
 
     def get_context_data(self, **kwargs):
-        """Ajoute les données d'impersrosation au contexte"""
+        """Ajoute les données d'impersonation au contexte"""
         context = super().get_context_data(**kwargs)
 
-        # Informations sur l'impersrosation
-        context['can_impersrosate'] = self.can_impersrosate()
+        # Informations sur l'impersonation
+        context['can_impersonate'] = self.can_impersonate()
         context['target_user'] = self.get_target_user()
-        context['is_impersrosating'] = self.get_target_user() != self.request.user
+        context['is_impersonating'] = self.get_target_user() != self.request.user
 
         # Liste des utilisateurs pour le dropdown (si permission)
-        if self.can_impersrosate():
+        if self.can_impersonate():
             from volunteers.models import Volunteer
             available_users = User.objects.filter(
                 volunteer_profile__isnull=False,
@@ -155,12 +155,12 @@ class CalendarImpersrosationMixin:
         return context
 
     def get_query_params(self, **extra_params):
-        """Ajoute le paramètre as_user aux liens pour préserver l'impersrosation"""
+        """Ajoute le paramètre as_user aux liens pour préserver l'impersonation"""
         params = {}
 
-        # Préserver l'impersrosation (vérifier dans GET et POST)
+        # Préserver l'impersonation (vérifier dans GET et POST)
         as_user_id = self.request.GET.get('as_user') or self.request.POST.get('as_user')
-        if as_user_id and self.can_impersrosate():
+        if as_user_id and self.can_impersonate():
             params['as_user'] = as_user_id
 
         # Ajouter les paramètres supplémentaires
@@ -184,7 +184,7 @@ class CalendarView(LoginRequiredMixin, CalendarPermissionMixin, TemplateView):
             return redirect('calendar:week')
 
 
-class CalendarWeekView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, TemplateView):
+class CalendarWeekView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, TemplateView):
     """Vue semaine du calendrier"""
     template_name = 'calendar/week.html'
 
@@ -276,7 +276,7 @@ class CalendarWeekView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpe
         return context
 
 
-class CalendarDayView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, TemplateView):
+class CalendarDayView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, TemplateView):
     """Vue jour du calendrier"""
     template_name = 'calendar/day.html'
 
@@ -354,7 +354,7 @@ class CalendarDayView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImper
         return context
 
 
-class CalendarMonthView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, TemplateView):
+class CalendarMonthView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, TemplateView):
     """Vue mois du calendrier - calendrier mensuel classique"""
     template_name = 'calendar/month.html'
 
@@ -592,7 +592,7 @@ class GlobalCalendarView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, ListView):
+class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, ListView):
     """Liste des créneaux de disponibilité"""
     model = AvailabilitySlot
     template_name = 'calendar/availability_list.html'
@@ -643,7 +643,7 @@ class AvailabilityListView(LoginRequiredMixin, CalendarPermissionMixin, Calendar
         return context
 
 
-class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, CreateView):
+class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, CreateView):
     """Créer un nouveau créneau de disponibilité"""
     model = AvailabilitySlot
     form_class = AvailabilitySlotForm
@@ -681,26 +681,26 @@ class AvailabilityCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calend
         return url
 
 
-class AvailabilityDetailView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, DetailView):
+class AvailabilityDetailView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, DetailView):
     """Détail d'un créneau de disponibilité"""
     model = AvailabilitySlot
     template_name = 'calendar/availability_detail.html'
     context_object_name = 'slot'
 
     def get_queryset(self):
-        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersrosation)
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
         calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
 
 
-class AvailabilityEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, UpdateView):
+class AvailabilityEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, UpdateView):
     """Modifier un créneau de disponibilité"""
     model = AvailabilitySlot
     form_class = AvailabilitySlotForm
     template_name = 'calendar/availability_form.html'
 
     def get_queryset(self):
-        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersrosation)
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
         calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
 
@@ -729,14 +729,14 @@ class AvailabilityEditView(LoginRequiredMixin, CalendarPermissionMixin, Calendar
         return url
 
 
-class AvailabilityDeleteView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, DeleteView):
+class AvailabilityDeleteView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, DeleteView):
     """Supprimer un créneau de disponibilité"""
     model = AvailabilitySlot
     template_name = 'calendar/availability_confirm_delete.html'
     success_url = reverse_lazy('calendar:availability_list')
 
     def get_queryset(self):
-        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersrosation)
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
         calendar = self.get_target_calendar()
         return AvailabilitySlot.objects.filter(volunteer_calendar=calendar)
 
@@ -754,7 +754,7 @@ class AvailabilityDeleteView(LoginRequiredMixin, CalendarPermissionMixin, Calend
         return super().delete(request, *args, **kwargs)
 
 
-class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, ListView):
+class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, ListView):
     """Liste des rendez-vous"""
     model = Appointment
     template_name = 'calendar/appointment_list.html'
@@ -808,7 +808,7 @@ class AppointmentListView(LoginRequiredMixin, CalendarPermissionMixin, CalendarI
         return context
 
 
-class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, CreateView):
+class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, CreateView):
     """Créer un nouveau rendez-vous"""
     model = Appointment
     form_class = AppointmentForm
@@ -894,7 +894,7 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
         if volunteer_calendar_id:
             initial['volunteer_calendar'] = volunteer_calendar_id
         else:
-            # Utiliser automatiquement le calendrier de l'utilisateur ciblé (pour l'impersrosation)
+            # Utiliser automatiquement le calendrier de l'utilisateur ciblé (pour l'impersonation)
             try:
                 target_calendar = self.get_target_calendar()
                 initial['volunteer_calendar'] = target_calendar.id
@@ -926,7 +926,7 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
         next_week = week_start + timedelta(days=7)
 
         # Récupérer TOUS les calendriers actifs pour permettre le filtrage côté client
-        # Le champ volunteer_calendar sera pré-rempli avec le calendrier ciblé si impersrosation
+        # Le champ volunteer_calendar sera pré-rempli avec le calendrier ciblé si impersonation
         calendars = VolunteerCalendar.objects.filter(
             volunteer__role__in=['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']
         ).select_related('volunteer__user')
@@ -1027,7 +1027,7 @@ class AppointmentCreateView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
         return url
 
 
-class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, DetailView):
+class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, DetailView):
     """Détail d'un rendez-vous"""
     model = Appointment
     template_name = 'calendar/appointment_detail.html'
@@ -1072,7 +1072,7 @@ class AppointmentDetailView(LoginRequiredMixin, CalendarPermissionMixin, Calenda
         return Appointment.objects.none()
 
 
-class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, UpdateView):
+class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, UpdateView):
     """Modifier un rendez-vous"""
     model = Appointment
     form_class = AppointmentForm
@@ -1240,14 +1240,14 @@ class AppointmentEditView(LoginRequiredMixin, CalendarPermissionMixin, CalendarI
         return url
 
 
-class AppointmentDeleteView(LoginRequiredMixin, CalendarPermissionMixin, CalendarImpersrosationMixin, DeleteView):
+class AppointmentDeleteView(LoginRequiredMixin, CalendarPermissionMixin, CalendarimpersonationMixin, DeleteView):
     """Supprimer un rendez-vous"""
     model = Appointment
     template_name = 'calendar/appointment_confirm_delete.html'
     success_url = reverse_lazy('calendar:appointment_list')
 
     def get_queryset(self):
-        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersrosation)
+        # Utiliser le calendrier de l'utilisateur ciblé (supporte l'impersonation)
         calendar = self.get_target_calendar()
         return Appointment.objects.filter(volunteer_calendar=calendar)
 
@@ -1605,19 +1605,19 @@ def available_volunteers_api(request):
 @login_required
 def availability_edit_panel(request, pk):
     """Panel HTMX pour éditer une disponibilité existante"""
-    # Gérer l'impersrosation : vérifier le paramètre as_user
+    # Gérer l'impersonation : vérifier le paramètre as_user
     as_user_id = request.GET.get('as_user') or request.POST.get('as_user')
     target_user = request.user
 
     # Si as_user est fourni et que l'utilisateur a les permissions
     if as_user_id:
-        # Vérifier que l'utilisateur actuel peut faire de l'impersrosation
-        can_impersrosate = request.user.is_superuser
-        if not can_impersrosate and hasattr(request.user, 'volunteer_profile'):
+        # Vérifier que l'utilisateur actuel peut faire de l'impersonation
+        can_impersonate = request.user.is_superuser
+        if not can_impersonate and hasattr(request.user, 'volunteer_profile'):
             volunteer = request.user.volunteer_profile
-            can_impersrosate = volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
+            can_impersonate = volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
 
-        if can_impersrosate:
+        if can_impersonate:
             try:
                 target_user = User.objects.get(id=as_user_id)
             except User.DoesNotExist:
@@ -1697,19 +1697,19 @@ def availability_edit_panel(request, pk):
 @login_required
 def availability_new_panel(request):
     """Panel HTMX pour créer une nouvelle disponibilité"""
-    # Gérer l'impersrosation : vérifier le paramètre as_user
+    # Gérer l'impersonation : vérifier le paramètre as_user
     as_user_id = request.GET.get('as_user') or request.POST.get('as_user')
     target_user = request.user
 
     # Si as_user est fourni et que l'utilisateur a les permissions
     if as_user_id:
-        # Vérifier que l'utilisateur actuel peut faire de l'impersrosation
-        can_impersrosate = request.user.is_superuser
-        if not can_impersrosate and hasattr(request.user, 'volunteer_profile'):
+        # Vérifier que l'utilisateur actuel peut faire de l'impersonation
+        can_impersonate = request.user.is_superuser
+        if not can_impersonate and hasattr(request.user, 'volunteer_profile'):
             volunteer = request.user.volunteer_profile
-            can_impersrosate = volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
+            can_impersonate = volunteer and volunteer.role in ['ADMIN', 'EMPLOYEE']
 
-        if can_impersrosate:
+        if can_impersonate:
             try:
                 target_user = User.objects.get(id=as_user_id)
             except User.DoesNotExist:

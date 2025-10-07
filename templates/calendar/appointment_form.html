@@ -11,10 +11,10 @@
         <h1 class="text-2xl font-bold text-gray-900">
             <i class="fas fa-calendar-plus text-blue-600 mr-2"></i>
             {% if object %}Modifier un rendez-vous{% else %}Créer un rendez-vous{% endif %}
-            {% if is_impersrosating %}pour {{ target_user.first_name }} {{ target_user.last_name|upper }}{% endif %}
+            {% if is_impersonating %}pour {{ target_user.first_name }} {{ target_user.last_name|upper }}{% endif %}
         </h1>
         <p class="text-gray-600 mt-1">
-            {% if is_impersrosating %}
+            {% if is_impersonating %}
                 Planifiez un rendez-vous pour {{ target_user.first_name }} {{ target_user.last_name|upper }} - Semaine du {{ week_start|date:"d/m/Y" }} au {{ week_end|date:"d/m/Y" }}
             {% else %}
                 Planifiez un rendez-vous - Semaine du {{ week_start|date:"d/m/Y" }} au {{ week_end|date:"d/m/Y" }}
@@ -22,8 +22,8 @@
         </p>
     </div>
     <div class="flex items-center space-x-3">
-        <!-- Dropdown d'impersrosation -->
-        {% include 'calendar/partials/impersrosation_dropdown.html' %}
+        <!-- Dropdown d'impersonation -->
+        {% include 'calendar/partials/impersonation_dropdown.html' %}
 
         <!-- Navigation par semaine -->
         <div class="flex bg-white rounded-lg shadow border">
@@ -47,7 +47,7 @@
         <a href="{% url 'calendar:week' %}{% if request.GET.as_user %}?as_user={{ request.GET.as_user }}{% endif %}"
            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
             <i class="fas fa-calendar mr-2"></i>
-            {% if is_impersrosating %}Calendrier de {{ target_user.first_name }}{% else %}Mon calendrier{% endif %}
+            {% if is_impersonating %}Calendrier de {{ target_user.first_name }}{% else %}Mon calendrier{% endif %}
         </a>
     </div>
 </div>
