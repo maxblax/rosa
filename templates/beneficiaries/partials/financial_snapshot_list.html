@@ -30,9 +30,20 @@
                         <canvas id="financialChart"></canvas>
                     </div>
                     <div class="mt-4 text-center">
-                        <p class="text-lg font-semibold {% if latest_snapshot.solde_net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                            Solde net: {{ latest_snapshot.solde_net|floatformat:2 }}€
-                        </p>
+                        <div class="grid grid-cols-2 gap-4 mb-2">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Solde net mensuel</p>
+                                <p class="text-xl font-bold {% if latest_snapshot.solde_net >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ latest_snapshot.solde_net|floatformat:2 }}€
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Reste à vivre journalier</p>
+                                <p class="text-xl font-bold {% if latest_snapshot.reste_a_vivre_journalier >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ latest_snapshot.reste_a_vivre_journalier|floatformat:2 }}€/jour
+                                </p>
+                            </div>
+                        </div>
                         <p class="text-xs text-gray-500">Dernière photo instantanée: {{ latest_snapshot.date|date:"d/m/Y H:i" }}</p>
                     </div>
                 </div>
@@ -190,15 +201,31 @@ function createFinancialChart(ctx, isModal = false) {
                 // Trier par date
         snapshots.reverse();
 
-        // Couleurs D3 schemeObservable10
+        // Palette de couleurs étendue (40 couleurs distinctes)
+        // Mélange de palettes D3 pour garantir une bonne distinction visuelle
         const D3_COLORS = [
+            // Palette principale D3 Observable (10 couleurs)
             '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
-            '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+            '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab',
+            // Palette Tableau10 complémentaire (10 couleurs)
+            '#4E79A7', '#A0CBE8', '#F28E2B', '#FFBE7D', '#59A14F',
+            '#8CD17D', '#B6992D', '#F1CE63', '#499894', '#86BCB6',
+            // Palette Set3 (10 couleurs pastel distinctes)
+            '#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3',
+            '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd',
+            // Couleurs vives complémentaires (10 couleurs)
+            '#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00',
+            '#ffff33', '#a65628', '#f781bf', '#1b9e77', '#d95f02'
         ];
 
-        // Fonction pour obtenir une couleur cyclique
+        // Fonction pour obtenir une couleur unique (pas de cycle)
         function getColor(index) {
-            return D3_COLORS[index % D3_COLORS.length];
+            if (index < D3_COLORS.length) {
+                return D3_COLORS[index];
+            }
+            // Si jamais on dépasse 40 couleurs, générer aléatoirement
+            const hue = (index * 137.508) % 360; // Golden angle
+            return `hsl(${hue}, 70%, 50%)`;
         }
 
         // Définition des champs avec couleurs D3

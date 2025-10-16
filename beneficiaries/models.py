@@ -11,7 +11,13 @@ class Beneficiary(models.Model):
         ('MME', 'Mme'),
         ('AUTRE', 'Autre'),
     ]
-    
+
+    NATIONALITY_CHOICES = [
+        ('FRANCAISE', 'Française'),
+        ('UE', 'Union Européenne'),
+        ('NON_UE', 'Hors Union Européenne'),
+    ]
+
     HOUSING_STATUS_CHOICES = [
         ('CADA', 'CADA'),
         ('CAO', 'CAO'),
@@ -36,6 +42,12 @@ class Beneficiary(models.Model):
     first_name = models.CharField('Prénom', max_length=100)
     last_name = models.CharField('Nom', max_length=100)
     birth_date = models.DateField('Date de naissance', null=True, blank=True)
+    nationality = models.CharField(
+        'Nationalité',
+        max_length=20,
+        choices=NATIONALITY_CHOICES,
+        blank=True
+    )
     phone = models.CharField('Téléphone', max_length=20, blank=True)
     email = models.EmailField('Email', blank=True)
     
@@ -69,6 +81,58 @@ class Beneficiary(models.Model):
         verbose_name='Interlocuteur privilégié',
         limit_choices_to={'role__in': ['ADMIN', 'EMPLOYEE', 'VOLUNTEER_INTERVIEW']},
         help_text='Bénévole référent pour ce bénéficiaire'
+    )
+
+    # Consentement RGPD
+    gdpr_consent = models.BooleanField(
+        'Consentement RGPD',
+        default=False,
+        help_text='La personne consent au recueil et au traitement de ses données personnelles'
+    )
+    gdpr_consent_date = models.DateTimeField(
+        'Date de consentement RGPD',
+        null=True,
+        blank=True
+    )
+
+    # Statistiques et Suivi
+    referral_source = models.CharField(
+        'Adressé par',
+        max_length=200,
+        blank=True,
+        help_text='Par qui le bénéficiaire a été adressé (ex: Croix-Rouge, assistant social, bouche à oreille, etc.)'
+    )
+
+    PROFILE_TAG_CHOICES = [
+        ('', '--------'),
+        ('FEMME_SEULE_ENFANTS', 'Femme seule avec enfant(s)'),
+        ('ETUDIANT', 'Étudiant'),
+        ('RETRAITE', 'Retraité'),
+        ('PERSONNE_SEULE', 'Personne seule'),
+        ('FAMILLE_NOMBREUSE', 'Famille nombreuse'),
+    ]
+
+    ALERT_LEVEL_CHOICES = [
+        ('VERT', 'Situation normale'),
+        ('ORANGE', 'Surveillance nécessaire'),
+        ('ROUGE', 'Situation critique/urgente'),
+    ]
+
+    # Système d'alertes et tags
+    profile_tag = models.CharField(
+        'Profil spécifique',
+        max_length=30,
+        choices=PROFILE_TAG_CHOICES,
+        blank=True,
+        help_text='Identifier un profil particulier nécessitant une attention spécifique'
+    )
+
+    alert_level = models.CharField(
+        'Niveau d\'alerte',
+        max_length=10,
+        choices=ALERT_LEVEL_CHOICES,
+        default='VERT',
+        help_text='Niveau d\'urgence ou de gravité de la situation'
     )
 
     # Métadonnées
@@ -360,8 +424,13 @@ class FinancialSnapshot(models.Model):
     
     @property
     def solde_net(self):
-        """Calcule le solde net (revenus - charges)"""
+        """Calcule le solde net mensuel (revenus - charges)"""
         return self.total_revenus - self.total_charges
+
+    @property
+    def reste_a_vivre_journalier(self):
+        """Calcule le reste à vivre journalier (solde net / 30 jours)"""
+        return self.solde_net / 30 if self.solde_net else 0
 
 
 class Child(models.Model):

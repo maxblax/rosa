@@ -20,14 +20,107 @@
 
     <form method="post" class="space-y-8">
         {% csrf_token %}
-        
+
+        <!-- Section 0: Consentement RGPD -->
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-medium text-blue-900 mb-2">
+                        Protection des données personnelles
+                    </h3>
+                    <div class="flex items-start space-x-3">
+                        {{ form.gdpr_consent }}
+                        <div class="flex-1">
+                            <label for="{{ form.gdpr_consent.id_for_label }}" class="text-sm font-medium text-blue-900 cursor-pointer">
+                                {{ form.gdpr_consent.label }} *
+                            </label>
+                            <p class="text-sm text-blue-700 mt-1">
+                                {{ form.gdpr_consent.help_text }}
+                            </p>
+                            {% if form.gdpr_consent.errors %}
+                                <div class="mt-2 text-sm text-red-600">{{ form.gdpr_consent.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Système d'Alertes -->
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">
+                    <i class="fas fa-exclamation-triangle mr-2 text-orange-500"></i>
+                    Système d'Alertes et Profils
+                </h3>
+
+                <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+                    <!-- Profil spécifique -->
+                    <div>
+                        <label for="{{ form.profile_tag.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.profile_tag.label }}
+                            <span class="text-gray-400 text-xs">(facultatif)</span>
+                        </label>
+                        <div class="mt-1">
+                            {{ form.profile_tag }}
+                        </div>
+                        {% if form.profile_tag.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.profile_tag.help_text }}</p>
+                        {% endif %}
+                        {% if form.profile_tag.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.profile_tag.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Niveau d'alerte -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            {{ form.alert_level.label }}
+                        </label>
+                        <div class="space-y-3">
+                            {% for radio in form.alert_level %}
+                                <label class="flex items-center p-3 border rounded-md cursor-pointer transition-all
+                                    {% if radio.data.value == 'VERT' %}bg-green-50 border-green-300 hover:bg-green-100 hover:border-green-400{% endif %}
+                                    {% if radio.data.value == 'ORANGE' %}bg-orange-50 border-orange-300 hover:bg-orange-100 hover:border-orange-400{% endif %}
+                                    {% if radio.data.value == 'ROUGE' %}bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400{% endif %}
+                                ">
+                                    {{ radio.tag }}
+                                    <span class="ml-3 flex items-center">
+                                        <span class="inline-block w-3 h-3 rounded-full mr-2
+                                            {% if radio.data.value == 'VERT' %}bg-green-500{% endif %}
+                                            {% if radio.data.value == 'ORANGE' %}bg-orange-500{% endif %}
+                                            {% if radio.data.value == 'ROUGE' %}bg-red-500{% endif %}
+                                        "></span>
+                                        <span class="text-sm font-medium
+                                            {% if radio.data.value == 'VERT' %}text-green-900{% endif %}
+                                            {% if radio.data.value == 'ORANGE' %}text-orange-900{% endif %}
+                                            {% if radio.data.value == 'ROUGE' %}text-red-900{% endif %}
+                                        ">{{ radio.choice_label }}</span>
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {% if form.alert_level.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ form.alert_level.help_text }}</p>
+                        {% endif %}
+                        {% if form.alert_level.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.alert_level.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Section 1: Informations Personnelles -->
         <div class="bg-white shadow sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">
                     Informations Personnelles
                 </h3>
-                
+
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                     <!-- Civilité -->
                     <div class="sm:col-span-2">
@@ -67,7 +160,20 @@
                             <div class="mt-1 text-sm text-red-600">{{ form.birth_date.errors.0 }}</div>
                         {% endif %}
                     </div>
-                    
+
+                    <!-- Nationalité -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.nationality.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.nationality.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.nationality }}
+                        </div>
+                        {% if form.nationality.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.nationality.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
                     <!-- Nom -->
                     <div class="sm:col-span-3">
                         <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700">
@@ -189,8 +295,25 @@
                         {% endif %}
                     </div>
 
+                    <!-- Adressé par -->
+                    <div class="sm:col-span-3">
+                        <label for="{{ form.referral_source.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.referral_source.label }}
+                            <span class="text-gray-400 text-xs">(facultatif)</span>
+                        </label>
+                        <div class="mt-1">
+                            {{ form.referral_source }}
+                        </div>
+                        {% if form.referral_source.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.referral_source.help_text }}</p>
+                        {% endif %}
+                        {% if form.referral_source.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.referral_source.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
                     <!-- Interlocuteur privilégié -->
-                    <div class="sm:col-span-4">
+                    <div class="sm:col-span-3">
                         <label for="{{ form.preferred_contact.id_for_label }}" class="block text-sm font-medium text-gray-700">
                             {{ form.preferred_contact.label }}
                         </label>

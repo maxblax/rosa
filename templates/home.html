@@ -59,10 +59,11 @@
             {% if upcoming_appointments %}
             <div class="space-y-3">
                 {% for appointment in upcoming_appointments %}
-                <div class="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <a href="{% url 'calendar:appointment_detail' appointment.pk %}"
+                   class="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-300 border border-gray-200 transition-all cursor-pointer block">
                     <div class="flex-1">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="font-medium text-gray-900">
+                            <span class="font-medium text-gray-900 group-hover:text-blue-700">
                                 {{ appointment.beneficiary.first_name }} {{ appointment.beneficiary.last_name }}
                             </span>
                             <div class="flex items-center text-sm text-gray-600">
@@ -79,7 +80,10 @@
                         </div>
                         {% endif %}
                     </div>
-                </div>
+                    <div class="ml-2 text-gray-400 hover:text-blue-600">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
                 {% endfor %}
             </div>
             <div class="mt-4">

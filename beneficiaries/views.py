@@ -58,19 +58,25 @@ class BeneficiaryCreateView(CanModifyBeneficiariesMixin, CreateView):
     def form_valid(self, form):
         context = self.get_context_data()
         financial_form = context['financial_form']
-        
+
         with transaction.atomic():
             if financial_form.is_valid():
                 # Sauvegarder le bénéficiaire
-                self.object = form.save()
-                
+                self.object = form.save(commit=False)
+
+                # Enregistrer la date de consentement RGPD si le consentement est donné
+                if self.object.gdpr_consent and not self.object.gdpr_consent_date:
+                    self.object.gdpr_consent_date = timezone.now()
+
+                self.object.save()
+
                 # Sauvegarder le snapshot financier
                 financial_snapshot = financial_form.save(commit=False)
                 financial_snapshot.beneficiary = self.object
                 financial_snapshot.save()
-                
+
                 messages.success(
-                    self.request, 
+                    self.request,
                     f'Bénéficiaire {self.object.full_name} créé avec succès.'
                 )
                 return redirect(self.get_success_url())
@@ -114,7 +120,7 @@ class BeneficiaryUpdateView(CanModifyBeneficiariesMixin, UpdateView):
                 children_data.append({
                     'first_name': child.first_name,
                     'last_name': child.last_name,
-                    'birth_date': child.birth_date,
+                    'birth_date': child.birth_date.strftime('%Y-%m-%d') if child.birth_date else '',
                     'observations': child.observations
                 })
             context['children_formset'] = ChildFormSet(initial=children_data, prefix='children')

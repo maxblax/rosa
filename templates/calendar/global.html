@@ -16,15 +16,15 @@
     <div class="flex space-x-3">
         <!-- Navigation par semaine -->
         <div class="flex bg-white rounded-lg shadow border">
-            <a href="?week={{ week_start|date:'Y-m-d' }}&prev=1"
+            <a href="?week={{ prev_week|date:'Y-m-d' }}"
                class="px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-l-lg border-r">
                 <i class="fas fa-chevron-left"></i>
             </a>
-            <a href="?week=today"
+            <a href="{% url 'calendar:global' %}"
                class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r">
                 Cette semaine
             </a>
-            <a href="?week={{ week_start|date:'Y-m-d' }}&next=1"
+            <a href="?week={{ next_week|date:'Y-m-d' }}"
                class="px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-r-lg">
                 <i class="fas fa-chevron-right"></i>
             </a>

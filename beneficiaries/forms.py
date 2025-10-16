@@ -9,9 +9,10 @@ class BeneficiaryForm(ModelForm):
     class Meta:
         model = Beneficiary
         fields = [
-            'civility', 'first_name', 'last_name', 'birth_date', 'phone', 'email',
+            'gdpr_consent', 'civility', 'first_name', 'last_name', 'birth_date', 'nationality', 'phone', 'email',
             'occupation', 'address', 'residence_address', 'housing_status',
-            'family_status', 'dependents_count', 'preferred_contact'
+            'family_status', 'dependents_count', 'preferred_contact', 'referral_source',
+            'profile_tag', 'alert_level'
         ]
         widgets = {
             'birth_date': forms.DateInput(attrs={
@@ -19,6 +20,9 @@ class BeneficiaryForm(ModelForm):
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'civility': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'nationality': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'first_name': forms.TextInput(attrs={
@@ -64,17 +68,38 @@ class BeneficiaryForm(ModelForm):
             'preferred_contact': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
+            'gdpr_consent': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+            }),
+            'referral_source': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Ex: Croix-Rouge, assistant social, bouche à oreille'
+            }),
+            'profile_tag': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'alert_level': forms.RadioSelect(attrs={
+                'class': 'space-y-2'
+            }),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Rendre SEULEMENT nom et prénom obligatoires
         self.fields['first_name'].required = True
         self.fields['last_name'].required = True
-        
+
+        # Le consentement RGPD est également obligatoire pour les nouvelles créations
+        if not self.instance.pk:  # Nouvelle création seulement
+            self.fields['gdpr_consent'].required = True
+
+        # Formater la date de naissance pour les champs type="date" (correction du bug)
+        if self.instance.pk and self.instance.birth_date:
+            self.initial['birth_date'] = self.instance.birth_date.strftime('%Y-%m-%d')
+
         # Tous les autres champs sont optionnels
         for field_name, field in self.fields.items():
-            if field_name not in ['first_name', 'last_name']:
+            if field_name not in ['first_name', 'last_name', 'gdpr_consent']:
                 field.required = False
 
 

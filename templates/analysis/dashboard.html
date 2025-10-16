@@ -13,14 +13,16 @@
     </div>
     {% if can_export %}
     <div class="flex space-x-3">
-        <button class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <i class="fas fa-file-pdf mr-2"></i>
+        <a href="{% url 'analysis:export_pdf' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+            <i class="fas fa-file-pdf mr-2 text-red-600"></i>
             Export PDF
-        </button>
-        <button class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            <i class="fas fa-file-powerpoint mr-2"></i>
+        </a>
+        <a href="{% url 'analysis:export_ppt' %}"
+           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+            <i class="fas fa-file-powerpoint mr-2 text-orange-600"></i>
             Export PPT
-        </button>
+        </a>
     </div>
     {% endif %}
 </div>
@@ -39,10 +41,26 @@
             {% for chart in section.charts %}
             <!-- Chart Card -->
             <div class="{% if chart.size == 'full' %}lg:col-span-2{% endif %} bg-white rounded-lg shadow p-6">
-                <div class="mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">{{ chart.title }}</h3>
-                    {% if chart.description %}
-                    <p class="text-sm text-gray-600 mt-1">{{ chart.description }}</p>
+                <div class="mb-4 flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ chart.title }}</h3>
+                        {% if chart.description %}
+                        <p class="text-sm text-gray-600 mt-1">{{ chart.description }}</p>
+                        {% endif %}
+                    </div>
+
+                    {% if not chart.has_error %}
+                    <!-- Toggle Quantitatif / Normalisé -->
+                    <div class="flex items-center ml-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <span class="mr-3 text-sm font-medium text-gray-700">Quantitatif</span>
+                            <div class="relative">
+                                <input type="checkbox" class="sr-only peer" id="toggle-{{ chart.id }}" onchange="toggleChartMode('{{ chart.id }}')">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </div>
+                            <span class="ml-3 text-sm font-medium text-gray-700">Normalisé (%)</span>
+                        </label>
+                    </div>
                     {% endif %}
                 </div>
 
@@ -80,6 +98,87 @@
 
 {% block extra_js %}
 <script>
+// Stockage global des graphiques et données originales
+const charts = {};
+const originalData = {};
+
+// Fonction pour normaliser les données en pourcentages
+function normalizeData(data, chartType) {
+    const normalized = JSON.parse(JSON.stringify(data)); // Deep clone
+
+    if (chartType === 'pie' || chartType === 'doughnut') {
+        // Pour les graphiques circulaires, calculer le total
+        const total = normalized.datasets[0].data.reduce((sum, val) => sum + val, 0);
+        normalized.datasets[0].data = normalized.datasets[0].data.map(val =>
+            total > 0 ? (val / total * 100).toFixed(1) : 0
+        );
+    } else if (chartType === 'bar' || chartType === 'line') {
+        // Pour les graphiques à barres/lignes
+        normalized.datasets.forEach(dataset => {
+            const total = dataset.data.reduce((sum, val) => sum + val, 0);
+            dataset.data = dataset.data.map(val =>
+                total > 0 ? (val / total * 100).toFixed(1) : 0
+            );
+        });
+    } else if (chartType === 'stacked_bar') {
+        // Pour les graphiques empilés, normaliser par colonne
+        const numPoints = normalized.datasets[0].data.length;
+        for (let i = 0; i < numPoints; i++) {
+            const columnTotal = normalized.datasets.reduce((sum, dataset) =>
+                sum + (dataset.data[i] || 0), 0
+            );
+            normalized.datasets.forEach(dataset => {
+                dataset.data[i] = columnTotal > 0 ?
+                    (dataset.data[i] / columnTotal * 100).toFixed(1) : 0;
+            });
+        }
+    }
+
+    return normalized;
+}
+
+// Fonction pour basculer entre quantitatif et normalisé
+function toggleChartMode(chartId) {
+    const toggle = document.getElementById(`toggle-${chartId}`);
+    const chart = charts[chartId];
+    const isNormalized = toggle.checked;
+
+    if (!chart || !originalData[chartId]) return;
+
+    // Récupérer les données appropriées
+    const data = isNormalized ?
+        normalizeData(originalData[chartId].data, originalData[chartId].type) :
+        originalData[chartId].data;
+
+    // Mettre à jour les données du graphique
+    chart.data = data;
+
+    // Mettre à jour les options (suffixe % si normalisé)
+    if (chart.options.scales && chart.options.scales.y) {
+        chart.options.scales.y.ticks.callback = isNormalized ?
+            function(value) { return value + '%'; } :
+            function(value) { return value; };
+    }
+
+    // Mettre à jour le tooltip
+    chart.options.plugins.tooltip = {
+        callbacks: {
+            label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                    label += ': ';
+                }
+                label += isNormalized ?
+                    context.parsed.y + '%' :
+                    context.parsed.y || context.parsed;
+                return label;
+            }
+        }
+    };
+
+    chart.update();
+}
+
 // Générer tous les graphiques
 {% for section in sections %}
 {% for chart in section.charts %}
@@ -88,9 +187,16 @@
     const ctx = document.getElementById('chart-{{ chart.id }}');
     if (ctx) {
         const chartData = {{ chart.data_json|safe }};
+        const chartType = '{{ chart.chart_type }}';
+
+        // Stocker les données originales
+        originalData['{{ chart.id }}'] = {
+            data: JSON.parse(JSON.stringify(chartData)),
+            type: chartType
+        };
 
         const config = {
-            type: '{{ chart.chart_type }}',
+            type: chartType,
             data: chartData,
             options: {
                 responsive: true,
@@ -142,7 +248,8 @@
             }
         };
 
-        new Chart(ctx, config);
+        // Créer et stocker le graphique
+        charts['{{ chart.id }}'] = new Chart(ctx, config);
     }
 })();
 {% endif %}

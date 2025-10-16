@@ -7,3 +7,8 @@ python-dateutil
 gunicorn
 requests
 PyYAML
+reportlab
+python-pptx
+matplotlib
+numpy
+
