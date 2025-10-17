@@ -157,7 +157,9 @@
                 </h2>
             </div>
 
-            <canvas id="evolutionChart" height="200"></canvas>
+            <div style="height: 300px;">
+                <canvas id="evolutionChart"></canvas>
+            </div>
         </div>
 
         <!-- Dernières Nouvelles -->
@@ -220,7 +222,8 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
                 plugins: {
                     legend: {
                         display: false

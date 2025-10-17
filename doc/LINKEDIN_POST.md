@@ -6,36 +6,36 @@
 
 **Quand les associations paient 400€/mois pour des CRM inadaptés, il est temps d'agir.**
 
-Quand l'Association Protestante d'Assistance Nîmoise m'a contacté il y a un an, j'ai découvert la dure réalité des associations d'aide aux démunis. Ils bossent avec 3 fois rien.
+Quand l'Association Protestante d'Assistance Nîmoise m'a contacté il y a un an, j'ai découvert la dure réalité des associations d'aide aux démunis.
 
-Peu de moyens, de la débrouille en permanence, et des besoins digitaux comme toute organisation, mais avec un budget ultra serré. Équation impossible ?
+Peu de moyens, de la débrouille en permanence, et des besoins digitaux comme toute organisation, mais avec un budget ultra serré. Équation impossible classique... ou pas!
 
-Pas de logiciel adapté pour gérer leurs entretiens avec les personnes en difficulté. Les solutions du marché ? Trop chères, trop complexes, pas du tout pensées pour leurs besoins réels.
-
-**Du coup, pour mon projet perso bénévole de l'année, j'ai décidé de mettre mon expertise Django et web dev au service d'une bonne cause.**
+Pour mon projet bénévole 2025, j'ai décidé de mettre mon expertise Django et web dev au service d'une bonne cause.
 
 J'ai développé **ROSA** (Réseau Ouvert de Solidarité et d'Assistance).
 
 Une application web complète, développée en quelques mois part-time en bénévolat :
-✅ Gestion des bénéficiaires et suivi financier
-✅ Calendrier intelligent pour les bénévoles
-✅ Tableaux de bord analytiques
-✅ Système de prise de rendez-vous
-✅ Gestion des partenaires et du stock
+- Gestion des bénéficiaires et suivi financier
+- Calendrier intelligent pour les bénévoles
+- Tableaux de bord analytiques
+- Système de prise de rendez-vous
+- Gestion des partenaires et du stock
+- Et plus encore..
 
-**Stack technique moderne :**
-• Django 5 + HTMX (pas de React, pas de complexité)
-• PostgreSQL + TailwindCSS
-• Déploiement indépendant (anti-vendor lock-in)
+**Stack technique moderne et robuste: **
+
+- Django 5 + HTMX (pas de React, pas de complexité)
+- PostgreSQL + TailwindCSS
+- Déploiement indépendant (anti-vendor lock-in)
 
 **Le plus important ?**
-🔓 Open source, licence Creative Commons (CC BY-NC-SA 4.0) → pas d'usage commercial
-🔓 Utilisable gratuitement par TOUTES les associations
-🔓 Infrastructure de déploiement incluse
+- 🔓 Open source, licence Creative Commons (CC BY-NC-SA 4.0) → pas d'usage commercial
+- 🔓 Utilisable gratuitement par TOUTES les associations
+- 🔓 Infrastructure de déploiement incluse
 
 **Deux repos GitHub :**
-📦 Application : github.com/maxblax/rosa
-🚀 Déploiement : github.com/maxblax/django-nginx-uwsgi-ansible
+- 📦 Application : github.com/maxblax/rosa
+- 🚀 Déploiement : github.com/maxblax/django-nginx-uwsgi-ansible
 
 Parce que l'aide sociale ne devrait pas coûter 400€/mois en licences.
 
@@ -115,8 +115,6 @@ Parce que les associations font un travail essentiel avec des moyens ridicules. 
 ➡️ Contactez-moi ou clonez directement les repos.
 
 **ROSA - Parce que l'aide sociale ne devrait pas coûter 400€/mois.**
-
-**PS :** L'Association Protestante d'Assistance fait un boulot formidable. Si vous voulez les soutenir : https://www.helloasso.com/associations/association-protestante-d-assistance/formulaires/1
 
 #OpenSource #Django #HTMX #SocialTech #AssociationsSolidaires #DéveloppementBénévole #TechForGood #Python #PostgreSQL #NonProfit #CodingForGood #DjangoFrance
 

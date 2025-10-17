@@ -37,7 +37,7 @@ def login_view(request):
     """Vue de connexion personnalisée"""
 
     if request.user.is_authenticated:
-        return redirect('beneficiaries:list')
+        return redirect('home')
 
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
@@ -51,11 +51,11 @@ def login_view(request):
                 messages.success(request, f'Bienvenue, {user.get_full_name() or user.username} !')
 
                 # Redirection vers next ou URL par défaut
-                next_url = request.GET.get('next', 'beneficiaries:list')
+                next_url = request.GET.get('next', '/')
                 if next_url.startswith('/'):
                     return redirect(next_url)
                 else:
-                    return redirect(next_url)
+                    return redirect('home')
             else:
                 messages.error(request, 'Nom d\'utilisateur ou mot de passe incorrect.')
     else:
