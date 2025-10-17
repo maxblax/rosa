@@ -51,11 +51,12 @@ def login_view(request):
                 messages.success(request, f'Bienvenue, {user.get_full_name() or user.username} !')
 
                 # Redirection vers next ou URL par défaut
-                next_url = request.GET.get('next', '/')
-                if next_url.startswith('/'):
+                # Chercher 'next' dans POST puis GET
+                next_url = request.POST.get('next') or request.GET.get('next', '/')
+                if next_url and next_url.startswith('/') and next_url != '/':
                     return redirect(next_url)
                 else:
-                    return redirect('home')
+                    return redirect('/')
             else:
                 messages.error(request, 'Nom d\'utilisateur ou mot de passe incorrect.')
     else:
