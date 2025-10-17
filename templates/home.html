@@ -157,8 +157,8 @@
                 </h2>
             </div>
 
-            <div style="height: 300px;">
-                <canvas id="evolutionChart"></canvas>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="evolutionChart" style="display: block; max-height: 300px;"></canvas>
             </div>
         </div>
 
@@ -222,8 +222,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 2,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -236,6 +235,10 @@
                             precision: 0
                         }
                     }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });
