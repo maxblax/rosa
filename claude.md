@@ -1,7 +1,7 @@
 # CLAUDE.md - rosa Project Development Guide
 
 ## 🎯 Project Scope
-**rosa (Open Network Aid)** is an open-source Django + HTMX web application designed for associations that provide social aid. It focuses on simplicity, maintainability, and forkability.
+**rosa (Réseau Ouvert de Solidarité et d'Assistance)** is an open-source Django + HTMX web application designed for associations that provide social aid. It focuses on simplicity, maintainability, and forkability.
 
 ### Mission Statement
 rosa est une application web open-source destinée aux associations d'aide sociale (associations de quartier, ONG locales, structures caritatives). Elle permet :

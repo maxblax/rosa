@@ -78,6 +78,38 @@ We built rosa because **most CRMs charge €400+ in licenses** to small non-prof
 - **Deployment**: Docker + Gunicorn + Nginx
 - **Authentication**: Django built-in auth system
 
+## 📸 Screenshots
+
+### Dashboard & Overview
+
+![Tableau de Bord](doc/screenshots/01_tableau_de_bord.png)
+*Modern dashboard with quick access, statistics, and upcoming appointments*
+
+### Beneficiary Management
+
+![Liste des Bénéficiaires](doc/screenshots/02_liste_beneficiaires.png)
+*Complete beneficiary list with filtering and search capabilities*
+
+![Détail Financier](doc/screenshots/04_detail_beneficiaire_graphique_financier.png)
+*Detailed financial tracking with revenue/expense visualization and daily remaining budget*
+
+### Calendar & Appointments
+
+![Calendrier Global](doc/screenshots/10_calendrier_global_tous_benevoles.png)
+*Team-wide calendar view showing all volunteers' availability and appointments*
+
+![Créer un Rendez-vous](doc/screenshots/11_creer_rendez_vous.png)
+*Intuitive appointment booking with real-time availability checking*
+
+### Analytics & Reporting
+
+![Analyses](doc/screenshots/12_analyses_graphiques.png)
+*Powerful analytics dashboard with financial insights and demographic data*
+
+📁 **[See all screenshots](doc/screenshots/README.md)** (13 high-quality screenshots with detailed descriptions)
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites

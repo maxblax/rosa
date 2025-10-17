@@ -24,3 +24,4 @@ package-lock.json
 # Docker
 static_collected/
 media/
+CLAUDE.md
