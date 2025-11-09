@@ -180,6 +180,19 @@ class FinancialSnapshotForm(ModelForm):
                 categories.append((category_name, fields))
         return categories
 
+    def clean(self):
+        """Ensure all DecimalFields have a default value of 0 instead of NULL"""
+        cleaned_data = super().clean()
+
+        # Convert all None/empty DecimalField values to 0 to prevent NOT NULL constraint violations
+        for field_name, field in self.fields.items():
+            if isinstance(field, forms.DecimalField):
+                value = cleaned_data.get(field_name)
+                if value is None or value == '':
+                    cleaned_data[field_name] = 0
+
+        return cleaned_data
+
 
 class ChildForm(ModelForm):
     """Formulaire pour les enfants"""
