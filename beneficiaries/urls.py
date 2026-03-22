@@ -18,6 +18,10 @@ urlpatterns = [
     path('<int:beneficiary_pk>/interactions/<int:pk>/', views.InteractionDetailView.as_view(), name='interaction_detail'),
     path('<int:beneficiary_pk>/interactions/<int:pk>/edit/', views.InteractionUpdateView.as_view(), name='interaction_edit'),
     
+    # Documents
+    path('<int:pk>/documents/upload/', views.DocumentUploadView.as_view(), name='document_upload'),
+    path('<int:beneficiary_pk>/documents/<int:pk>/delete/', views.document_delete_view, name='document_delete'),
+
     # API/HTMX endpoints
     path('search/', views.beneficiary_search_autocomplete, name='search_autocomplete'),
 ] 

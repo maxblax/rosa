@@ -9,8 +9,8 @@ from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime
-from .models import Beneficiary, FinancialSnapshot, Child, Interaction
-from .forms import BeneficiaryForm, FinancialSnapshotForm, ChildForm, ChildFormSet, InteractionForm
+from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
+from .forms import BeneficiaryForm, FinancialSnapshotForm, ChildForm, ChildFormSet, InteractionForm, DocumentForm
 from volunteers.permissions import CanModifyBeneficiariesMixin
 
 
@@ -99,6 +99,7 @@ class BeneficiaryDetailView(CanModifyBeneficiariesMixin, DetailView):
         context['latest_snapshot'] = self.object.latest_financial_snapshot
         context['children'] = self.object.children.all()
         context['interactions'] = self.object.interactions.select_related('user').all()[:10]  # Dernières 10
+        context['documents'] = self.object.documents.select_related('uploaded_by').all()
         return context
 
 
@@ -384,3 +385,68 @@ class InteractionUpdateView(CanModifyBeneficiariesMixin, UpdateView):
             'beneficiary_pk': self.object.beneficiary.pk,
             'pk': self.object.pk
         })
+
+
+class DocumentUploadView(CanModifyBeneficiariesMixin, CreateView):
+    """Vue pour uploader un document pour un bénéficiaire"""
+    model = Document
+    form_class = DocumentForm
+    template_name = 'beneficiaries/document_upload.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.beneficiary = get_object_or_404(Beneficiary, pk=kwargs['pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['beneficiary'] = self.beneficiary
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.beneficiary = self.beneficiary
+        if self.request.user.is_authenticated:
+            self.object.uploaded_by = self.request.user
+        self.object.save()
+        messages.success(
+            self.request,
+            f'Document "{self.object.title}" ajouté avec succès.'
+        )
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse('beneficiaries:detail', kwargs={'pk': self.beneficiary.pk})
+
+
+@login_required
+def document_delete_view(request, beneficiary_pk, pk):
+    """Vue pour supprimer un document (avec confirmation POST)"""
+    document = get_object_or_404(Document, pk=pk, beneficiary__pk=beneficiary_pk)
+
+    if request.method == 'POST':
+        title = document.title
+        # Supprimer le fichier physique
+        if document.file:
+            document.file.delete(save=False)
+        document.delete()
+        messages.success(request, f'Document "{title}" supprimé avec succès.')
+        return redirect('beneficiaries:detail', pk=beneficiary_pk)
+
+    return render(request, 'beneficiaries/document_confirm_delete.html', {
+        'document': document,
+        'beneficiary': document.beneficiary,
+    })
+
+
+@login_required
+def document_serve_view(request, path):
+    """Vue pour servir les fichiers media de manière protégée (utilisateurs authentifiés uniquement)"""
+    import os
+    from django.http import FileResponse, Http404
+    from django.conf import settings
+
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    if not os.path.exists(file_path):
+        raise Http404("Fichier non trouvé")
+
+    return FileResponse(open(file_path, 'rb'))

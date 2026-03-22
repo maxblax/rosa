@@ -31,6 +31,30 @@
                 
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                     <div>
+                        <label for="{{ form.file_number.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.file_number.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.file_number }}
+                        </div>
+                        {% if form.file_number.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.file_number.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.first_entry_date.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.first_entry_date.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.first_entry_date }}
+                        </div>
+                        {% if form.first_entry_date.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.first_entry_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
                         <label for="{{ form.civility.id_for_label }}" class="block text-sm font-medium text-gray-700">
                             {{ form.civility.label }}
                         </label>
@@ -171,6 +195,19 @@
                         <input type="hidden" name="housing_status" id="id_housing_status" value="{{ form.housing_status.value|default:'' }}">
                     </div>
 
+                    <!-- Hébergement (précision) - visible si AUTRE -->
+                    <div class="sm:col-span-2" id="housing-status-other-wrapper" style="display: none;">
+                        <label for="{{ form.housing_status_other.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.housing_status_other.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.housing_status_other }}
+                        </div>
+                        {% if form.housing_status_other.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.housing_status_other.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700">
                             {{ form.family_status.label }}
@@ -306,6 +343,10 @@
                                     {{ form.last_name }}
                                 </div>
                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700">Sexe</label>
+                                    {{ form.gender }}
+                                </div>
+                                <div>
                                     <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
                                     {{ form.birth_date }}
                                 </div>
@@ -388,6 +429,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="text" name="children-${index}-last_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Sexe</label>
+                    <select name="children-${index}-gender" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">---------</option>
+                        <option value="F">Fille</option>
+                        <option value="G">Garçon</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
                     <input type="date" name="children-${index}-birth_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
@@ -424,8 +473,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Si on décoche, vider le champ caché
                 hiddenHousingField.value = '';
             }
+            toggleHousingOther();
         });
     });
+
+    // Show/hide housing_status_other when AUTRE is selected
+    const housingOtherWrapper = document.getElementById('housing-status-other-wrapper');
+
+    function toggleHousingOther() {
+        let autreChecked = false;
+        housingCheckboxes.forEach(cb => {
+            if (cb.value === 'AUTRE' && cb.checked) autreChecked = true;
+        });
+        housingOtherWrapper.style.display = autreChecked ? 'block' : 'none';
+    }
+
+    toggleHousingOther();
 });
 </script>
 {% endblock %} 

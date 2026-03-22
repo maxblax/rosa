@@ -92,6 +92,85 @@
             </div>
         </div>
 
+        <!-- Premier besoin exprimé -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-hand-holding-heart text-pink-600 mr-2"></i>
+                        Premier besoin exprimé
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.primary_need.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.primary_need.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.primary_need }}
+                        </div>
+                        {% if form.primary_need.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.primary_need.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2" id="primary-need-details-wrapper">
+                        <label for="{{ form.primary_need_details.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.primary_need_details.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.primary_need_details }}
+                        </div>
+                        {% if form.primary_need_details.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.primary_need_details.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secours financiers -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="mb-8">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        <i class="fas fa-euro-sign text-green-600 mr-2"></i>
+                        Secours financier attribué
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.financial_aid_amount.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.financial_aid_amount.label }}
+                        </label>
+                        <div class="mt-1 relative">
+                            {{ form.financial_aid_amount }}
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">&euro;</span>
+                            </div>
+                        </div>
+                        {% if form.financial_aid_amount.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.financial_aid_amount.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.financial_aid_details.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.financial_aid_details.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.financial_aid_details }}
+                        </div>
+                        {% if form.financial_aid_details.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.financial_aid_details.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Suivi -->
         <div class="bg-white shadow-lg sm:rounded-lg">
             <div class="px-6 py-6 sm:p-8">
@@ -180,6 +259,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     followUpCheckbox.addEventListener('change', toggleFollowUpFields);
     toggleFollowUpFields(); // Initialiser l'état
+
+    // Gestion du champ primary_need_details
+    const primaryNeedSelect = document.getElementById('{{ form.primary_need.id_for_label }}');
+    const primaryNeedDetailsWrapper = document.getElementById('primary-need-details-wrapper');
+
+    function togglePrimaryNeedDetails() {
+        if (primaryNeedSelect && primaryNeedSelect.value) {
+            primaryNeedDetailsWrapper.style.display = 'block';
+        } else {
+            primaryNeedDetailsWrapper.style.display = 'none';
+        }
+    }
+
+    if (primaryNeedSelect) {
+        primaryNeedSelect.addEventListener('change', togglePrimaryNeedDetails);
+        togglePrimaryNeedDetails();
+    }
 });
 </script>
 {% endblock %}

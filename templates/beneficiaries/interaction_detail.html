@@ -64,10 +64,38 @@
                             <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ interaction.description }}</dd>
                         </div>
                         
+                        {% if interaction.primary_need %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">1er besoin exprimé</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.get_primary_need_display }}</dd>
+                        </div>
+                        {% endif %}
+
+                        {% if interaction.primary_need_details %}
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Précisions sur le besoin</dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line bg-pink-50 p-3 rounded-md border border-pink-200">{{ interaction.primary_need_details }}</dd>
+                        </div>
+                        {% endif %}
+
                         {% if interaction.changes_made %}
                         <div class="sm:col-span-2">
                             <dt class="text-sm font-medium text-gray-500">Changements apportés</dt>
                             <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line bg-green-50 p-3 rounded-md border border-green-200">{{ interaction.changes_made }}</dd>
+                        </div>
+                        {% endif %}
+
+                        {% if interaction.financial_aid_amount %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Montant du secours financier</dt>
+                            <dd class="mt-1 text-sm text-gray-900 font-semibold">{{ interaction.financial_aid_amount|floatformat:2 }} &euro;</dd>
+                        </div>
+                        {% endif %}
+
+                        {% if interaction.financial_aid_details %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Spécification du secours</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.financial_aid_details }}</dd>
                         </div>
                         {% endif %}
                     </dl>

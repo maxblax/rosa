@@ -652,7 +652,7 @@ class Command(BaseCommand):
         charts_data = [
             # IMPACT SOCIAL
             {
-                'title': 'Nombre de personnes touchées',
+                'title': 'Nombre de personnes concernées',
                 'section': 'IMPACT',
                 'chart_type': 'bar',
                 'size': 'half',
@@ -665,7 +665,7 @@ children_count = Child.objects.count()
 result = {
     'labels': ['Bénéficiaires', 'Enfants', 'Total'],
     'datasets': [{
-        'label': 'Personnes touchées',
+        'label': 'Personnes concernées',
         'data': [beneficiaries_count, children_count, beneficiaries_count + children_count],
         'backgroundColor': ['#3b82f6', '#10b981', '#8b5cf6']
     }]

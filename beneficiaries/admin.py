@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Beneficiary, FinancialSnapshot, Child, Interaction
+from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
 
 
 @admin.register(Beneficiary)
@@ -93,6 +93,25 @@ class Interactirosadmin(admin.ModelAdmin):
         }),
         ('Métadonnées', {
             'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(Document)
+class DocumentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'beneficiary', 'document_type', 'uploaded_by', 'created_at')
+    list_filter = ('document_type', 'created_at')
+    search_fields = ('title', 'description', 'beneficiary__first_name', 'beneficiary__last_name')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        ('Document', {
+            'fields': ('beneficiary', 'title', 'document_type', 'file', 'description')
+        }),
+        ('Métadonnées', {
+            'fields': ('uploaded_by', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )

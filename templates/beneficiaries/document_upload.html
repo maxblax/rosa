@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajouter un document - {{ beneficiary.full_name }} - rosa{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-8">
+    <!-- Header with back button -->
+    <div class="mb-8">
+        <div class="flex items-center">
+            <a href="{% url 'beneficiaries:detail' beneficiary.pk %}"
+               class="flex items-center text-sm text-gray-500 hover:text-gray-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour au profil de {{ beneficiary.full_name }}
+            </a>
+        </div>
+        <div class="mt-4">
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-upload text-blue-600 mr-2"></i>
+                Ajouter un document
+            </h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Joindre un document au dossier de {{ beneficiary.full_name }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">
+                    <i class="fas fa-file-upload mr-2 text-blue-600"></i>
+                    Informations du document
+                </h3>
+
+                {% if form.errors %}
+                <div class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+                    <div class="flex">
+                        <i class="fas fa-exclamation-circle text-red-400 mt-0.5 mr-2"></i>
+                        <div>
+                            <h3 class="text-sm font-medium text-red-800">Erreurs dans le formulaire</h3>
+                            <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="space-y-5">
+                    <!-- Titre -->
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Titre <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.title }}
+                    </div>
+
+                    <!-- Type de document -->
+                    <div>
+                        <label for="{{ form.document_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Type de document
+                        </label>
+                        {{ form.document_type }}
+                    </div>
+
+                    <!-- Fichier -->
+                    <div>
+                        <label for="{{ form.file.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Fichier <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.file }}
+                        <p class="mt-1 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Formats acceptés : PDF, images (JPG, PNG, GIF, WebP), Word (DOC, DOCX). Taille max : 10 Mo.
+                        </p>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Description
+                        </label>
+                        {{ form.description }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'beneficiaries:detail' beneficiary.pk %}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Annuler
+            </a>
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fas fa-upload mr-2"></i>
+                Ajouter le document
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

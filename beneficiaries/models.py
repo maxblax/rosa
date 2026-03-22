@@ -38,6 +38,8 @@ class Beneficiary(models.Model):
     ]
     
     # Informations personnelles
+    file_number = models.CharField('N° de dossier', max_length=50, blank=True)
+    first_entry_date = models.DateField('Date de première entrée', null=True, blank=True)
     civility = models.CharField('Civilité', max_length=10, choices=CIVILITY_CHOICES, blank=True)
     first_name = models.CharField('Prénom', max_length=100)
     last_name = models.CharField('Nom', max_length=100)
@@ -58,11 +60,12 @@ class Beneficiary(models.Model):
     # Situation
     occupation = models.CharField('Métier / Savoir-faire', max_length=200, blank=True)
     housing_status = models.CharField(
-        'Hébergement', 
-        max_length=20, 
+        'Hébergement',
+        max_length=20,
         choices=HOUSING_STATUS_CHOICES,
         blank=True
     )
+    housing_status_other = models.CharField('Hébergement (précision)', max_length=200, blank=True)
     family_status = models.CharField(
         'Situation Familiale',
         max_length=20,
@@ -333,7 +336,13 @@ class FinancialSnapshot(models.Model):
         decimal_places=2,
         default=0
     )
-    
+    telephonie_internet = models.DecimalField(
+        'Téléphonie / Internet',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+
     # Charges - Santé et Education
     mutuelle_privee = models.DecimalField(
         'Mutuelle privée',
@@ -416,6 +425,7 @@ class FinancialSnapshot(models.Model):
         """Calcule le total des charges"""
         charges = [
             self.loyer_residuel or 0, self.energie or 0, self.eau or 0, self.assurance_habitation or 0,
+            self.telephonie_internet or 0,
             self.mutuelle_privee or 0, self.css or 0, self.frais_scolaires or 0, self.frais_sante_non_rembourses or 0,
             self.transport_commun or 0, self.carburant or 0, self.credit_consommation or 0, self.dettes_diverses or 0,
             self.abonnements_sport_culture or 0
@@ -441,8 +451,14 @@ class Child(models.Model):
         related_name='children', 
         verbose_name='Bénéficiaire'
     )
+    GENDER_CHOICES = [
+        ('F', 'Fille'),
+        ('G', 'Garçon'),
+    ]
+
     first_name = models.CharField('Prénom', max_length=100)
     last_name = models.CharField('Nom', max_length=100)
+    gender = models.CharField('Sexe', max_length=1, choices=GENDER_CHOICES, blank=True)
     birth_date = models.DateField('Date de naissance')
     observations = models.TextField('Observations', blank=True, help_text='Notes sur l\'enfant')
     
@@ -484,6 +500,20 @@ class Interaction(models.Model):
         ('EMAIL', 'Contact par email'),
         ('OTHER', 'Autre'),
     ]
+
+    PRIMARY_NEED_CHOICES = [
+        ('', '--------'),
+        ('ALIMENTAIRE', 'Alimentaire'),
+        ('VESTIMENTAIRE', 'Vestimentaire'),
+        ('FINANCIER', 'Financier'),
+        ('ADMINISTRATIF', 'Administratif'),
+        ('LOGEMENT', 'Logement'),
+        ('SANTE', 'Santé'),
+        ('EMPLOI', 'Emploi / Formation'),
+        ('JURIDIQUE', 'Juridique'),
+        ('ECOUTE', 'Écoute / Soutien moral'),
+        ('AUTRE', 'Autre'),
+    ]
     
     # Relations
     beneficiary = models.ForeignKey(
@@ -521,6 +551,29 @@ class Interaction(models.Model):
         verbose_name='Photo instantanée financière associée'
     )
     
+    # Premier besoin exprimé
+    primary_need = models.CharField(
+        '1er besoin exprimé',
+        max_length=20,
+        choices=PRIMARY_NEED_CHOICES,
+        blank=True
+    )
+    primary_need_details = models.TextField('Précisez le besoin', blank=True)
+
+    # Secours financiers
+    financial_aid_amount = models.DecimalField(
+        'Montant du secours financier',
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    financial_aid_details = models.CharField(
+        'Spécification du secours',
+        max_length=300,
+        blank=True
+    )
+
     # Actions/changements apportés
     changes_made = models.TextField(
         'Changements apportés',
@@ -583,3 +636,82 @@ class Interaction(models.Model):
         if len(self.description) <= 100:
             return self.description
         return self.description[:97] + '...'
+
+
+class Document(models.Model):
+    """Document attaché à un bénéficiaire (pièce d'identité, justificatif, etc.)"""
+
+    DOCUMENT_TYPE_CHOICES = [
+        ('IDENTITE', 'Pièce d\'identité'),
+        ('DOMICILE', 'Justificatif de domicile'),
+        ('REVENUS', 'Justificatif de revenus'),
+        ('CAF', 'Attestation CAF'),
+        ('SANTE', 'Document médical'),
+        ('ADMINISTRATIF', 'Document administratif'),
+        ('AUTRE', 'Autre'),
+    ]
+
+    beneficiary = models.ForeignKey(
+        Beneficiary,
+        on_delete=models.CASCADE,
+        related_name='documents',
+        verbose_name='Bénéficiaire'
+    )
+    title = models.CharField('Titre', max_length=200)
+    document_type = models.CharField(
+        'Type de document',
+        max_length=20,
+        choices=DOCUMENT_TYPE_CHOICES,
+        default='AUTRE'
+    )
+    file = models.FileField('Fichier', upload_to='documents/%Y/%m/')
+    description = models.TextField('Description', blank=True)
+    uploaded_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name='Uploadé par'
+    )
+    created_at = models.DateTimeField('Ajouté le', auto_now_add=True)
+    updated_at = models.DateTimeField('Modifié le', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Document'
+        verbose_name_plural = 'Documents'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.get_document_type_display()}) - {self.beneficiary.full_name}"
+
+    @property
+    def file_extension(self):
+        """Retourne l'extension du fichier"""
+        import os
+        _, ext = os.path.splitext(self.file.name)
+        return ext.lower()
+
+    @property
+    def document_type_icon(self):
+        """Retourne l'icône FontAwesome selon le type de document"""
+        icons = {
+            'IDENTITE': 'fas fa-id-card',
+            'DOMICILE': 'fas fa-home',
+            'REVENUS': 'fas fa-money-bill-wave',
+            'CAF': 'fas fa-file-invoice',
+            'SANTE': 'fas fa-heartbeat',
+            'ADMINISTRATIF': 'fas fa-file-alt',
+            'AUTRE': 'fas fa-paperclip',
+        }
+        return icons.get(self.document_type, 'fas fa-paperclip')
+
+    @property
+    def file_type_icon(self):
+        """Retourne l'icône selon l'extension du fichier"""
+        ext = self.file_extension
+        if ext == '.pdf':
+            return 'fas fa-file-pdf text-red-500'
+        elif ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+            return 'fas fa-file-image text-blue-500'
+        elif ext in ['.doc', '.docx']:
+            return 'fas fa-file-word text-blue-700'
+        return 'fas fa-file text-gray-500'

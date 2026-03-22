@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import ModelForm, formset_factory
-from .models import Beneficiary, FinancialSnapshot, Child, Interaction
+from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
 
 
 class BeneficiaryForm(ModelForm):
@@ -9,12 +9,20 @@ class BeneficiaryForm(ModelForm):
     class Meta:
         model = Beneficiary
         fields = [
-            'gdpr_consent', 'civility', 'first_name', 'last_name', 'birth_date', 'nationality', 'phone', 'email',
-            'occupation', 'address', 'residence_address', 'housing_status',
+            'gdpr_consent', 'file_number', 'first_entry_date', 'civility', 'first_name', 'last_name', 'birth_date', 'nationality', 'phone', 'email',
+            'occupation', 'address', 'residence_address', 'housing_status', 'housing_status_other',
             'family_status', 'dependents_count', 'preferred_contact', 'referral_source',
             'profile_tag', 'alert_level'
         ]
         widgets = {
+            'file_number': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'N° de dossier'
+            }),
+            'first_entry_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
             'birth_date': forms.DateInput(attrs={
                 'type': 'date',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -58,6 +66,10 @@ class BeneficiaryForm(ModelForm):
             'housing_status': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
+            'housing_status_other': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Précisez le type d\'hébergement'
+            }),
             'family_status': forms.RadioSelect(attrs={
                 'class': 'space-y-2'
             }),
@@ -96,6 +108,8 @@ class BeneficiaryForm(ModelForm):
         # Formater la date de naissance pour les champs type="date" (correction du bug)
         if self.instance.pk and self.instance.birth_date:
             self.initial['birth_date'] = self.instance.birth_date.strftime('%Y-%m-%d')
+        if self.instance.pk and self.instance.first_entry_date:
+            self.initial['first_entry_date'] = self.instance.first_entry_date.strftime('%Y-%m-%d')
 
         # Tous les autres champs sont optionnels
         for field_name, field in self.fields.items():
@@ -136,7 +150,7 @@ class FinancialSnapshotForm(ModelForm):
         
         self.charge_fields = {
             'Logement': [
-                'loyer_residuel', 'energie', 'eau', 'assurance_habitation'
+                'loyer_residuel', 'energie', 'eau', 'assurance_habitation', 'telephonie_internet'
             ],
             'Santé et Education': [
                 'mutuelle_privee', 'css', 'frais_scolaires', 'frais_sante_non_rembourses'
@@ -199,9 +213,12 @@ class ChildForm(ModelForm):
     
     class Meta:
         model = Child
-        fields = ['first_name', 'last_name', 'birth_date', 'observations']
+        fields = ['first_name', 'last_name', 'gender', 'birth_date', 'observations']
         widgets = {
             'birth_date': forms.DateInput(attrs={'type': 'date'}),
+            'gender': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
             'observations': forms.Textarea(attrs={'rows': 2}),
         }
     
@@ -229,7 +246,10 @@ class InteractionForm(ModelForm):
     class Meta:
         model = Interaction
         fields = [
-            'interaction_type', 'title', 'description', 'changes_made',
+            'interaction_type', 'title', 'description',
+            'primary_need', 'primary_need_details',
+            'financial_aid_amount', 'financial_aid_details',
+            'changes_made',
             'follow_up_required', 'follow_up_date', 'follow_up_notes'
         ]
         widgets = {
@@ -244,6 +264,24 @@ class InteractionForm(ModelForm):
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 6,
                 'placeholder': 'Décrivez la situation, les besoins exprimés, les observations...'
+            }),
+            'primary_need': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'primary_need_details': forms.Textarea(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 3,
+                'placeholder': 'Précisez le besoin exprimé...'
+            }),
+            'financial_aid_amount': forms.NumberInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'financial_aid_details': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Ex: Aide alimentaire, aide au transport...'
             }),
             'changes_made': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
@@ -283,3 +321,52 @@ class InteractionForm(ModelForm):
                     field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 else:
                     field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500' 
+
+class DocumentForm(ModelForm):
+    """Formulaire pour uploader un document"""
+
+    # Taille maximale : 10 Mo
+    MAX_FILE_SIZE = 10 * 1024 * 1024
+    ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.doc', '.docx']
+
+    class Meta:
+        model = Document
+        fields = ['title', 'document_type', 'file', 'description']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'placeholder': 'Ex: CNI de M. Dupont'
+            }),
+            'document_type': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'file': forms.ClearableFileInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                'rows': 3,
+                'placeholder': 'Description optionnelle du document...'
+            }),
+        }
+
+    def clean_file(self):
+        """Valide la taille et le type du fichier"""
+        import os
+        file = self.cleaned_data.get('file')
+        if file:
+            # Vérifier la taille
+            if file.size > self.MAX_FILE_SIZE:
+                raise forms.ValidationError(
+                    f'Le fichier est trop volumineux ({file.size // (1024*1024)} Mo). '
+                    f'La taille maximale autorisée est de 10 Mo.'
+                )
+            # Vérifier l'extension
+            _, ext = os.path.splitext(file.name)
+            if ext.lower() not in self.ALLOWED_EXTENSIONS:
+                raise forms.ValidationError(
+                    f'Type de fichier non autorisé ({ext}). '
+                    f'Types acceptés : PDF, images (JPG, PNG, GIF, WebP), Word (DOC, DOCX).'
+                )
+        return file

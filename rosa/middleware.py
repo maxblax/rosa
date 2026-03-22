@@ -22,11 +22,11 @@ class AuthenticationMiddleware:
         ]
 
         # URLs publiques par pattern
+        # Note: /media/ retiré pour protéger l'accès aux documents des bénéficiaires
         public_patterns = [
             '/admin/',
             '/auth/',
             '/static/',
-            '/media/',
         ]
 
         # En mode dev, bypass l'authentification

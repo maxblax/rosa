@@ -122,6 +122,32 @@
                 </h3>
 
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <!-- N° de dossier -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.file_number.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.file_number.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.file_number }}
+                        </div>
+                        {% if form.file_number.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.file_number.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Date de première entrée -->
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.first_entry_date.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.first_entry_date.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.first_entry_date }}
+                        </div>
+                        {% if form.first_entry_date.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.first_entry_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
                     <!-- Civilité -->
                     <div class="sm:col-span-2">
                         <label for="{{ form.civility.id_for_label }}" class="block text-sm font-medium text-gray-700">
@@ -265,6 +291,19 @@
                                 </label>
                             {% endfor %}
                         </div>
+                    </div>
+
+                    <!-- Hébergement (précision) - visible si AUTRE -->
+                    <div class="sm:col-span-3" id="housing-status-other-wrapper" style="display: none;">
+                        <label for="{{ form.housing_status_other.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            {{ form.housing_status_other.label }}
+                        </label>
+                        <div class="mt-1">
+                            {{ form.housing_status_other }}
+                        </div>
+                        {% if form.housing_status_other.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ form.housing_status_other.errors.0 }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Situation Familiale -->
@@ -411,4 +450,27 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide housing_status_other when AUTRE is selected
+    const housingCheckboxes = document.querySelectorAll('input[name="housing_status_multi"]');
+    const housingOtherWrapper = document.getElementById('housing-status-other-wrapper');
+
+    function toggleHousingOther() {
+        let autreChecked = false;
+        housingCheckboxes.forEach(cb => {
+            if (cb.value === 'AUTRE' && cb.checked) autreChecked = true;
+        });
+        housingOtherWrapper.style.display = autreChecked ? 'block' : 'none';
+    }
+
+    housingCheckboxes.forEach(cb => {
+        cb.addEventListener('change', toggleHousingOther);
+    });
+    toggleHousingOther();
+});
+</script>
 {% endblock %} 

@@ -63,6 +63,9 @@
                         <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                             ID
                         </th>
+                        <th scope="col" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                            N° Dossier
+                        </th>
                         <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Nom complet
                         </th>
@@ -99,6 +102,9 @@
                         <a href="{% url 'beneficiaries:detail' beneficiary.pk %}" class="hover:text-blue-800 transition-colors">
                             #{{ beneficiary.id }}
                         </a>
+                    </td>
+                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-700 hidden md:table-cell">
+                        {{ beneficiary.file_number|default:"-" }}
                     </td>
                     <td class="px-3 py-3 text-sm">
                         <div class="font-medium text-gray-900">
@@ -188,7 +194,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="10" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="11" class="px-6 py-4 text-center text-gray-500">
                         {% if search_query %}
                             Aucun bénéficiaire trouvé pour "{{ search_query }}"
                         {% else %}

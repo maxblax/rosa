@@ -33,3 +33,10 @@ urlpatterns = [
     path('dons/', include('dons.urls')),
     path('', home, name='home'),
 ]
+
+# Servir les fichiers media via une vue protégée (authentification requise)
+# Toujours actif car la vue gère l'auth elle-même (@login_required)
+from beneficiaries.views import document_serve_view
+urlpatterns += [
+    path('media/<path:path>', document_serve_view, name='media_serve'),
+]
