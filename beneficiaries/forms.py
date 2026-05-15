@@ -1,6 +1,43 @@
+import re
+
 from django import forms
 from django.forms import ModelForm, formset_factory
 from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
+
+
+def _normalize_decimal_string(value):
+    """Nettoie une saisie utilisateur en nombre décimal lisible par Python/Decimal.
+
+    Tolère espaces (y compris insécables), séparateurs milliers virgule/point,
+    et virgule décimale. Renvoie la valeur originale si elle n'est ni str ni
+    convertible.
+    """
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    s = value.strip()
+    if not s:
+        return s
+    # Supprime espaces normaux et insécables (séparateur de milliers fr)
+    s = s.replace('\u00a0', '').replace('\u202f', '').replace(' ', '')
+    # Cas "1,234.56" -> virgule = milliers, point = decimal -> retire virgules
+    if ',' in s and '.' in s:
+        if s.rfind('.') > s.rfind(','):
+            s = s.replace(',', '')
+        else:
+            s = s.replace('.', '').replace(',', '.')
+    elif ',' in s:
+        # Virgule = décimal (cas français)
+        s = s.replace(',', '.')
+    return s
+
+
+class TolerantDecimalField(forms.DecimalField):
+    """DecimalField qui tolère les espaces et la virgule comme séparateur décimal."""
+
+    def to_python(self, value):
+        return super().to_python(_normalize_decimal_string(value))
 
 
 class BeneficiaryForm(ModelForm):
@@ -163,14 +200,29 @@ class FinancialSnapshotForm(ModelForm):
             ]
         }
         
-        # Appliquer les classes CSS à tous les champs
+        # Remplacer les DecimalField par une variante tolérante (espaces, virgule).
+        for field_name, field in list(self.fields.items()):
+            if isinstance(field, forms.DecimalField) and not isinstance(field, TolerantDecimalField):
+                self.fields[field_name] = TolerantDecimalField(
+                    max_digits=field.max_digits,
+                    decimal_places=field.decimal_places,
+                    required=False,
+                    label=field.label,
+                    help_text=field.help_text,
+                    initial=field.initial,
+                )
+
+        # Appliquer les classes CSS et un input texte tolérant aux séparateurs.
         for field_name, field in self.fields.items():
+            if isinstance(field, forms.DecimalField):
+                field.widget = forms.TextInput(attrs={
+                    'inputmode': 'decimal',
+                    'data-decimal-input': 'true',
+                })
             field.widget.attrs.update({
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
-                'step': '0.01',
-                'min': '0'
             })
-            
+
             # Pour les champs décimaux, ne pas afficher 0 si la valeur est null
             if hasattr(field, 'initial') and field.initial == 0:
                 field.initial = None

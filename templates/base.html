@@ -333,6 +333,31 @@
             });
         });
 
+        function normalizeDecimalInput(value) {
+            if (value == null) return value;
+            let s = String(value).trim();
+            if (!s) return s;
+            s = s.replace(/[\u00a0\u202f ]/g, '');
+            const hasComma = s.includes(',');
+            const hasDot = s.includes('.');
+            if (hasComma && hasDot) {
+                if (s.lastIndexOf('.') > s.lastIndexOf(',')) {
+                    s = s.replace(/,/g, '');
+                } else {
+                    s = s.replace(/\./g, '').replace(',', '.');
+                }
+            } else if (hasComma) {
+                s = s.replace(',', '.');
+            }
+            return s;
+        }
+        document.addEventListener('blur', (e) => {
+            const t = e.target;
+            if (!t || t.dataset?.decimalInput !== 'true') return;
+            const normalized = normalizeDecimalInput(t.value);
+            if (normalized !== t.value) t.value = normalized;
+        }, true);
+
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
             const t = e.target;
