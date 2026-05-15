@@ -40,9 +40,49 @@ class TolerantDecimalField(forms.DecimalField):
         return super().to_python(_normalize_decimal_string(value))
 
 
+TOLERANT_DATE_FORMATS = (
+    '%d/%m/%Y',  # 17/03/2008
+    '%d-%m-%Y',  # 17-03-2008
+    '%d.%m.%Y',  # 17.03.2008
+    '%d/%m/%y',  # 17/03/08
+    '%Y-%m-%d',  # 2008-03-17 (ISO, format natif <input type=date>)
+)
+
+
+class TolerantDateField(forms.DateField):
+    """DateField acceptant JJ/MM/AAAA et plusieurs séparateurs.
+
+    Rendue en <input type=text> pour permettre la saisie clavier libre
+    (le widget natif type=date impose AAAA-MM-JJ et bloque les anciennes
+    dates dans certains navigateurs).
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('input_formats', TOLERANT_DATE_FORMATS)
+        kwargs.setdefault(
+            'widget',
+            forms.TextInput(attrs={
+                'inputmode': 'numeric',
+                'placeholder': 'JJ/MM/AAAA',
+                'data-tolerant-date': 'true',
+                'autocomplete': 'off',
+            }),
+        )
+        super().__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        # Pre-remplir au format JJ/MM/AAAA pour coherence visuelle.
+        if hasattr(value, 'strftime'):
+            return value.strftime('%d/%m/%Y')
+        return super().prepare_value(value)
+
+
 class BeneficiaryForm(ModelForm):
     """Formulaire pour créer/modifier un bénéficiaire"""
-    
+
+    birth_date = TolerantDateField(required=False, label='Date de naissance')
+    first_entry_date = TolerantDateField(required=False, label='Date de première entrée')
+
     class Meta:
         model = Beneficiary
         fields = [
@@ -55,14 +95,6 @@ class BeneficiaryForm(ModelForm):
             'file_number': forms.TextInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'placeholder': 'N° de dossier'
-            }),
-            'first_entry_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-            }),
-            'birth_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'civility': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -142,11 +174,12 @@ class BeneficiaryForm(ModelForm):
         if not self.instance.pk:  # Nouvelle création seulement
             self.fields['gdpr_consent'].required = True
 
-        # Formater la date de naissance pour les champs type="date" (correction du bug)
-        if self.instance.pk and self.instance.birth_date:
-            self.initial['birth_date'] = self.instance.birth_date.strftime('%Y-%m-%d')
-        if self.instance.pk and self.instance.first_entry_date:
-            self.initial['first_entry_date'] = self.instance.first_entry_date.strftime('%Y-%m-%d')
+        # Cohérence visuelle: classes CSS sur les champs date tolérants.
+        for date_field in ('birth_date', 'first_entry_date'):
+            self.fields[date_field].widget.attrs.setdefault(
+                'class',
+                'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            )
 
         # Tous les autres champs sont optionnels
         for field_name, field in self.fields.items():
@@ -262,18 +295,19 @@ class FinancialSnapshotForm(ModelForm):
 
 class ChildForm(ModelForm):
     """Formulaire pour les enfants"""
-    
+
+    birth_date = TolerantDateField(required=False, label='Date de naissance')
+
     class Meta:
         model = Child
         fields = ['first_name', 'last_name', 'gender', 'birth_date', 'observations']
         widgets = {
-            'birth_date': forms.DateInput(attrs={'type': 'date'}),
             'gender': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'observations': forms.Textarea(attrs={'rows': 2}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
@@ -294,7 +328,9 @@ ChildFormSet = formset_factory(
 
 class InteractionForm(ModelForm):
     """Formulaire pour créer/modifier une interaction"""
-    
+
+    follow_up_date = TolerantDateField(required=False, label='Date de suivi')
+
     class Meta:
         model = Interaction
         fields = [
@@ -342,10 +378,6 @@ class InteractionForm(ModelForm):
             }),
             'follow_up_required': forms.CheckboxInput(attrs={
                 'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
-            }),
-            'follow_up_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'follow_up_notes': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
