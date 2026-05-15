@@ -1,11 +1,22 @@
 from django import forms
 from django.forms import ModelForm
 from django.contrib.auth.models import User
+
+from rosa.form_fields import TolerantDateField
 from .models import Volunteer
 
 
 class VolunteerForm(ModelForm):
     """Formulaire pour créer/modifier un bénévole"""
+
+    birth_date = TolerantDateField(required=False, label='Date de naissance', widget=forms.TextInput(attrs={
+        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    }))
+    join_date = TolerantDateField(required=False, label='Date d\'arrivee', widget=forms.TextInput(attrs={
+        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    }))
 
     # Champs pour créer l'utilisateur Django
     username = forms.CharField(
@@ -32,20 +43,6 @@ class VolunteerForm(ModelForm):
             'skills', 'join_date'
         ]
         widgets = {
-            'birth_date': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={
-                    'type': 'date',
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                }
-            ),
-            'join_date': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={
-                    'type': 'date',
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                }
-            ),
             'civility': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),

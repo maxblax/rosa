@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 
+from rosa.form_fields import TolerantDateField
 from .models import Appointment, AvailabilitySlot, VolunteerCalendar
 from volunteers.models import Volunteer
 from beneficiaries.models import Beneficiary
@@ -33,10 +34,13 @@ class AppointmentForm(forms.ModelForm):
         })
     )
 
-    appointment_date = forms.DateField(
+    appointment_date = TolerantDateField(
         label="Date du rendez-vous",
-        widget=forms.DateInput(attrs={
-            'type': 'date',
+        widget=forms.TextInput(attrs={
+            'inputmode': 'numeric',
+            'placeholder': 'JJ/MM/AAAA',
+            'autocomplete': 'off',
+            'data-tolerant-date': 'true',
             'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             'hx-get': '/calendrier/api/available-volunteers/',
             'hx-target': '#id_volunteer_calendar',
@@ -273,6 +277,19 @@ class AppointmentForm(forms.ModelForm):
 
 
 class AvailabilitySlotForm(forms.ModelForm):
+    specific_date = TolerantDateField(required=False, label='Date specifique', widget=forms.TextInput(attrs={
+        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    }))
+    valid_from = TolerantDateField(required=False, label='Valide a partir du', widget=forms.TextInput(attrs={
+        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    }))
+    valid_until = TolerantDateField(required=False, label="Valide jusqu'au", widget=forms.TextInput(attrs={
+        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    }))
+
     class Meta:
         model = AvailabilitySlot
         fields = [
@@ -293,13 +310,6 @@ class AvailabilitySlotForm(forms.ModelForm):
             'weekday': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
-            'specific_date': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={
-                    'type': 'date',
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                }
-            ),
             'start_time': forms.TimeInput(attrs={
                 'type': 'time',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -308,20 +318,6 @@ class AvailabilitySlotForm(forms.ModelForm):
                 'type': 'time',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
-            'valid_from': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={
-                    'type': 'date',
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                }
-            ),
-            'valid_until': forms.DateInput(
-                format='%Y-%m-%d',
-                attrs={
-                    'type': 'date',
-                    'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                }
-            ),
             'notes': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 3

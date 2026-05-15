@@ -1525,8 +1525,16 @@ def available_volunteers_api(request):
         return HttpResponse(html)
 
     try:
-        # Parse des dates/heures
-        apt_date = datetime.strptime(appointment_date, '%Y-%m-%d').date()
+        # Parse de la date : tolere ISO et formats fr (JJ/MM/AAAA, JJ-MM-AAAA, ...).
+        apt_date = None
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%d.%m.%Y', '%d/%m/%y'):
+            try:
+                apt_date = datetime.strptime(appointment_date, fmt).date()
+                break
+            except ValueError:
+                continue
+        if apt_date is None:
+            raise ValueError("date format")
         start_dt = datetime.strptime(start_time, '%H:%M').time()
         end_dt = datetime.strptime(end_time, '%H:%M').time()
 

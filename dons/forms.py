@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 from django import forms
 from datetime import date
+
+from rosa.form_fields import TolerantDateField
 from .models import Donation
 
 
 class donationForm(forms.ModelForm):
     """Formulaire pour creer/modifier un don manuel"""
+
+    date = TolerantDateField(required=False, label='Date du don', widget=forms.TextInput(attrs={
+        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+    }))
 
     class Meta:
         model = Donation
@@ -22,10 +29,6 @@ class donationForm(forms.ModelForm):
                 'min': '0'
             }),
             'payment_type': forms.Select(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-            }),
-            'date': forms.DateInput(attrs={
-                'type': 'date',
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'is_anonymous': forms.CheckboxInput(attrs={

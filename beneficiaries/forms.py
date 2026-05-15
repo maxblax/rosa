@@ -1,80 +1,8 @@
-import re
-
 from django import forms
 from django.forms import ModelForm, formset_factory
+
+from rosa.form_fields import TolerantDateField, TolerantDecimalField
 from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
-
-
-def _normalize_decimal_string(value):
-    """Nettoie une saisie utilisateur en nombre décimal lisible par Python/Decimal.
-
-    Tolère espaces (y compris insécables), séparateurs milliers virgule/point,
-    et virgule décimale. Renvoie la valeur originale si elle n'est ni str ni
-    convertible.
-    """
-    if value is None:
-        return value
-    if not isinstance(value, str):
-        return value
-    s = value.strip()
-    if not s:
-        return s
-    # Supprime espaces normaux et insécables (séparateur de milliers fr)
-    s = s.replace('\u00a0', '').replace('\u202f', '').replace(' ', '')
-    # Cas "1,234.56" -> virgule = milliers, point = decimal -> retire virgules
-    if ',' in s and '.' in s:
-        if s.rfind('.') > s.rfind(','):
-            s = s.replace(',', '')
-        else:
-            s = s.replace('.', '').replace(',', '.')
-    elif ',' in s:
-        # Virgule = décimal (cas français)
-        s = s.replace(',', '.')
-    return s
-
-
-class TolerantDecimalField(forms.DecimalField):
-    """DecimalField qui tolère les espaces et la virgule comme séparateur décimal."""
-
-    def to_python(self, value):
-        return super().to_python(_normalize_decimal_string(value))
-
-
-TOLERANT_DATE_FORMATS = (
-    '%d/%m/%Y',  # 17/03/2008
-    '%d-%m-%Y',  # 17-03-2008
-    '%d.%m.%Y',  # 17.03.2008
-    '%d/%m/%y',  # 17/03/08
-    '%Y-%m-%d',  # 2008-03-17 (ISO, format natif <input type=date>)
-)
-
-
-class TolerantDateField(forms.DateField):
-    """DateField acceptant JJ/MM/AAAA et plusieurs séparateurs.
-
-    Rendue en <input type=text> pour permettre la saisie clavier libre
-    (le widget natif type=date impose AAAA-MM-JJ et bloque les anciennes
-    dates dans certains navigateurs).
-    """
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('input_formats', TOLERANT_DATE_FORMATS)
-        kwargs.setdefault(
-            'widget',
-            forms.TextInput(attrs={
-                'inputmode': 'numeric',
-                'placeholder': 'JJ/MM/AAAA',
-                'data-tolerant-date': 'true',
-                'autocomplete': 'off',
-            }),
-        )
-        super().__init__(*args, **kwargs)
-
-    def prepare_value(self, value):
-        # Pre-remplir au format JJ/MM/AAAA pour coherence visuelle.
-        if hasattr(value, 'strftime'):
-            return value.strftime('%d/%m/%Y')
-        return super().prepare_value(value)
 
 
 class BeneficiaryForm(ModelForm):
