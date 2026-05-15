@@ -95,7 +95,19 @@ class BeneficiaryDetailView(CanModifyBeneficiariesMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['financial_snapshots'] = self.object.financial_snapshots.all()[:10]  # Derniers 10
+        # Garder un seul snapshot par mois calendaire (le plus recent).
+        all_snapshots = self.object.financial_snapshots.all()
+        seen_months = set()
+        deduped = []
+        for snap in all_snapshots:
+            key = (snap.date.year, snap.date.month)
+            if key in seen_months:
+                continue
+            seen_months.add(key)
+            deduped.append(snap)
+            if len(deduped) >= 10:
+                break
+        context['financial_snapshots'] = deduped
         context['latest_snapshot'] = self.object.latest_financial_snapshot
         context['children'] = self.object.children.all()
         context['interactions'] = self.object.interactions.select_related('user').all()[:10]  # Dernières 10
@@ -294,29 +306,28 @@ class InteractionCreateView(CanModifyBeneficiariesMixin, CreateView):
             self.object.save()
             
             # Si un snapshot financier est renseigné, le sauvegarder
-            # On ne bloque jamais l'interaction, même si les données financières ont des problèmes
+            # Upsert mensuel: un seul snapshot par bénéficiaire et par mois calendaire.
             if self._has_financial_data_from_request():
                 try:
-                    # Créer le snapshot manuellement avec les données POST
-                    financial_snapshot = FinancialSnapshot(beneficiary=self.beneficiary)
-                    
-                    # Parcourir tous les champs du modèle FinancialSnapshot
-                    for field in FinancialSnapshot._meta.fields:
-                        if field.name not in ['id', 'beneficiary', 'date']:
-                            value = self.request.POST.get(field.name, '')
-                            if value == '' or value is None:
-                                setattr(financial_snapshot, field.name, 0)
-                            else:
-                                try:
-                                    setattr(financial_snapshot, field.name, float(value))
-                                except (ValueError, TypeError):
-                                    setattr(financial_snapshot, field.name, 0)
-                    
-                    financial_snapshot.save()
-                    
-                    # Associer le snapshot à l'interaction
-                    self.object.financial_snapshot = financial_snapshot
-                    self.object.save()
+                    now = timezone.now()
+                    current_month_snapshot = self.beneficiary.financial_snapshots.filter(
+                        date__year=now.year,
+                        date__month=now.month,
+                    ).first()
+                    financial_form = FinancialSnapshotForm(
+                        self.request.POST,
+                        instance=current_month_snapshot,
+                    )
+                    if financial_form.is_valid():
+                        financial_snapshot = financial_form.save(commit=False)
+                        financial_snapshot.beneficiary = self.beneficiary
+                        if current_month_snapshot:
+                            financial_snapshot.date = now
+                        financial_snapshot.save()
+
+                        # Associer le snapshot à l'interaction
+                        self.object.financial_snapshot = financial_snapshot
+                        self.object.save()
                 except Exception as e:
                     # Si la création du snapshot échoue, on continue quand même
                     print(f"Erreur lors de la création du snapshot: {e}")

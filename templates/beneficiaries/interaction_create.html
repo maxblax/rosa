@@ -333,7 +333,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // S'assurer que tous les champs financiers ne sont pas requis
-    const financialInputs = document.querySelectorAll('#financial-section input[type="number"]');
+    const financialInputs = document.querySelectorAll('#financial-section input[data-decimal-input="true"], #financial-section input[type="number"]');
     financialInputs.forEach(input => {
         input.removeAttribute('required');
     });
