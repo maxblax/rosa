@@ -258,6 +258,12 @@ class InteractionForm(ModelForm):
     """Formulaire pour créer/modifier une interaction"""
 
     follow_up_date = TolerantDateField(required=False, label='Date de suivi')
+    primary_need = forms.MultipleChoiceField(
+        label='Besoins exprimés',
+        choices=[c for c in Interaction.PRIMARY_NEED_CHOICES if c[0]],
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-2'}),
+    )
 
     class Meta:
         model = Interaction
@@ -280,9 +286,6 @@ class InteractionForm(ModelForm):
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 6,
                 'placeholder': 'Décrivez la situation, les besoins exprimés, les observations...'
-            }),
-            'primary_need': forms.Select(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             }),
             'primary_need_details': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
@@ -320,19 +323,34 @@ class InteractionForm(ModelForm):
         self.fields['interaction_type'].required = True
         self.fields['title'].required = True
         self.fields['description'].required = True
-        
+
+        # Pre-cocher les besoins existants en cas d'edition (CSV -> liste).
+        instance = kwargs.get('instance') or getattr(self, 'instance', None)
+        if instance and instance.pk and instance.primary_need:
+            self.initial['primary_need'] = instance.primary_need_list
+
         # Appliquer les classes CSS uniformément
         for field_name, field in self.fields.items():
             if field_name == 'follow_up_required':
                 continue  # Le checkbox a déjà ses classes
-            
+            if field_name == 'primary_need':
+                continue  # Geré séparément (CheckboxSelectMultiple).
+
             if 'class' not in field.widget.attrs:
                 if isinstance(field.widget, forms.Textarea):
                     field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 elif isinstance(field.widget, forms.Select):
                     field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 else:
-                    field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500' 
+                    field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+    def clean_primary_need(self):
+        """Serialise la liste cochee en CSV pour le stockage modele."""
+        codes = self.cleaned_data.get('primary_need') or []
+        if isinstance(codes, str):
+            codes = [codes]
+        return ','.join(codes)
+
 
 class DocumentForm(ModelForm):
     """Formulaire pour uploader un document"""

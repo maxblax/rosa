@@ -551,14 +551,27 @@ class Interaction(models.Model):
         verbose_name='Photo instantanée financière associée'
     )
     
-    # Premier besoin exprimé
+    # Besoins exprimés (selection multiple, stockee comme liste CSV).
     primary_need = models.CharField(
-        '1er besoin exprimé',
-        max_length=20,
-        choices=PRIMARY_NEED_CHOICES,
-        blank=True
+        'Besoins exprimés',
+        max_length=200,
+        blank=True,
+        help_text='Codes des besoins separes par des virgules (ex: ALIMENTAIRE,VESTIMENTAIRE).',
     )
     primary_need_details = models.TextField('Précisez le besoin', blank=True)
+
+    @property
+    def primary_need_list(self):
+        """Renvoie la liste des codes de besoins exprimes."""
+        if not self.primary_need:
+            return []
+        return [s.strip() for s in self.primary_need.split(',') if s.strip()]
+
+    @property
+    def primary_need_labels(self):
+        """Renvoie la liste des libelles des besoins exprimes."""
+        labels = dict(self.PRIMARY_NEED_CHOICES)
+        return [labels.get(code, code) for code in self.primary_need_list]
 
     # Secours financiers
     financial_aid_amount = models.DecimalField(

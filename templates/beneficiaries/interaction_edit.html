@@ -260,22 +260,19 @@ document.addEventListener('DOMContentLoaded', function() {
     followUpCheckbox.addEventListener('change', toggleFollowUpFields);
     toggleFollowUpFields(); // Initialiser l'état
 
-    // Gestion du champ primary_need_details
-    const primaryNeedSelect = document.getElementById('{{ form.primary_need.id_for_label }}');
+    // Gestion du champ primary_need_details : visible des qu'au moins un besoin est coche.
+    const primaryNeedCheckboxes = document.querySelectorAll('input[name="primary_need"]');
     const primaryNeedDetailsWrapper = document.getElementById('primary-need-details-wrapper');
 
     function togglePrimaryNeedDetails() {
-        if (primaryNeedSelect && primaryNeedSelect.value) {
-            primaryNeedDetailsWrapper.style.display = 'block';
-        } else {
-            primaryNeedDetailsWrapper.style.display = 'none';
+        const anyChecked = [...primaryNeedCheckboxes].some(cb => cb.checked);
+        if (primaryNeedDetailsWrapper) {
+            primaryNeedDetailsWrapper.style.display = anyChecked ? 'block' : 'none';
         }
     }
 
-    if (primaryNeedSelect) {
-        primaryNeedSelect.addEventListener('change', togglePrimaryNeedDetails);
-        togglePrimaryNeedDetails();
-    }
+    primaryNeedCheckboxes.forEach(cb => cb.addEventListener('change', togglePrimaryNeedDetails));
+    togglePrimaryNeedDetails();
 });
 </script>
 {% endblock %}

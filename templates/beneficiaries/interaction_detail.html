@@ -66,8 +66,12 @@
                         
                         {% if interaction.primary_need %}
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">1er besoin exprimé</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ interaction.get_primary_need_display }}</dd>
+                            <dt class="text-sm font-medium text-gray-500">Besoins exprimés</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                {% for label in interaction.primary_need_labels %}
+                                    <span class="inline-block bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-md mr-1 mb-1">{{ label }}</span>
+                                {% endfor %}
+                            </dd>
                         </div>
                         {% endif %}
 
