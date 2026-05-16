@@ -330,11 +330,18 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center justify-between">
-                                        <a href="{% url 'beneficiaries:interaction_detail' beneficiary.pk interaction.pk %}" 
+                                        <a href="{% url 'beneficiaries:interaction_detail' beneficiary.pk interaction.pk %}"
                                            class="text-sm font-medium text-gray-900 hover:text-blue-600">
                                             {{ interaction.title }}
                                         </a>
-                                        <span class="text-xs text-gray-500">{{ interaction.created_at|date:"d/m/Y" }}</span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs text-gray-500">{{ interaction.created_at|date:"d/m/Y" }}</span>
+                                            <a href="{% url 'beneficiaries:interaction_edit' beneficiary.pk interaction.pk %}"
+                                               class="text-xs text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center"
+                                               title="Modifier cette interaction">
+                                                <i class="fas fa-pen mr-1"></i>Éditer
+                                            </a>
+                                        </div>
                                     </div>
                                     <p class="text-sm text-gray-600 mt-1">{{ interaction.get_interaction_type_display }}</p>
                                     {% if interaction.description %}
