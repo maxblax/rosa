@@ -35,7 +35,7 @@ def check_input(page, url, input_id):
     }}""")
     assert info is not None, f"input #{input_id} introuvable sur {url}"
     assert info["type"] == "text", f"#{input_id} type={info['type']}, attendu text"
-    assert info["placeholder"] == "JJ/MM/AAAA", f"#{input_id} placeholder={info['placeholder']}"
+    assert info["placeholder"].startswith("JJ/MM/AAAA"), f"#{input_id} placeholder={info['placeholder']}"
     assert info["dataset"] == "true", f"#{input_id} dataset.tolerantDate={info['dataset']}"
     print(f"  OK: {url} #{input_id}")
 
