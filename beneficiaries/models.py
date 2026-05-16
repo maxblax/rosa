@@ -188,75 +188,92 @@ class FinancialSnapshot(models.Model):
     
     # Revenus - Prestations sociales/minimas sociaux
     rsa_prime_activite = models.DecimalField(
-        'RSA/Prime d\'activité', 
-        max_digits=10, 
-        decimal_places=2, 
+        'RSA / Prime d\'activité',
+        max_digits=10,
+        decimal_places=2,
         null=True,
-        blank=True
+        blank=True,
+        help_text="Revenu de Solidarité Active / Prime d'activité (CAF).",
     )
     aah_pension_invalidite = models.DecimalField(
         'AAH, PI (pension d\'invalidité)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Allocation Adulte Handicapé ou Pension d'Invalidité.",
     )
     apl = models.DecimalField(
-        'APL (Bailleur ou bénéficiaire)',
+        'APL (Aide Personnalisée au Logement)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Versée par la CAF, directement au bénéficiaire ou au bailleur.",
     )
-    paje = models.DecimalField('PAJE', max_digits=10, decimal_places=2, default=0)
+    paje = models.DecimalField(
+        'PAJE (Prestation d\'Accueil du Jeune Enfant)',
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Prime à la naissance, allocation de base et compléments (CAF).",
+    )
     af = models.DecimalField(
         'AF (Allocations Familiales)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Versées à partir de 2 enfants à charge (CAF).",
     )
     cf = models.DecimalField(
         'CF (Complément Familial)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Versé aux familles d'au moins 3 enfants de plus de 3 ans (CAF).",
     )
     asf = models.DecimalField(
         'ASF (Allocation de Soutien Familial)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Versée aux parents isolés ou en cas de pension alimentaire impayée (CAF).",
     )
     ape_conge_parental = models.DecimalField(
-        'APE Congé Parental',
+        'APE / Congé Parental',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Allocation Parentale d'Éducation ou indemnité de congé parental.",
     )
-    
+
     # Revenus
     ij_cpam_msa = models.DecimalField(
-        'IJ CPAM/MSA',
+        'IJ CPAM / MSA (indemnités journalières)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Indemnités Journalières versées par la CPAM (régime général) ou la MSA (agricole).",
     )
     france_travail = models.DecimalField(
-        'France Travail',
+        'France Travail (ex Pôle Emploi)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Allocation Retour à l'Emploi (ARE) ou Allocation de Solidarité Spécifique (ASS).",
     )
     retraite_aspa = models.DecimalField(
-        'Retraite, A.S.P.A.',
+        'Retraite / ASPA',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Pension de retraite ou Allocation de Solidarité aux Personnes Âgées (minimum vieillesse).",
     )
     salaire = models.DecimalField('Salaire', max_digits=10, decimal_places=2, default=0)
     ada = models.DecimalField(
-        'Allocation Demandeur d\'Asile (ADA)',
+        'ADA (Allocation Demandeur d\'Asile)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Allocation versée par l'OFII aux demandeurs d'asile.",
     )
     stage_formation_bourses = models.DecimalField(
         'Stage, Formation, bourses',
@@ -300,7 +317,8 @@ class FinancialSnapshot(models.Model):
         'Contrat Garantie Jeunes (MLJ)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Mission Locale Jeunes — accompagnement et allocation pour les 16-25 ans.",
     )
     contrat_apprentissage = models.DecimalField(
         'Contrat d\'apprentissage',
@@ -355,7 +373,8 @@ class FinancialSnapshot(models.Model):
         'CSS (Complémentaire Santé Solidaire)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Ex-CMU-C : remplace la CMU-C et l'ACS depuis 2019. Gratuite ou < 30€/mois selon ressources.",
     )
     frais_scolaires = models.DecimalField(
         'Frais scolaires (cantine, sorties)',

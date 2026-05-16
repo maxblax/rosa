@@ -66,8 +66,13 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {% for field_name, field in fields %}
                                 <div>
-                                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                                        {{ field.label }}
+                                    <label for="{{ field.id_for_label }}" class="flex items-center gap-1 text-sm font-medium text-gray-700">
+                                        <span>{{ field.label }}</span>
+                                        {% if field.help_text %}
+                                            <span class="text-gray-400 cursor-help" title="{{ field.help_text }}">
+                                                <i class="fas fa-info-circle text-xs"></i>
+                                            </span>
+                                        {% endif %}
                                     </label>
                                     <div class="mt-1 relative rounded-md shadow-sm">
                                         {{ field }}
@@ -75,6 +80,9 @@
                                             <span class="text-gray-500 sm:text-sm">€</span>
                                         </div>
                                     </div>
+                                    {% if field.help_text %}
+                                        <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                                    {% endif %}
                                     {% if field.errors %}
                                         <div class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</div>
                                     {% endif %}
@@ -107,8 +115,13 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {% for field_name, field in fields %}
                                 <div>
-                                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
-                                        {{ field.label }}
+                                    <label for="{{ field.id_for_label }}" class="flex items-center gap-1 text-sm font-medium text-gray-700">
+                                        <span>{{ field.label }}</span>
+                                        {% if field.help_text %}
+                                            <span class="text-gray-400 cursor-help" title="{{ field.help_text }}">
+                                                <i class="fas fa-info-circle text-xs"></i>
+                                            </span>
+                                        {% endif %}
                                     </label>
                                     <div class="mt-1 relative rounded-md shadow-sm">
                                         {{ field }}
