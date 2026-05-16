@@ -10,7 +10,15 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime
 from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
-from .forms import BeneficiaryForm, FinancialSnapshotForm, ChildForm, ChildFormSet, InteractionForm, DocumentForm
+from .forms import (
+    BeneficiaryForm,
+    FinancialSnapshotForm,
+    ChildForm,
+    ChildFormSet,
+    HouseholdAdultFormSet,
+    InteractionForm,
+    DocumentForm,
+)
 from volunteers.permissions import CanModifyBeneficiariesMixin
 
 
@@ -110,6 +118,7 @@ class BeneficiaryDetailView(CanModifyBeneficiariesMixin, DetailView):
         context['financial_snapshots'] = deduped
         context['latest_snapshot'] = self.object.latest_financial_snapshot
         context['children'] = self.object.children.all()
+        context['household_adults'] = self.object.household_adults.all()
         context['interactions'] = self.object.interactions.select_related('user').all()[:10]  # Dernières 10
         context['documents'] = self.object.documents.select_related('uploaded_by').all()
         return context
@@ -126,6 +135,7 @@ class BeneficiaryUpdateView(CanModifyBeneficiariesMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['children_formset'] = ChildFormSet(self.request.POST, prefix='children')
+            context['adults_formset'] = HouseholdAdultFormSet(self.request.POST, prefix='adults')
         else:
             # Créer un formset avec les enfants existants
             children_data = []
@@ -137,30 +147,54 @@ class BeneficiaryUpdateView(CanModifyBeneficiariesMixin, UpdateView):
                     'observations': child.observations
                 })
             context['children_formset'] = ChildFormSet(initial=children_data, prefix='children')
+
+            adults_data = []
+            for adult in self.object.household_adults.all():
+                adults_data.append({
+                    'civility': adult.civility,
+                    'first_name': adult.first_name,
+                    'last_name': adult.last_name,
+                    'relationship': adult.relationship,
+                    'birth_date': adult.birth_date.strftime('%d/%m/%Y') if adult.birth_date else '',
+                    'observations': adult.observations,
+                })
+            context['adults_formset'] = HouseholdAdultFormSet(initial=adults_data, prefix='adults')
         return context
-    
+
     def form_valid(self, form):
         context = self.get_context_data()
         children_formset = context['children_formset']
-        
+        adults_formset = context['adults_formset']
+
         with transaction.atomic():
             self.object = form.save()
-            
+
             if children_formset.is_valid():
                 # Supprimer les enfants existants
                 self.object.children.all().delete()
-                
+
                 # Créer les nouveaux enfants
                 for child_form in children_formset:
                     if child_form.cleaned_data and not child_form.cleaned_data.get('DELETE', False):
                         child = child_form.save(commit=False)
                         child.beneficiary = self.object
                         child.save()
-                
-                messages.success(self.request, 'Bénéficiaire modifié avec succès.')
-                return redirect(self.object.get_absolute_url())
-        
-        return self.form_invalid(form)
+
+            if adults_formset.is_valid():
+                # Supprimer les adultes existants puis recreer.
+                self.object.household_adults.all().delete()
+                for adult_form in adults_formset:
+                    cleaned = getattr(adult_form, 'cleaned_data', None) or {}
+                    if not cleaned or cleaned.get('DELETE'):
+                        continue
+                    if not cleaned.get('first_name') and not cleaned.get('last_name'):
+                        continue
+                    adult = adult_form.save(commit=False)
+                    adult.beneficiary = self.object
+                    adult.save()
+
+            messages.success(self.request, 'Bénéficiaire modifié avec succès.')
+            return redirect(self.object.get_absolute_url())
 
 
 @login_required

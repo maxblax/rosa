@@ -489,6 +489,72 @@ class Child(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 
+class HouseholdAdult(models.Model):
+    """Adulte rattache au foyer du beneficiaire (conjoint, parent age, etc.)."""
+
+    RELATIONSHIP_CHOICES = [
+        ('CONJOINT', 'Conjoint·e'),
+        ('PARENT', 'Parent'),
+        ('ENFANT_MAJEUR', 'Enfant majeur'),
+        ('AUTRE_FAMILLE', 'Autre famille'),
+        ('AUTRE', 'Autre'),
+    ]
+
+    CIVILITY_CHOICES = [
+        ('M', 'Monsieur'),
+        ('Mme', 'Madame'),
+        ('Mlle', 'Mademoiselle'),
+        ('Autre', 'Autre'),
+    ]
+
+    beneficiary = models.ForeignKey(
+        Beneficiary,
+        on_delete=models.CASCADE,
+        related_name='household_adults',
+        verbose_name='Beneficiaire',
+    )
+    civility = models.CharField('Civilite', max_length=10, choices=CIVILITY_CHOICES, blank=True)
+    first_name = models.CharField('Prenom', max_length=100)
+    last_name = models.CharField('Nom', max_length=100, blank=True)
+    relationship = models.CharField(
+        'Lien familial',
+        max_length=20,
+        choices=RELATIONSHIP_CHOICES,
+        blank=True,
+    )
+    birth_date = models.DateField('Date de naissance', null=True, blank=True)
+    observations = models.TextField('Observations', blank=True)
+
+    created_at = models.DateTimeField('Cree le', auto_now_add=True)
+    updated_at = models.DateTimeField('Modifie le', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Membre adulte du foyer'
+        verbose_name_plural = 'Membres adultes du foyer'
+        ordering = ['relationship', 'last_name', 'first_name']
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}".strip() or 'Adulte du foyer'
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def age(self):
+        if not self.birth_date:
+            return None
+        from datetime import date
+
+        today = date.today()
+        age = today.year - self.birth_date.year
+        if today.month < self.birth_date.month or (
+            today.month == self.birth_date.month and today.day < self.birth_date.day
+        ):
+            age -= 1
+        return age
+
+
 class Interaction(models.Model):
     """Modèle pour enregistrer les interactions avec les bénéficiaires"""
     

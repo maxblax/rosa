@@ -2,7 +2,7 @@ from django import forms
 from django.forms import ModelForm, formset_factory
 
 from rosa.form_fields import TolerantDateField, TolerantDecimalField
-from .models import Beneficiary, FinancialSnapshot, Child, Interaction, Document
+from .models import Beneficiary, FinancialSnapshot, Child, HouseholdAdult, Interaction, Document
 
 
 class BeneficiaryForm(ModelForm):
@@ -251,6 +251,40 @@ ChildFormSet = formset_factory(
     can_delete=True,
     min_num=0,
     max_num=10
+)
+
+
+class HouseholdAdultForm(ModelForm):
+    """Formulaire pour un membre adulte du foyer."""
+
+    birth_date = TolerantDateField(required=False, label='Date de naissance')
+
+    class Meta:
+        model = HouseholdAdult
+        fields = ['civility', 'first_name', 'last_name', 'relationship', 'birth_date', 'observations']
+        widgets = {
+            'civility': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'relationship': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+            }),
+            'observations': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if 'class' not in field.widget.attrs:
+                field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+
+HouseholdAdultFormSet = formset_factory(
+    HouseholdAdultForm,
+    extra=0,
+    can_delete=True,
+    min_num=0,
+    max_num=10,
 )
 
 

@@ -261,11 +261,38 @@
                             <div class="flex items-center">
                                 <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
                                 <p class="text-sm text-yellow-800">
-                                    {{ beneficiary.dependents_count }} enfant{{ beneficiary.dependents_count|pluralize }} déclaré{{ beneficiary.dependents_count|pluralize }}, 
-                                    mais aucune information détaillée renseignée. 
+                                    {{ beneficiary.dependents_count }} enfant{{ beneficiary.dependents_count|pluralize }} déclaré{{ beneficiary.dependents_count|pluralize }},
+                                    mais aucune information détaillée renseignée.
                                     <a href="{% url 'beneficiaries:edit' beneficiary.pk %}" class="underline font-medium">Modifier le profil</a> pour ajouter les détails.
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Membres adultes du foyer -->
+                    {% if household_adults %}
+                    <div class="mt-8">
+                        <h4 class="text-md font-medium text-gray-900 mb-4">Membres adultes du foyer</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {% for adult in household_adults %}
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 class="font-medium text-purple-900">
+                                        {% if adult.civility %}{{ adult.civility }} {% endif %}{{ adult.full_name }}
+                                    </h5>
+                                    {% if adult.relationship %}
+                                        <span class="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">{{ adult.get_relationship_display }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if adult.birth_date %}
+                                    <p class="text-sm text-purple-700 mb-2">Né(e) le {{ adult.birth_date|date:"d/m/Y" }}{% if adult.age %} ({{ adult.age }} ans){% endif %}</p>
+                                {% endif %}
+                                {% if adult.observations %}
+                                    <p class="text-xs text-purple-600 italic bg-purple-100 p-2 rounded">{{ adult.observations|truncatewords:20 }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                     {% endif %}
