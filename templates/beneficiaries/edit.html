@@ -257,13 +257,53 @@
             </div>
         </div>
 
-        <!-- Section Système d'Alertes -->
-        <div class="bg-white shadow-lg sm:rounded-lg">
+        <!-- Section Enfants -->
+        <div id="children-section" class="bg-white shadow-lg sm:rounded-lg" style="display: none;">
             <div class="px-6 py-6 sm:p-8">
                 <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-8">
-                    <i class="fas fa-exclamation-triangle mr-2 text-orange-500"></i>
-                    Système d'Alertes et Profils
+                    Enfants à Charge
                 </h3>
+                
+                <div id="children-forms">
+                    {{ children_formset.management_form }}
+                    {% for form in children_formset %}
+                        <div class="child-form border border-gray-200 rounded-lg p-4 mb-4">
+                            <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Prénom</label>
+                                    {{ form.first_name }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Nom</label>
+                                    {{ form.last_name }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Sexe</label>
+                                    {{ form.gender }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
+                                    {{ form.birth_date }}
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Observations</label>
+                                    {{ form.observations }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section finale: Synthèse de l'entretien -->
+        <div class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-exclamation-triangle mr-2 text-orange-500"></i>
+                    Synthèse de l'entretien
+                </h3>
+                <p class="text-sm text-gray-500 mb-6">À ajuster en fonction de l'évolution de la situation.</p>
 
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                     <!-- Profil spécifique -->
@@ -322,52 +362,13 @@
             </div>
         </div>
 
-        <!-- Section Enfants -->
-        <div id="children-section" class="bg-white shadow-lg sm:rounded-lg" style="display: none;">
-            <div class="px-6 py-6 sm:p-8">
-                <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-8">
-                    Enfants à Charge
-                </h3>
-                
-                <div id="children-forms">
-                    {{ children_formset.management_form }}
-                    {% for form in children_formset %}
-                        <div class="child-form border border-gray-200 rounded-lg p-4 mb-4">
-                            <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Prénom</label>
-                                    {{ form.first_name }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Nom</label>
-                                    {{ form.last_name }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Sexe</label>
-                                    {{ form.gender }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
-                                    {{ form.birth_date }}
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-700">Observations</label>
-                                    {{ form.observations }}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
         <!-- Boutons d'action -->
         <div class="flex justify-end space-x-3">
-            <a href="{% url 'beneficiaries:detail' beneficiary.pk %}" 
+            <a href="{% url 'beneficiaries:detail' beneficiary.pk %}"
                class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Annuler
             </a>
-            <button type="submit" 
+            <button type="submit"
                     class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Enregistrer les modifications
             </button>
