@@ -285,10 +285,15 @@ class AvailabilitySlotForm(forms.ModelForm):
         'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
         'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
     }))
-    valid_until = TolerantDateField(required=False, label="Valide jusqu'au", widget=forms.TextInput(attrs={
-        'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA', 'autocomplete': 'off', 'data-tolerant-date': 'true',
-        'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-    }))
+    valid_until = TolerantDateField(
+        required=False,
+        label="Valide jusqu'au",
+        help_text="Laisser vide pour une disponibilité sans date de fin (récurrence jusqu'à nouvel ordre).",
+        widget=forms.TextInput(attrs={
+            'inputmode': 'numeric', 'placeholder': 'JJ/MM/AAAA (vide = sans fin)', 'autocomplete': 'off', 'data-tolerant-date': 'true',
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+        }),
+    )
 
     class Meta:
         model = AvailabilitySlot

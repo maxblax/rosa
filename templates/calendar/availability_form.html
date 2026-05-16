@@ -203,6 +203,14 @@
                             {{ form.valid_until.label }}
                         </label>
                         {{ form.valid_until }}
+                        <div class="mt-2 flex items-center">
+                            <input type="checkbox" id="no-end-date-checkbox"
+                                   {% if not form.valid_until.value %}checked{% endif %}
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="no-end-date-checkbox" class="ml-2 text-sm text-gray-700">
+                                Sans date de fin (récurrent jusqu'à nouvel ordre)
+                            </label>
+                        </div>
                         {% if form.valid_until.errors %}
                         <div class="mt-1 text-sm text-red-600">{{ form.valid_until.errors }}</div>
                         {% endif %}
@@ -417,6 +425,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial setup
     toggleRecurrenceFields();
     updatePreview();
+
+    // "Sans date de fin" : checkbox synchronisee avec le champ valid_until.
+    const noEndCheckbox = document.getElementById('no-end-date-checkbox');
+    const validUntilInput = document.getElementById('{{ form.valid_until.id_for_label }}');
+    if (noEndCheckbox && validUntilInput) {
+        const syncFromCheckbox = () => {
+            if (noEndCheckbox.checked) {
+                validUntilInput.value = '';
+                validUntilInput.disabled = true;
+                validUntilInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+            } else {
+                validUntilInput.disabled = false;
+                validUntilInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+            }
+        };
+        noEndCheckbox.addEventListener('change', syncFromCheckbox);
+        validUntilInput.addEventListener('input', () => {
+            if (validUntilInput.value.trim() !== '') {
+                noEndCheckbox.checked = false;
+            }
+        });
+        syncFromCheckbox();
+    }
 });
 
 // Make function global for onchange
