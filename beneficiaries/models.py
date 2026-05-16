@@ -323,10 +323,11 @@ class FinancialSnapshot(models.Model):
     
     # Charges - Logement
     loyer_residuel = models.DecimalField(
-        'Loyer résiduel',
+        'Loyer (montant total)',
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
+        help_text="Saisir le montant total du loyer. Les APL sont à saisir comme un revenu dans la section appropriée.",
     )
     energie = models.DecimalField('Énergie', max_digits=10, decimal_places=2, default=0)
     eau = models.DecimalField('Eau', max_digits=10, decimal_places=2, default=0)

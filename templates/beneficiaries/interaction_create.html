@@ -303,6 +303,9 @@
                                                     <span class="text-gray-500 sm:text-sm">€</span>
                                                 </div>
                                             </div>
+                                            {% if field.help_text %}
+                                                <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
