@@ -179,6 +179,9 @@ HELLOASSO_API_SECRET = os.environ.get('HELLOASSO_API_SECRET', '9G+Zctzo8ZUT0iWaB
 HELLOASSO_ORGANIZATION_SLUG = os.environ.get('HELLOASSO_ORGANIZATION_SLUG', 'association-protestante-d-assistance')
 
 
+LOG_DIR = Path(os.environ.get('LOG_DIR', BASE_DIR / 'logs'))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -192,7 +195,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '.claude/django_server.log',
+            'filename': LOG_DIR / 'django.log',
             'formatter': 'verbose',
         },
         'console': {

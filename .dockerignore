@@ -16,3 +16,4 @@ tests_playwright
 /*.png
 **/__pycache__
 **/*.pyc
+logs
