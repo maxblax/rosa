@@ -28,7 +28,7 @@ class HelloAssoService:
         logger.info("=" * 80)
         logger.info("HelloAsso Service Initialized")
         logger.info(f"ENABLE_HELLOASSO_INTEGRATION: {settings.ENABLE_HELLOASSO_INTEGRATION}")
-        logger.info(f"HELLOASSO_API_KEY: {self.client_id[:10] if self.client_id else 'NOT SET'}...")
+        logger.info(f"HELLOASSO_API_KEY: {"SET" if self.client_id else "NOT SET"}")
         logger.info(f"HELLOASSO_API_SECRET: {'SET' if self.client_secret else 'NOT SET'} (length: {len(self.client_secret) if self.client_secret else 0})")
         logger.info(f"HELLOASSO_ORGANIZATION_SLUG: {self.organization_slug}")
         logger.info("=" * 80)
@@ -53,7 +53,7 @@ class HelloAssoService:
             return True
 
         try:
-            logger.info(f"Attempting HelloAsso authentication with client_id: {self.client_id[:10]}...")
+            logger.info(f"Attempting HelloAsso authentication (client_id set)")
             response = requests.post(
                 self.OAUTH_URL,
                 data={

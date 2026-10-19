@@ -174,8 +174,8 @@ ADMIN_URL = os.environ.get('ADMIN_URL', 'admin')
 
 # HelloAsso Integration Settings
 ENABLE_HELLOASSO_INTEGRATION = os.environ.get('ENABLE_HELLOASSO_INTEGRATION', 'True').lower() in ('true', '1', 't', 'yes')
-HELLOASSO_API_KEY = os.environ.get('HELLOASSO_API_KEY', 'e68c68ac00654206b8a4057c78dcb285')
-HELLOASSO_API_SECRET = os.environ.get('HELLOASSO_API_SECRET', '9G+Zctzo8ZUT0iWaBcJKzTh5YYuHIVbY')
+HELLOASSO_API_KEY = os.environ.get('HELLOASSO_API_KEY', '')
+HELLOASSO_API_SECRET = os.environ.get('HELLOASSO_API_SECRET', '')
 HELLOASSO_ORGANIZATION_SLUG = os.environ.get('HELLOASSO_ORGANIZATION_SLUG', 'association-protestante-d-assistance')
 
 
