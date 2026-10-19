@@ -1,0 +1,113 @@
+{% comment %}Section « Membres adultes du foyer » partagée entre création et édition. Attend adults_formset dans le contexte.{% endcomment %}
+        <!-- Section Adultes du foyer -->
+        <div id="adults-section" class="bg-white shadow-lg sm:rounded-lg">
+            <div class="px-6 py-6 sm:p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                        Membres adultes du foyer
+                    </h3>
+                    <button type="button" id="add-adult-btn"
+                            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-plus mr-2"></i>
+                        Ajouter un adulte
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 mb-4">Conjoint, parent, enfant majeur, autre adulte vivant au foyer du bénéficiaire.</p>
+
+                <div id="adults-forms">
+                    {{ adults_formset.management_form }}
+                    {% for form in adults_formset %}
+                        <div class="adult-form border border-gray-200 rounded-lg p-4 mb-4">
+                            <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Civilité</label>
+                                    {{ form.civility }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Lien familial</label>
+                                    {{ form.relationship }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Prénom</label>
+                                    {{ form.first_name }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Nom</label>
+                                    {{ form.last_name }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
+                                    {{ form.birth_date }}
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Observations</label>
+                                    {{ form.observations }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des adultes du foyer (ajout dynamique).
+    const adultsForms = document.getElementById('adults-forms');
+    const addAdultBtn = document.getElementById('add-adult-btn');
+    const adultsTotalInput = document.querySelector('[name="adults-TOTAL_FORMS"]');
+
+    function addAdultForm() {
+        const index = parseInt(adultsTotalInput.value || '0', 10);
+        const newForm = document.createElement('div');
+        newForm.className = 'adult-form border border-gray-200 rounded-lg p-4 mb-4';
+        newForm.innerHTML = `
+            <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Civilité</label>
+                    <select name="adults-${index}-civility" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">---------</option>
+                        <option value="M">Monsieur</option>
+                        <option value="Mme">Madame</option>
+                        <option value="Mlle">Mademoiselle</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Lien familial</label>
+                    <select name="adults-${index}-relationship" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">---------</option>
+                        <option value="CONJOINT">Conjoint·e</option>
+                        <option value="PARENT">Parent</option>
+                        <option value="ENFANT_MAJEUR">Enfant majeur</option>
+                        <option value="AUTRE_FAMILLE">Autre famille</option>
+                        <option value="AUTRE">Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Prénom</label>
+                    <input type="text" name="adults-${index}-first_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nom</label>
+                    <input type="text" name="adults-${index}-last_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Date de naissance</label>
+                    <input type="text" name="adults-${index}-birth_date" inputmode="numeric" placeholder="JJ/MM/AAAA" data-tolerant-date="true" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">Observations</label>
+                    <textarea name="adults-${index}-observations" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+            </div>
+        `;
+        adultsForms.appendChild(newForm);
+        adultsTotalInput.value = index + 1;
+    }
+
+    if (addAdultBtn) {
+        addAdultBtn.addEventListener('click', addAdultForm);
+    }
+});
+</script>

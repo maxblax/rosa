@@ -59,16 +59,19 @@ class BeneficiaryCreateView(CanModifyBeneficiariesMixin, CreateView):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['financial_form'] = FinancialSnapshotForm(self.request.POST)
+            context['adults_formset'] = HouseholdAdultFormSet(self.request.POST, prefix='adults')
         else:
             context['financial_form'] = FinancialSnapshotForm()
+            context['adults_formset'] = HouseholdAdultFormSet(prefix='adults')
         return context
     
     def form_valid(self, form):
         context = self.get_context_data()
         financial_form = context['financial_form']
+        adults_formset = context['adults_formset']
 
         with transaction.atomic():
-            if financial_form.is_valid():
+            if financial_form.is_valid() and adults_formset.is_valid():
                 # Sauvegarder le bénéficiaire
                 self.object = form.save(commit=False)
 
@@ -82,6 +85,16 @@ class BeneficiaryCreateView(CanModifyBeneficiariesMixin, CreateView):
                 financial_snapshot = financial_form.save(commit=False)
                 financial_snapshot.beneficiary = self.object
                 financial_snapshot.save()
+
+                for adult_form in adults_formset:
+                    cleaned = getattr(adult_form, 'cleaned_data', None) or {}
+                    if not cleaned or cleaned.get('DELETE'):
+                        continue
+                    if not cleaned.get('first_name') and not cleaned.get('last_name'):
+                        continue
+                    adult = adult_form.save(commit=False)
+                    adult.beneficiary = self.object
+                    adult.save()
 
                 messages.success(
                     self.request,
