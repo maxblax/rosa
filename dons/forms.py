@@ -2,7 +2,7 @@
 from django import forms
 from datetime import date
 
-from rosa.form_fields import TolerantDateField
+from rosa.form_fields import TolerantDateField, TolerantDecimalField
 from .models import Donation
 
 
@@ -14,6 +14,19 @@ class donationForm(forms.ModelForm):
         'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
     }))
 
+    amount = TolerantDecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        label='Montant',
+        help_text='Montant du don en euros',
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            'inputmode': 'decimal',
+            'placeholder': 'Montant en euros (ex : 1 200,50)',
+        }),
+    )
+
     class Meta:
         model = Donation
         fields = ['donor_name', 'amount', 'payment_type', 'date', 'is_anonymous', 'notes']
@@ -21,12 +34,6 @@ class donationForm(forms.ModelForm):
             'donor_name': forms.TextInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'placeholder': 'Nom du drosateur (laisser vide pour anonyme)'
-            }),
-            'amount': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'placeholder': 'Montant en euros',
-                'step': '0.01',
-                'min': '0'
             }),
             'payment_type': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'

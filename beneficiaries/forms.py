@@ -292,6 +292,19 @@ class InteractionForm(ModelForm):
     """Formulaire pour créer/modifier une interaction"""
 
     follow_up_date = TolerantDateField(required=False, label='Date de suivi')
+    financial_aid_amount = TolerantDecimalField(
+        required=False,
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        label='Montant du secours financier',
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            'inputmode': 'decimal',
+            'data-decimal-input': 'true',
+            'placeholder': 'ex : 50 ou 1 200,50',
+        }),
+    )
     primary_need = forms.MultipleChoiceField(
         label='Besoins exprimés',
         choices=[c for c in Interaction.PRIMARY_NEED_CHOICES if c[0]],
@@ -325,12 +338,6 @@ class InteractionForm(ModelForm):
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
                 'rows': 3,
                 'placeholder': 'Précisez le besoin exprimé...'
-            }),
-            'financial_aid_amount': forms.NumberInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-                'step': '0.01',
-                'min': '0',
-                'placeholder': '0.00'
             }),
             'financial_aid_details': forms.TextInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
