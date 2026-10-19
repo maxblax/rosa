@@ -7,14 +7,15 @@ de remplissage).
 """
 import os
 import sys
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "http://localhost:5678"
-USER = "admin"
-PASSWORD = "admin123!"
+BASE_URL = os.environ.get("ROSA_BASE_URL", "http://localhost:5678")
+USER = os.environ.get("ROSA_USER", "admin")
+PASSWORD = os.environ.get("ROSA_PASSWORD", "admin123!")
 
 
 def login(page):
@@ -52,16 +53,21 @@ def check_order(page, url):
     print(f"  OK {url}: first_name={pos_first_name}, profile_tag={pos_profile}, alert_level={pos_alert_first}")
 
 
+def create_beneficiary(page, first_name, last_name):
+    page.goto(f"{BASE_URL}/beneficiaires/new/")
+    page.wait_for_load_state("domcontentloaded")
+    page.check("#id_gdpr_consent")
+    page.fill("#id_first_name", first_name)
+    page.fill("#id_last_name", last_name)
+    page.click('button[type="submit"]:has-text("Créer")')
+    page.wait_for_load_state("domcontentloaded")
+    # URL finale: /beneficiaires/<pk>/
+    parts = page.url.rstrip("/").split("/")
+    return int(parts[-1])
+
+
 def main():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rosa.settings")
-    import django
-
-    django.setup()
-    from beneficiaries.models import Beneficiary
-
-    b = Beneficiary.objects.first()
-    assert b is not None
-    pk = b.pk
+    unique = uuid.uuid4().hex[:8]
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -69,6 +75,7 @@ def main():
         try:
             login(page)
             print("Amelioration 2.1 — Ordre des champs:")
+            pk = create_beneficiary(page, "E2E", f"TEST{unique}")
             check_order(page, f"{BASE_URL}/beneficiaires/new/")
             check_order(page, f"{BASE_URL}/beneficiaires/{pk}/edit/")
         finally:

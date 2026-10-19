@@ -2,14 +2,15 @@
 """Section 3.1 — help_text/tooltips sur les acronymes d'aides."""
 import os
 import sys
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "http://localhost:5678"
-USER = "admin"
-PASSWORD = "admin123!"
+BASE_URL = os.environ.get("ROSA_BASE_URL", "http://localhost:5678")
+USER = os.environ.get("ROSA_USER", "admin")
+PASSWORD = os.environ.get("ROSA_PASSWORD", "admin123!")
 
 
 def login(page):
@@ -20,15 +21,20 @@ def login(page):
     page.wait_for_url(f"{BASE_URL}/")
 
 
+def create_beneficiary(page, first_name, last_name):
+    page.goto(f"{BASE_URL}/beneficiaires/new/")
+    page.wait_for_load_state("domcontentloaded")
+    page.check("#id_gdpr_consent")
+    page.fill("#id_first_name", first_name)
+    page.fill("#id_last_name", last_name)
+    page.click('button[type="submit"]:has-text("Créer")')
+    page.wait_for_load_state("domcontentloaded")
+    parts = page.url.rstrip("/").split("/")
+    return int(parts[-1])
+
+
 def main():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rosa.settings")
-    import django
-
-    django.setup()
-    from beneficiaries.models import Beneficiary
-
-    b = Beneficiary.objects.first()
-    pk = b.pk
+    unique = uuid.uuid4().hex[:8]
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -36,6 +42,8 @@ def main():
         try:
             login(page)
             print("Section 3.1 — Tooltips acronymes aides:")
+            pk = create_beneficiary(page, "E2E", f"AIDES{unique}")
+
             page.goto(f"{BASE_URL}/beneficiaires/{pk}/snapshot/new/")
             page.wait_for_load_state("domcontentloaded")
             # Verifier presence de help_text pour quelques sigles cles

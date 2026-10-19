@@ -3,12 +3,13 @@
 
 Les formulaires GET (recherche/filtre) doivent rester soumettables avec Entrée.
 """
+import os
 import sys
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "http://localhost:5678"
-USER = "admin"
-PASSWORD = "admin123!"
+BASE_URL = os.environ.get("ROSA_BASE_URL", "http://localhost:5678")
+USER = os.environ.get("ROSA_USER", "admin")
+PASSWORD = os.environ.get("ROSA_PASSWORD", "admin123!")
 
 
 def login(page):

@@ -2,14 +2,15 @@
 """Section 3.2 — Bouton Editer sur les interactions de la fiche beneficiaire."""
 import os
 import sys
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "http://localhost:5678"
-USER = "admin"
-PASSWORD = "admin123!"
+BASE_URL = os.environ.get("ROSA_BASE_URL", "http://localhost:5678")
+USER = os.environ.get("ROSA_USER", "admin")
+PASSWORD = os.environ.get("ROSA_PASSWORD", "admin123!")
 
 
 def login(page):
@@ -20,23 +21,30 @@ def login(page):
     page.wait_for_url(f"{BASE_URL}/")
 
 
+def create_beneficiary(page, first_name, last_name):
+    page.goto(f"{BASE_URL}/beneficiaires/new/")
+    page.wait_for_load_state("domcontentloaded")
+    page.check("#id_gdpr_consent")
+    page.fill("#id_first_name", first_name)
+    page.fill("#id_last_name", last_name)
+    page.click('button[type="submit"]:has-text("Créer")')
+    page.wait_for_load_state("domcontentloaded")
+    parts = page.url.rstrip("/").split("/")
+    return int(parts[-1])
+
+
+def create_interaction(page, pk, title):
+    page.goto(f"{BASE_URL}/beneficiaires/{pk}/interactions/new/")
+    page.wait_for_load_state("domcontentloaded")
+    page.fill("#id_title", title)
+    page.fill("#id_description", "Test edit button")
+    page.click('button[type="submit"]:has-text("Enregistrer")')
+    page.wait_for_load_state("domcontentloaded")
+
+
 def main():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rosa.settings")
-    import django
-
-    django.setup()
-    from beneficiaries.models import Beneficiary, Interaction
-
-    b = Beneficiary.objects.first()
-    pk = b.pk
-
-    # S'assurer qu'au moins une interaction existe.
-    inter, created = Interaction.objects.get_or_create(
-        beneficiary_id=pk,
-        title="Interaction pour test edit",
-        defaults={"interaction_type": "ASSOCIATION", "description": "Test"},
-    )
-    ipk = inter.pk
+    unique = uuid.uuid4().hex[:8]
+    title = f"Interaction pour test edit {unique}"
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -44,24 +52,28 @@ def main():
         try:
             login(page)
             print("Section 3.2 — Bouton Editer interactions:")
+            pk = create_beneficiary(page, "E2E", f"EDIT{unique}")
+            create_interaction(page, pk, title)
+
             page.goto(f"{BASE_URL}/beneficiaires/{pk}/")
             page.wait_for_load_state("domcontentloaded")
+
             # Le bouton Editer doit etre present pour notre interaction
-            expected_url = f"/beneficiaires/{pk}/interactions/{ipk}/edit/"
-            found = page.evaluate(
-                f"() => !!document.querySelector('a[href=\"{expected_url}\"]')"
+            row = page.locator(f"#interaction-history div:has-text('{title}')").first
+            edit_link = row.locator('a:has-text("Éditer")')
+            href = edit_link.get_attribute("href")
+            assert href and f"/beneficiaires/{pk}/interactions/" in href and href.endswith("/edit/"), (
+                f"Bouton Editer absent ou href inattendu: {href!r}"
             )
-            assert found, f"Bouton Editer absent pour l'interaction {ipk}"
-            print(f"  OK: bouton Editer present (href {expected_url})")
+            print(f"  OK: bouton Editer present (href {href})")
+
             # Cliquer dessus et verifier qu'on atterrit sur la page d'edition
-            page.click(f'a[href="{expected_url}"]')
-            page.wait_for_url(f"**{expected_url}")
-            print(f"  OK: navigation vers la page edit fonctionne")
+            edit_link.click()
+            page.wait_for_url(f"**{href}")
+            print("  OK: navigation vers la page edit fonctionne")
         finally:
             browser.close()
 
-    if created:
-        Interaction.objects.filter(pk=ipk).delete()
     print("Tous les tests OK")
 
 

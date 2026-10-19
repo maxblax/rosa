@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "http://localhost:5678"
-USER = "admin"
-PASSWORD = "admin123!"
+BASE_URL = os.environ.get("ROSA_BASE_URL", "http://localhost:5678")
+USER = os.environ.get("ROSA_USER", "admin")
+PASSWORD = os.environ.get("ROSA_PASSWORD", "admin123!")
 
 
 def login(page):
@@ -41,11 +41,6 @@ def check_input(page, url, input_id):
 
 
 def main():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rosa.settings")
-    import django
-
-    django.setup()
-
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
