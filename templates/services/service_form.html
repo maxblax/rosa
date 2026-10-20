@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Modifier {{ object.name }}{% else %}Nouveau service{% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+    <a href="{% url 'services:catalogue' %}" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>Catalogue</a>
+    <h1 class="text-3xl font-bold text-gray-900 mt-2 mb-6">{% if object %}Modifier {{ object.name }}{% else %}Nouveau service{% endif %}</h1>
+    <form method="post" class="bg-white shadow-lg sm:rounded-lg p-6 space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<p class="text-sm text-red-600">{{ form.non_field_errors.0 }}</p>{% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form %}
+            {% if field.name in "name description kind category partner order" %}
+            <div class="{% if field.name == 'description' %}md:col-span-2{% endif %}">
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>{% endif %}
+                {% if field.errors %}<p class="text-sm text-red-600">{{ field.errors.0 }}</p>{% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+            <label class="flex items-center gap-2 text-sm text-gray-700">{{ form.is_active }} {{ form.is_active.label }}</label>
+            <label class="flex items-center gap-2 text-sm text-gray-700">{{ form.requires_details }} {{ form.requires_details.label }}</label>
+        </div>
+        <fieldset class="border-t pt-4">
+            <legend class="text-sm font-semibold text-gray-700">Distributions (uniquement pour le fonctionnement « Distribution »)</legend>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                {% for field in form %}
+                {% if field.name in "session_weekday session_start session_end sessions_per_registration scheduling session_capacity capacity_unit max_adults_per_booking max_children_per_booking" %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>{% endif %}
+                    {% if field.errors %}<p class="text-sm text-red-600">{{ field.errors.0 }}</p>{% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </fieldset>
+        <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Enregistrer</button>
+    </form>
+</div>
+{% endblock %}

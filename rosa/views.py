@@ -10,6 +10,26 @@ from django.db.models import Count, Q
 from calendar_app.models import Appointment, VolunteerCalendar
 from beneficiaries.models import Beneficiary, Interaction
 from news.models import News
+from services.models import Service, ServiceSession, FinancialAidRequest
+from services.permissions import is_services_admin
+from services import logic as services_logic
+
+
+def services_overview(user):
+    """Encarts du tableau de bord pour les administrateurs : aides à traiter, prochaines distributions."""
+    if not is_services_admin(user):
+        return None
+    sessions = []
+    for service in Service.objects.filter(is_active=True, kind=Service.KIND_DISTRIBUTION):
+        services_logic.upcoming_sessions(service, count=1)
+        session = ServiceSession.objects.filter(service=service, date__gte=timezone.localdate()).order_by('date').first()
+        if session:
+            sessions.append(session)
+    return {
+        'pending_aids': FinancialAidRequest.objects.filter(status=FinancialAidRequest.STATUS_PENDING).count(),
+        'approved_aids': FinancialAidRequest.objects.filter(status=FinancialAidRequest.STATUS_APPROVED).count(),
+        'sessions': sessions,
+    }
 
 
 @login_required
@@ -102,6 +122,7 @@ def home(request):
         'evolution_data': evolution_data,
         'evolution_data_json': json.dumps(evolution_data),
         'latest_news': latest_news,
+        'services_overview': services_overview(request.user),
     }
 
     return render(request, 'home.html', context)

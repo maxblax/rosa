@@ -1,0 +1,8 @@
+{% comment %}Onglets du module services (admin).{% endcomment %}
+<div class="mb-6 flex flex-wrap gap-2 text-sm">
+    {% url 'services:home' as u_home %}{% url 'services:aid_list' as u_aids %}{% url 'services:stats' as u_stats %}{% url 'services:catalogue' as u_cat %}
+    <a href="{{ u_home }}" class="px-3 py-2 rounded-md {% if request.path == u_home %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}"><i class="fas fa-hands-helping mr-1"></i>Distributions</a>
+    <a href="{{ u_aids }}" class="px-3 py-2 rounded-md {% if u_aids in request.path %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}"><i class="fas fa-euro-sign mr-1"></i>Aides financières{% if pending_aid_count %} <span class="ml-1 inline-flex px-2 rounded-full bg-red-600 text-white text-xs">{{ pending_aid_count }}</span>{% endif %}</a>
+    <a href="{{ u_stats }}" class="px-3 py-2 rounded-md {% if request.path == u_stats %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}"><i class="fas fa-chart-bar mr-1"></i>Statistiques</a>
+    <a href="{{ u_cat }}" class="px-3 py-2 rounded-md {% if u_cat in request.path %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}"><i class="fas fa-list mr-1"></i>Catalogue</a>
+</div>

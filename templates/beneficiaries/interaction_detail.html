@@ -102,6 +102,22 @@
                             <dd class="mt-1 text-sm text-gray-900">{{ interaction.financial_aid_details }}</dd>
                         </div>
                         {% endif %}
+
+                        {% with regs=interaction.service_registrations.all aids=interaction.financial_aid_requests.all %}
+                        {% if regs or aids %}
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">Services attribués</dt>
+                            <dd class="mt-1 flex flex-wrap gap-2">
+                                {% for reg in regs %}
+                                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ reg.service.name }}{% for b in reg.bookings.all %}{% if forloop.first %} : {% endif %}{{ b.session.date|date:"d/m" }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                                {% endfor %}
+                                {% for aid in aids %}
+                                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {{ aid.badge_classes }}">Aide {{ aid.amount|floatformat:2 }} € · {{ aid.get_status_display }}</span>
+                                {% endfor %}
+                            </dd>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
                     </dl>
                 </div>
             </div>

@@ -31,6 +31,7 @@ urlpatterns = [
     path('stock/', include('stock.urls')),
     path('analyses/', include('analysis.urls')),
     path('dons/', include('dons.urls')),
+    path('services/', include('services.urls')),
     path('', home, name='home'),
 ]
 

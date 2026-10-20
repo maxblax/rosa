@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}{{ service.name }} du {{ session.date|date:"d/m/Y" }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto py-8">
+    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div>
+            <a href="{% url 'services:session_list' service.pk %}" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>{{ service.name }}</a>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ service.name }} - {{ session.date|date:"l d F Y" }}</h1>
+            <p class="text-sm text-gray-600 mt-1">
+                {{ totals.families }} famille{{ totals.families|pluralize }} · {{ totals.adults }} adulte{{ totals.adults|pluralize }} · {{ totals.children }} enfant{{ totals.children|pluralize }} · {{ totals.babies }} bébé{{ totals.babies|pluralize }}
+                {% if session.capacity %} · jauge {{ session.load }}/{{ session.capacity }} {{ service.get_capacity_unit_display|lower }}{% endif %}
+                {% if session.is_closed %} · <span class="text-red-600 font-semibold">session fermée</span>{% endif %}
+            </p>
+        </div>
+        <a href="?print=1" target="_blank" class="inline-flex items-center px-4 py-2 rounded-md bg-white border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+            <i class="fas fa-print mr-2"></i>Imprimer la liste
+        </a>
+    </div>
+
+    <form method="post" class="bg-white shadow-lg sm:rounded-lg overflow-hidden">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="attendance">
+        <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
+                <tr>
+                    <th class="px-4 py-3">Nom</th><th class="px-4 py-3">Prénom</th>
+                    <th class="px-2 py-3 text-center">Adultes</th><th class="px-2 py-3 text-center">Enfants</th><th class="px-2 py-3 text-center">Bébés</th>
+                    <th class="px-4 py-3">Entretien</th><th class="px-4 py-3">Passage</th>
+                    <th class="px-4 py-3">Présence</th><th class="px-4 py-3">Observations</th><th></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for row in rows %}
+                {% with b=row.booking %}
+                <tr data-booking="{{ b.pk }}">
+                    <td class="px-4 py-2 font-medium"><a href="{% url 'beneficiaries:detail' row.beneficiary.pk %}" class="text-blue-700 hover:underline">{{ row.beneficiary.last_name|upper }}</a></td>
+                    <td class="px-4 py-2">{{ row.beneficiary.first_name }}</td>
+                    <td class="px-2 py-2 text-center">{{ b.adults }}</td>
+                    <td class="px-2 py-2 text-center">{{ b.children }}</td>
+                    <td class="px-2 py-2 text-center">{{ b.babies }}</td>
+                    <td class="px-4 py-2 text-gray-600">{{ row.interview_date|date:"d/m/Y" }}</td>
+                    <td class="px-4 py-2 text-gray-600">{% if row.rank %}{{ row.rank }}/{{ row.total }}{% endif %}</td>
+                    <td class="px-4 py-2 whitespace-nowrap">
+                        <label class="mr-2"><input type="radio" name="attended_{{ b.pk }}" value="yes" {% if b.attended %}checked{% endif %}> Présent</label>
+                        <label class="mr-2"><input type="radio" name="attended_{{ b.pk }}" value="no" {% if b.attended is False %}checked{% endif %}> Absent</label>
+                        <label class="text-gray-400"><input type="radio" name="attended_{{ b.pk }}" value="" {% if b.attended is None %}checked{% endif %}> ?</label>
+                    </td>
+                    <td class="px-4 py-2"><input type="text" name="obs_{{ b.pk }}" value="{{ b.observations }}" class="w-48 px-2 py-1 border border-gray-300 rounded-md"></td>
+                    <td class="px-2 py-2">
+                        <button type="submit" form="remove-{{ b.pk }}" class="text-red-600 hover:text-red-800" title="Retirer de la liste"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr><td colspan="10" class="px-4 py-6 text-center text-gray-500">Aucune famille inscrite sur cette session.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if rows %}
+        <div class="px-4 py-4 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm text-gray-600">Présents : {{ totals.present }} · Absents : {{ totals.absent }} · Non pointés : {{ totals.unknown }}</p>
+            <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Enregistrer les présences</button>
+        </div>
+        {% endif %}
+    </form>
+    {% for row in rows %}
+    <form id="remove-{{ row.booking.pk }}" method="post" onsubmit="return confirm('Retirer cette famille de la liste ?');">{% csrf_token %}<input type="hidden" name="action" value="remove"><input type="hidden" name="booking" value="{{ row.booking.pk }}"></form>
+    {% endfor %}
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form method="post" class="bg-white shadow sm:rounded-lg p-6 space-y-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_family">
+            <h2 class="text-lg font-semibold">Ajouter une famille à la liste</h2>
+            {{ add_form.beneficiary }}
+            <button type="submit" class="px-4 py-2 rounded-md bg-green-600 text-white text-sm hover:bg-green-700">Ajouter</button>
+        </form>
+        <form method="post" class="bg-white shadow sm:rounded-lg p-6 space-y-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="settings">
+            <h2 class="text-lg font-semibold">Réglages de la session</h2>
+            <label class="block text-sm text-gray-700">Jauge ({{ service.get_capacity_unit_display|lower }}, vide = pas de limite) {{ settings_form.capacity }}</label>
+            <label class="flex items-center gap-2 text-sm text-gray-700">{{ settings_form.is_closed }} Session fermée (jour férié, absence...)</label>
+            <label class="block text-sm text-gray-700">Notes {{ settings_form.notes }}</label>
+            <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Enregistrer</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

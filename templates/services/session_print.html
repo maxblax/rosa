@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ service.name }} - {{ session.date|date:"d/m/Y" }}</title>
+<style>
+    body { font-family: Arial, sans-serif; font-size: 12px; margin: 16px; color: #111; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p { margin: 0 0 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #999; padding: 6px; text-align: left; }
+    th { background: #eee; }
+    .num { text-align: center; width: 50px; }
+    .box { width: 60px; }
+    .wide { width: 180px; }
+    @media print { .noprint { display: none; } }
+</style>
+</head>
+<body>
+<button class="noprint" onclick="window.print()">Imprimer</button>
+<h1>{{ ASSOCIATION_NAME }} - {{ service.name }}</h1>
+<p>{{ session.date|date:"l d F Y" }}{% if session.start_time %}, {{ session.start_time|time:"H\hi" }}{% if session.end_time %} - {{ session.end_time|time:"H\hi" }}{% endif %}{% endif %} ·
+   {{ totals.families }} familles · {{ totals.adults }} adultes · {{ totals.children }} enfants · {{ totals.babies }} bébés</p>
+<table>
+    <thead><tr><th>Nom</th><th>Prénom</th><th class="num">Adultes</th><th class="num">Enfants</th><th class="num">Bébés</th><th>Entretien</th><th class="num">Passage</th><th class="box">Présent</th><th class="wide">Observations</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+    <tr>
+        <td>{{ row.beneficiary.last_name|upper }}</td><td>{{ row.beneficiary.first_name }}</td>
+        <td class="num">{{ row.booking.adults }}</td><td class="num">{{ row.booking.children }}</td><td class="num">{{ row.booking.babies }}</td>
+        <td>{{ row.interview_date|date:"d/m/Y" }}</td><td class="num">{% if row.rank %}{{ row.rank }}/{{ row.total }}{% endif %}</td>
+        <td class="box"></td><td class="wide">{{ row.booking.observations }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

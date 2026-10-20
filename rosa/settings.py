@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'news',
     'analysis',
     'dons',
+    'services',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +83,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'rosa.context_processors.association_info',  # Infos association
+                'services.context_processors.services_badges',
             ],
         },
     },
@@ -216,3 +218,15 @@ LOGGING = {
         },
     },
 }
+# Envoi de mails (notifications des demandes d'aide financière).
+# Sans EMAIL_HOST, aucun mail n'est envoyé : les notifications restent sur le tableau de bord.
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't', 'yes')
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 't', 'yes')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@localhost')
+
+# URL publique du site, utilisée pour les liens dans les mails (ex : https://gestion.apa30.fr).
+SITE_URL = os.environ.get('SITE_URL', '')

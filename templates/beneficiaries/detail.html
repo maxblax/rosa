@@ -468,63 +468,7 @@
                 </div>
             </div>
 
-            <!-- Services Éligibles -->
-            {% if latest_snapshot %}
-            <div class="bg-white shadow-lg sm:rounded-lg">
-                <div class="px-6 py-6 sm:p-8">
-                    <h3 class="text-xl leading-6 font-semibold text-gray-900 mb-8">
-                        Services Éligibles
-                    </h3>
-                    
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">Distribution Alimentaire</p>
-                                <p class="text-xs text-gray-500">Aide Alimentaire - Banque Alimentaire</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Actif
-                                </span>
-                                <button class="text-red-600 hover:text-red-900 text-xs">
-                                    Désactiver
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">Vestiaire Social</p>
-                                <p class="text-xs text-gray-500">Vêtements - Croix Rouge</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    Inactif
-                                </span>
-                                <button class="text-green-600 hover:text-green-900 text-xs">
-                                    Activer
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">Aide au Logement</p>
-                                <p class="text-xs text-gray-500">Logement - CCAS</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    Inactif
-                                </span>
-                                <button class="text-green-600 hover:text-green-900 text-xs">
-                                    Activer
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+            {% include 'services/partials/beneficiary_services.html' %}
         </div>
     </div>
 </div>

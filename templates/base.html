@@ -119,6 +119,15 @@
                         <span class="sidebar-text ml-3">Bénéficiaires</span>
                     </a>
                     {% endif %}
+                    {% if user.is_superuser or user.volunteer_profile and user.volunteer_profile.can_manage_users %}
+                    <a href="{% url 'services:home' %}"
+                       class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'services' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
+                       title="Services">
+                        <i class="fas fa-clipboard-list sidebar-icon w-5"></i>
+                        <span class="sidebar-text ml-3">Services</span>
+                        {% if pending_aid_count %}<span id="nav-pending-aids" class="sidebar-text ml-auto inline-flex px-2 rounded-full bg-red-600 text-white text-xs">{{ pending_aid_count }}</span>{% endif %}
+                    </a>
+                    {% endif %}
                     <a href="{% url 'volunteers:list' %}"
                        class="flex items-center px-4 py-3 {% if request.resolver_match.app_name == 'volunteers' %}bg-slate-900 text-white{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %} rounded-lg transition-colors"
                        title="Bénévoles">

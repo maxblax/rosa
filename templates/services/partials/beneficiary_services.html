@@ -1,0 +1,111 @@
+{% comment %}Bloc « Services » de la fiche bénéficiaire : passages du jour, inscriptions, aides financières.{% endcomment %}
+<div id="beneficiary-services" class="bg-white shadow-lg sm:rounded-lg">
+    <div class="px-6 py-6 sm:p-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                <i class="fas fa-hands-helping text-green-600 mr-2"></i>Services
+            </h3>
+            <a href="{% url 'beneficiaries:interaction_create' beneficiary.pk %}" class="text-sm text-blue-600 hover:text-blue-800">
+                <i class="fas fa-plus mr-1"></i>Via un entretien
+            </a>
+        </div>
+
+        {% if todays_bookings %}
+        <div class="mb-6 p-4 rounded-lg bg-green-50 border border-green-200">
+            <p class="text-sm font-semibold text-green-900 mb-3">Attendu aujourd'hui</p>
+            {% for booking in todays_bookings %}
+            <form method="post" action="{% url 'services:booking_mark' booking.pk %}" class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                {% csrf_token %}
+                <span class="text-sm text-gray-900">{{ booking.session.service.name }}</span>
+                <span class="flex gap-2">
+                    <button type="submit" name="attended" value="yes" class="px-3 py-1 rounded-md bg-green-600 text-white text-xs hover:bg-green-700">
+                        <i class="fas fa-check mr-1"></i>Venu aujourd'hui
+                    </button>
+                    <button type="submit" name="attended" value="no" class="px-3 py-1 rounded-md bg-white border border-gray-300 text-gray-700 text-xs hover:bg-gray-50">
+                        Absent
+                    </button>
+                </span>
+            </form>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if aid_requests %}
+        <div class="mb-6">
+            <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Aides financières</h4>
+            <ul class="divide-y divide-gray-100">
+                {% for aid in aid_requests %}
+                <li class="py-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm text-gray-900">
+                            <strong>{{ aid.amount|floatformat:2 }} €</strong> - {{ aid.get_nature_display }}
+                            <span class="block text-xs text-gray-500">{{ aid.reason|truncatechars:80 }} · {{ aid.created_at|date:"d/m/Y" }}</span>
+                        </span>
+                        <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap {{ aid.badge_classes }}">{{ aid.get_status_display }}</span>
+                    </div>
+                    {% if aid.status == 'REJECTED' and aid.rejection_reason %}
+                        <p class="mt-1 text-xs text-red-700">Motif du refus : {{ aid.rejection_reason }}</p>
+                    {% endif %}
+                    {% if is_services_admin %}
+                        <a href="{% url 'services:aid_detail' aid.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Voir la demande</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Inscriptions et orientations</h4>
+        {% if service_registrations %}
+        <ul class="divide-y divide-gray-100">
+            {% for reg in service_registrations %}
+            <li class="py-3">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ reg.service.name }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ reg.created_at|date:"d/m/Y" }}{% if reg.created_by %} · {{ reg.created_by.get_full_name|default:reg.created_by.username }}{% endif %}
+                            {% if reg.partner_label %} · {{ reg.partner_label }}{% endif %}
+                        </p>
+                        {% if reg.details %}<p class="text-xs text-gray-700 mt-1">{{ reg.details }}</p>{% endif %}
+                    </div>
+                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
+                        {% if reg.status == 'ACTIVE' %}bg-blue-100 text-blue-800{% elif reg.status == 'DONE' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ reg.get_status_display }}
+                    </span>
+                </div>
+                {% with bookings=reg.bookings.all %}
+                {% if bookings %}
+                <div class="mt-2 flex flex-wrap gap-2">
+                    {% for b in bookings %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
+                        {% if b.attended %}bg-green-100 text-green-800{% elif b.attended is False %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-700{% endif %}"
+                        title="{{ b.adults }} adulte(s), {{ b.children }} enfant(s), {{ b.babies }} bébé(s)">
+                        {{ b.session.date|date:"d/m" }}
+                        {% if b.attended %}<i class="fas fa-check ml-1"></i>{% elif b.attended is False %} absent{% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+                {% if reg.status == 'ACTIVE' %}
+                <div class="mt-2 flex flex-wrap gap-3">
+                    {% if reg.service.is_simple %}
+                        <a href="{% url 'services:registration_voucher' reg.pk %}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800"><i class="fas fa-print mr-1"></i>Bon d'orientation</a>
+                        <form method="post" action="{% url 'services:registration_done' reg.pk %}">{% csrf_token %}
+                            <button type="submit" class="text-xs text-green-700 hover:text-green-900"><i class="fas fa-check mr-1"></i>Réalisé</button>
+                        </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'services:registration_cancel' reg.pk %}" onsubmit="return confirm('Annuler cette inscription ?');">{% csrf_token %}
+                        <button type="submit" class="text-xs text-red-600 hover:text-red-800">Annuler</button>
+                    </form>
+                </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+            <p class="text-sm text-gray-500">Aucun service pour l'instant. Les services s'attribuent pendant un entretien.</p>
+        {% endif %}
+    </div>
+</div>

@@ -20,6 +20,10 @@ from .forms import (
     DocumentForm,
 )
 from volunteers.permissions import CanModifyBeneficiariesMixin
+from partners.models import Partner
+from services.forms import InteractionServicesForm
+from services.logic import RegistrationError, todays_bookings
+from services.permissions import is_services_admin
 
 
 class BeneficiaryListView(CanModifyBeneficiariesMixin, ListView):
@@ -134,6 +138,11 @@ class BeneficiaryDetailView(CanModifyBeneficiariesMixin, DetailView):
         context['household_adults'] = self.object.household_adults.all()
         context['interactions'] = self.object.interactions.select_related('user').all()[:10]  # Dernières 10
         context['documents'] = self.object.documents.select_related('uploaded_by').all()
+        context['service_registrations'] = self.object.service_registrations.select_related(
+            'service__partner', 'created_by').prefetch_related('bookings__session')[:30]
+        context['aid_requests'] = self.object.financial_aid_requests.all()[:10]
+        context['todays_bookings'] = todays_bookings(self.object)
+        context['is_services_admin'] = is_services_admin(self.request.user)
         return context
 
 
@@ -322,6 +331,9 @@ class InteractionCreateView(CanModifyBeneficiariesMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['beneficiary'] = self.beneficiary
+        context['services_form'] = kwargs.get('services_form') or InteractionServicesForm(
+            self.request.POST or None, beneficiary=self.beneficiary)
+        context['partners'] = Partner.objects.order_by('name')
         
         # Ajouter le formulaire de snapshot financier pré-rempli avec les dernières données
         if self.request.POST:
@@ -343,6 +355,21 @@ class InteractionCreateView(CanModifyBeneficiariesMixin, CreateView):
         return context
     
     def form_valid(self, form):
+        services_form = InteractionServicesForm(self.request.POST, beneficiary=self.beneficiary)
+        if not services_form.is_valid():
+            return self.render_to_response(self.get_context_data(form=form, services_form=services_form))
+        try:
+            return self._save(form, services_form)
+        except RegistrationError as exc:
+            services_form.add_error(None, str(exc))
+            return self.render_to_response(self.get_context_data(form=form, services_form=services_form))
+
+    def form_invalid(self, form):
+        services_form = InteractionServicesForm(self.request.POST, beneficiary=self.beneficiary)
+        services_form.is_valid()
+        return self.render_to_response(self.get_context_data(form=form, services_form=services_form))
+
+    def _save(self, form, services_form):
         with transaction.atomic():
             # Sauvegarder l'interaction
             self.object = form.save(commit=False)
@@ -379,10 +406,18 @@ class InteractionCreateView(CanModifyBeneficiariesMixin, CreateView):
                     # Si la création du snapshot échoue, on continue quand même
                     print(f"Erreur lors de la création du snapshot: {e}")
             
+            registrations, aid = services_form.save(self.object, self.request.user)
+
             messages.success(
                 self.request, 
                 f'Interaction "{self.object.title}" créée avec succès.'
             )
+            for registration in registrations:
+                dates = ', '.join(f"{b.session.date:%d/%m}" for b in registration.bookings.all())
+                messages.info(self.request, f'{registration.service.name} : inscrit'
+                              + (f' ({dates})' if dates else '') + '.')
+            if aid:
+                messages.info(self.request, f"Demande d'aide de {aid.amount} € envoyée pour validation.")
             
             return redirect(self.get_success_url())
     

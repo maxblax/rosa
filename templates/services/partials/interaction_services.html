@@ -1,0 +1,146 @@
+{% comment %}Bloc « Services » du formulaire d'entretien. Attend services_form (InteractionServicesForm) et partners.{% endcomment %}
+<div id="services-section" class="bg-white shadow-lg sm:rounded-lg">
+    <div class="px-6 py-6 sm:p-8">
+        <div class="mb-6">
+            <h3 class="text-xl leading-6 font-semibold text-gray-900">
+                <i class="fas fa-hands-helping text-green-600 mr-2"></i>
+                Services proposés
+            </h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Cochez les services attribués ou les orientations faites pendant l'entretien.
+                {% if services_form.composition %}
+                    Composition du foyer reprise du dossier :
+                    <strong>{{ services_form.composition.adults }} adulte{{ services_form.composition.adults|pluralize }},
+                    {{ services_form.composition.children }} enfant{{ services_form.composition.children|pluralize }},
+                    {{ services_form.composition.babies }} bébé{{ services_form.composition.babies|pluralize }}</strong>.
+                {% endif %}
+            </p>
+        </div>
+
+        {% if services_form.non_field_errors %}
+            <div class="mb-4 p-3 rounded-md bg-red-50 text-sm text-red-700">{{ services_form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <div class="space-y-8">
+            {% for group in services_form.groups %}
+            <div>
+                <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">{{ group.label }}</h4>
+                <div class="space-y-3">
+                    {% for item in group.items %}
+                    <div class="service-item border border-gray-200 rounded-lg p-3" data-service-id="{{ item.service.pk }}">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <span class="mt-0.5">{{ item.field }}</span>
+                            <span>
+                                <span class="text-sm font-medium text-gray-900">{{ item.service.name }}</span>
+                                {% if item.service.description %}
+                                    <span class="block text-xs text-gray-500">{{ item.service.description }}</span>
+                                {% endif %}
+                                {% if item.service.partner %}
+                                    <span class="block text-xs text-gray-500">Partenaire : {{ item.service.partner.name }}</span>
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% if item.field.errors %}
+                            <div class="mt-1 text-sm text-red-600">{{ item.field.errors.0 }}</div>
+                        {% endif %}
+
+                        <div class="service-options mt-3 pl-7 space-y-2 hidden">
+                            {% if item.service.is_distribution and item.service.is_auto_scheduled %}
+                                <p class="text-xs text-gray-600">
+                                    <i class="fas fa-calendar-check mr-1"></i>
+                                    Inscription automatique sur les {{ item.service.sessions_per_registration }} prochaines sessions.
+                                </p>
+                            {% endif %}
+
+                            {% if item.sessions %}
+                                <p class="text-xs text-gray-600">Choisissez la date avec la personne :</p>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for s in item.sessions %}
+                                    <label class="inline-flex items-center gap-2 px-3 py-2 border rounded-md text-sm {% if s.available %}border-gray-300 cursor-pointer hover:bg-blue-50{% else %}border-gray-200 bg-gray-100 text-gray-400{% endif %}">
+                                        <input type="radio" name="{{ item.session_field_name }}" value="{{ s.session.pk }}"
+                                               {% if s.checked %}checked{% endif %} {% if not s.available %}disabled{% endif %}
+                                               class="text-blue-600 focus:ring-blue-500">
+                                        {{ s.session.date|date:"l d/m" }}
+                                        {% if s.session.is_closed %}
+                                            <span class="text-xs">(fermé)</span>
+                                        {% elif s.session.capacity %}
+                                            <span class="text-xs {% if s.available %}text-gray-500{% endif %}">{{ s.session.load }}/{{ s.session.capacity }}</span>
+                                        {% endif %}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% if item.service.max_adults_per_booking or item.service.max_children_per_booking %}
+                                    <p class="text-xs text-gray-500">
+                                        Maximum {{ item.service.max_adults_per_booking|default:"-" }} adultes et
+                                        {{ item.service.max_children_per_booking|default:"-" }} enfants par date :
+                                        une famille plus nombreuse est répartie automatiquement sur la date suivante.
+                                    </p>
+                                {% endif %}
+                            {% endif %}
+
+                            {% if item.partner %}
+                                <div>{{ item.partner }}</div>
+                            {% endif %}
+                            {% if item.details %}
+                                <div>{{ item.details }}</div>
+                                {% if item.details.errors %}
+                                    <div class="text-sm text-red-600">{{ item.details.errors.0 }}</div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if services_form.financial_service %}
+            <div>
+                <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">Aide financière</h4>
+                <div class="service-item border border-gray-200 rounded-lg p-3" data-service-id="aid">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <span class="mt-0.5">{{ services_form.aid_requested }}</span>
+                        <span>
+                            <span class="text-sm font-medium text-gray-900">{{ services_form.aid_requested.label }}</span>
+                            <span class="block text-xs text-gray-500">La demande sera envoyée aux administrateurs pour validation.</span>
+                        </span>
+                    </label>
+                    <div class="service-options mt-3 pl-7 grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                        <div>
+                            <label for="{{ services_form.aid_amount.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ services_form.aid_amount.label }}</label>
+                            {{ services_form.aid_amount }}
+                            {% if services_form.aid_amount.errors %}<div class="mt-1 text-sm text-red-600">{{ services_form.aid_amount.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ services_form.aid_nature.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ services_form.aid_nature.label }}</label>
+                            {{ services_form.aid_nature }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="{{ services_form.aid_reason.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ services_form.aid_reason.label }}</label>
+                            {{ services_form.aid_reason }}
+                            {% if services_form.aid_reason.errors %}<div class="mt-1 text-sm text-red-600">{{ services_form.aid_reason.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<datalist id="partners-datalist">
+    {% for partner in partners %}<option value="{{ partner.name }}">{% endfor %}
+</datalist>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#services-section .service-item').forEach(function(item) {
+        const checkbox = item.querySelector('label input[type="checkbox"]');
+        const options = item.querySelector('.service-options');
+        if (!checkbox || !options) return;
+        const sync = function() { options.classList.toggle('hidden', !checkbox.checked); };
+        checkbox.addEventListener('change', sync);
+        sync();
+    });
+});
+</script>

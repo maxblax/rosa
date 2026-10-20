@@ -3,8 +3,7 @@
 
 1. Création d'un bénéficiaire avec un adulte du foyer ajouté directement sur
    la page de création : l'adulte apparaît sur la fiche.
-2. Interaction : "Montant du secours financier" accepte "1 200,50".
-3. Don manuel : "Montant" accepte "1 234,56".
+2. Don manuel : "Montant" accepte "1 234,56".
 """
 import os
 import re
@@ -53,23 +52,6 @@ def check_create_with_adult(page, unique):
     return pk
 
 
-def check_interaction_amount(page, pk):
-    page.goto(f"{BASE_URL}/beneficiaires/{pk}/interactions/new/")
-    page.wait_for_load_state("domcontentloaded")
-    page.fill("#id_title", "Secours E2E")
-    page.fill("#id_description", "Test montant tolérant")
-    page.fill("#id_financial_aid_amount", "1 200,50")
-    page.click('button[type="submit"]:has-text("Enregistrer")')
-    page.wait_for_load_state("domcontentloaded")
-    assert "/interactions/new/" not in page.url, "Formulaire d'interaction refusé avec '1 200,50'"
-    page.goto(f"{BASE_URL}/beneficiaires/{pk}/")
-    link = page.locator('a[href*="/interactions/"]:has-text("Secours E2E")').first
-    link.click()
-    page.wait_for_load_state("domcontentloaded")
-    text = body_text(page)
-    assert re.search(r"1\s?200[.,]50", text), "Montant 1200,50 absent du détail de l'interaction"
-    print("  OK: secours financier '1 200,50' enregistré")
-
 
 def check_donation_amount(page, unique):
     donor = f"Donateur E2E {unique}"
@@ -98,8 +80,7 @@ def main():
         try:
             login(page)
             print("Adultes à la création + montants tolérants:")
-            pk = check_create_with_adult(page, unique)
-            check_interaction_amount(page, pk)
+            check_create_with_adult(page, unique)
             check_donation_amount(page, unique)
         finally:
             browser.close()

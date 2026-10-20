@@ -43,6 +43,23 @@
     </div>
     {% endif %}
 
+    {% if services_overview %}
+    <div id="services-overview" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <a href="{% url 'services:aid_list' %}?status=PENDING" class="block bg-white shadow rounded-lg p-5 border-l-4 {% if services_overview.pending_aids %}border-yellow-400{% else %}border-gray-200{% endif %}">
+            <p class="text-sm text-gray-600"><i class="fas fa-euro-sign mr-1"></i>Demandes d'aide à valider</p>
+            <p class="text-3xl font-bold text-gray-900">{{ services_overview.pending_aids }}</p>
+            {% if services_overview.approved_aids %}<p class="text-xs text-gray-500">{{ services_overview.approved_aids }} validée{{ services_overview.approved_aids|pluralize }} à verser</p>{% endif %}
+        </a>
+        {% for s in services_overview.sessions %}
+        <a href="{% url 'services:session_detail' s.pk %}" class="block bg-white shadow rounded-lg p-5 border-l-4 border-green-400">
+            <p class="text-sm text-gray-600"><i class="fas fa-hands-helping mr-1"></i>{{ s.service.name }}</p>
+            <p class="text-lg font-semibold text-gray-900">{{ s.date|date:"l d/m" }}</p>
+            <p class="text-xs text-gray-500">{{ s.active_bookings.count }} famille{{ s.active_bookings.count|pluralize }}{% if s.capacity %} · {{ s.load }}/{{ s.capacity }}{% endif %}</p>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Grille principale -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

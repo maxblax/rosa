@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bon d'orientation - {{ registration.beneficiary.full_name }}</title>
+<style>
+    body { font-family: Arial, sans-serif; font-size: 14px; margin: 32px; color: #111; max-width: 640px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .muted { color: #555; }
+    .box { border: 1px solid #999; padding: 16px; margin-top: 16px; }
+    .sign { margin-top: 48px; display: flex; justify-content: space-between; }
+    @media print { .noprint { display: none; } }
+</style>
+</head>
+<body>
+<button class="noprint" onclick="window.print()">Imprimer</button>
+<h1>{{ ASSOCIATION_FULL_NAME|default:ASSOCIATION_NAME }}</h1>
+<p class="muted">Bon d'orientation du {{ today|date:"d/m/Y" }}</p>
+<div class="box">
+    <p><strong>Service :</strong> {{ registration.service.name }}</p>
+    {% if registration.partner_label %}<p><strong>Partenaire :</strong> {{ registration.partner_label }}</p>{% endif %}
+    {% if registration.service.partner %}
+        {% if registration.service.partner.address %}<p class="muted">{{ registration.service.partner.address }}</p>{% endif %}
+        {% if registration.service.partner.phone %}<p class="muted">Tél. {{ registration.service.partner.phone }}</p>{% endif %}
+    {% endif %}
+    <p><strong>Bénéficiaire :</strong> {{ registration.beneficiary.civility }} {{ registration.beneficiary.last_name|upper }} {{ registration.beneficiary.first_name }}</p>
+    {% if registration.details %}<p><strong>Objet :</strong> {{ registration.details }}</p>{% endif %}
+</div>
+<div class="sign">
+    <span>Orienté(e) par : {{ registration.created_by.get_full_name|default:registration.created_by.username|default:"" }}</span>
+    <span>Signature / cachet :</span>
+</div>
+</body>
+</html>
