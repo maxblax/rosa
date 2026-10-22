@@ -33,13 +33,6 @@ class Service(models.Model):
         (CATEGORY_EXTERNAL, 'Orientation externe'),
     ]
 
-    SCHEDULING_AUTO = 'AUTO'
-    SCHEDULING_CHOICE = 'CHOICE'
-    SCHEDULING_CHOICES = [
-        (SCHEDULING_AUTO, 'Sessions consécutives attribuées automatiquement'),
-        (SCHEDULING_CHOICE, 'Date(s) choisie(s) pendant l\'entretien'),
-    ]
-
     CAPACITY_FAMILIES = 'FAMILIES'
     CAPACITY_PERSONS = 'PERSONS'
     CAPACITY_UNIT_CHOICES = [
@@ -64,15 +57,13 @@ class Service(models.Model):
     is_active = models.BooleanField('Actif', default=True)
     order = models.PositiveIntegerField('Ordre d\'affichage', default=100)
 
-    # Distributions
-    session_weekday = models.PositiveSmallIntegerField('Jour des sessions', choices=WEEKDAY_CHOICES,
-                                                       null=True, blank=True)
-    session_start = models.TimeField('Heure de début', null=True, blank=True)
-    session_end = models.TimeField('Heure de fin', null=True, blank=True)
-    sessions_per_registration = models.PositiveIntegerField('Sessions par inscription', default=1)
-    scheduling = models.CharField('Attribution des dates', max_length=10, choices=SCHEDULING_CHOICES,
-                                  default=SCHEDULING_CHOICE)
-    session_capacity = models.PositiveIntegerField('Jauge par session', null=True, blank=True,
+    # Distributions (les créneaux récurrents sont dans ServiceScheduleSlot)
+    default_tickets = models.PositiveIntegerField(
+        'Passages par inscription', default=1,
+        help_text='Nombre de tickets donnés à chaque inscription (ex : 3 pour l\'épicerie, 1 pour le vestiaire).')
+    max_bookings_per_week = models.PositiveIntegerField(
+        'Passages max par semaine', null=True, blank=True, help_text='Vide = pas de limite.')
+    session_capacity = models.PositiveIntegerField('Jauge par défaut', null=True, blank=True,
                                                    help_text='Vide = pas de limite.')
     capacity_unit = models.CharField('Unité de la jauge', max_length=10, choices=CAPACITY_UNIT_CHOICES,
                                      default=CAPACITY_FAMILIES)
@@ -103,19 +94,45 @@ class Service(models.Model):
     def is_simple(self):
         return self.kind == self.KIND_SIMPLE
 
-    @property
-    def is_auto_scheduled(self):
-        return self.scheduling == self.SCHEDULING_AUTO
+
+
+class ServiceScheduleSlot(models.Model):
+    """Créneau récurrent hebdomadaire d'un service (ex : épicerie le mardi 14h-17h)."""
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='schedule_slots',
+                                verbose_name='Service')
+    weekday = models.PositiveSmallIntegerField('Jour', choices=Service.WEEKDAY_CHOICES)
+    start_time = models.TimeField('Début', null=True, blank=True)
+    end_time = models.TimeField('Fin', null=True, blank=True)
+    capacity = models.PositiveIntegerField('Jauge', null=True, blank=True, help_text='Vide = pas de limite.')
+    is_active = models.BooleanField('Actif', default=True)
+
+    class Meta:
+        verbose_name = 'Créneau récurrent'
+        verbose_name_plural = 'Créneaux récurrents'
+        ordering = ['weekday', 'start_time']
+
+    def __str__(self):
+        hours = f" {self.start_time:%H:%M}" if self.start_time else ''
+        return f"{self.service.name} - {self.get_weekday_display()}{hours}"
 
 
 class ServiceSession(models.Model):
-    """Session datée d'un service de distribution (ex : épicerie du mercredi 22/10)."""
+    """Occurrence datée d'un service de distribution.
+
+    Les sessions sont générées à partir des créneaux récurrents. Chacune peut
+    ensuite être modifiée seule (date, heure, jauge), annulée, ou ajoutée
+    ponctuellement sans créneau récurrent.
+    """
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='sessions', verbose_name='Service')
+    schedule_slot = models.ForeignKey(ServiceScheduleSlot, on_delete=models.SET_NULL, null=True, blank=True,
+                                      related_name='sessions', verbose_name='Créneau récurrent')
+    original_date = models.DateField('Date prévue par le planning', null=True, blank=True)
     date = models.DateField('Date')
     start_time = models.TimeField('Début', null=True, blank=True)
     end_time = models.TimeField('Fin', null=True, blank=True)
     capacity = models.PositiveIntegerField('Jauge', null=True, blank=True)
-    is_closed = models.BooleanField('Fermée', default=False)
+    is_closed = models.BooleanField('Annulée', default=False)
+    is_customized = models.BooleanField('Modifiée à la main', default=False)
     notes = models.TextField('Notes', blank=True)
 
     class Meta:
@@ -123,11 +140,12 @@ class ServiceSession(models.Model):
         verbose_name_plural = 'Sessions'
         ordering = ['date', 'start_time']
         constraints = [
-            models.UniqueConstraint(fields=['service', 'date'], name='unique_service_session_per_day'),
+            models.UniqueConstraint(fields=['schedule_slot', 'original_date'], name='unique_session_per_slot_date'),
         ]
 
     def __str__(self):
-        return f"{self.service.name} - {self.date:%d/%m/%Y}"
+        hours = f" {self.start_time:%H:%M}" if self.start_time else ''
+        return f"{self.service.name} - {self.date:%d/%m/%Y}{hours}"
 
     def active_bookings(self):
         return self.bookings.exclude(registration__status=ServiceRegistration.STATUS_CANCELLED)
@@ -175,6 +193,7 @@ class ServiceRegistration(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name='service_registrations', verbose_name='Inscrit par')
     status = models.CharField('Statut', max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    tickets = models.PositiveIntegerField('Passages accordés', default=1)
     details = models.TextField('Précisions', blank=True)
     partner_name = models.CharField('Partenaire (texte libre)', max_length=200, blank=True)
 
@@ -195,15 +214,21 @@ class ServiceRegistration(models.Model):
             return self.partner_name
         return self.service.partner.name if self.service.partner else ''
 
+    @property
+    def tickets_used(self):
+        return self.bookings.count()
+
+    @property
+    def tickets_left(self):
+        return max(self.tickets - self.tickets_used, 0)
+
     def refresh_status(self):
-        """Termine l'inscription quand toutes ses sessions sont pointées."""
+        """Termine l'inscription quand tous ses passages sont réservés et pointés."""
         if self.status == self.STATUS_CANCELLED or not self.service.is_distribution:
             return
         bookings = list(self.bookings.all())
-        if bookings and all(b.attended is not None for b in bookings):
-            new_status = self.STATUS_DONE
-        else:
-            new_status = self.STATUS_ACTIVE
+        done = (len(bookings) >= self.tickets and all(b.attended is not None for b in bookings))
+        new_status = self.STATUS_DONE if done else self.STATUS_ACTIVE
         if new_status != self.status:
             self.status = new_status
             self.save(update_fields=['status', 'updated_at'])
@@ -227,7 +252,7 @@ class ServiceBooking(models.Model):
     class Meta:
         verbose_name = 'Réservation'
         verbose_name_plural = 'Réservations'
-        ordering = ['session__date']
+        ordering = ['session__date', 'session__start_time']
         constraints = [
             models.UniqueConstraint(fields=['registration', 'session'], name='unique_booking_per_session'),
         ]

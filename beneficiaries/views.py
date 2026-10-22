@@ -22,6 +22,7 @@ from .forms import (
 from volunteers.permissions import CanModifyBeneficiariesMixin
 from partners.models import Partner
 from services.forms import InteractionServicesForm
+from services import logic as services_logic
 from services.logic import RegistrationError, todays_bookings
 from services.permissions import is_services_admin
 
@@ -138,8 +139,16 @@ class BeneficiaryDetailView(CanModifyBeneficiariesMixin, DetailView):
         context['household_adults'] = self.object.household_adults.all()
         context['interactions'] = self.object.interactions.select_related('user').all()[:10]  # Dernières 10
         context['documents'] = self.object.documents.select_related('uploaded_by').all()
-        context['service_registrations'] = self.object.service_registrations.select_related(
-            'service__partner', 'created_by').prefetch_related('bookings__session')[:30]
+        registrations = list(self.object.service_registrations.select_related(
+            'service__partner', 'created_by').prefetch_related('bookings__session')[:30])
+        for reg in registrations:
+            reg.assignable_sessions = []
+            if reg.service.is_distribution and reg.status == 'ACTIVE' and reg.tickets_left > 0:
+                booked = {b.session_id for b in reg.bookings.all()}
+                reg.assignable_sessions = [s for s in services_logic.upcoming_sessions(reg.service)
+                                           if s.pk not in booked]
+        context['service_registrations'] = registrations
+        context['today'] = timezone.localdate()
         context['aid_requests'] = self.object.financial_aid_requests.all()[:10]
         context['todays_bookings'] = todays_bookings(self.object)
         context['is_services_admin'] = is_services_admin(self.request.user)
@@ -357,16 +366,27 @@ class InteractionCreateView(CanModifyBeneficiariesMixin, CreateView):
     def form_valid(self, form):
         services_form = InteractionServicesForm(self.request.POST, beneficiary=self.beneficiary)
         if not services_form.is_valid():
-            return self.render_to_response(self.get_context_data(form=form, services_form=services_form))
+            return self._render_with_errors(form, services_form)
         try:
             return self._save(form, services_form)
         except RegistrationError as exc:
             services_form.add_error(None, str(exc))
-            return self.render_to_response(self.get_context_data(form=form, services_form=services_form))
+            return self._render_with_errors(form, services_form)
 
     def form_invalid(self, form):
         services_form = InteractionServicesForm(self.request.POST, beneficiary=self.beneficiary)
         services_form.is_valid()
+        return self._render_with_errors(form, services_form)
+
+    def _render_with_errors(self, form, services_form):
+        """Réaffiche le formulaire avec la liste des erreurs en haut de page : rien n'a été enregistré."""
+        problems = []
+        for name, errors in form.errors.items():
+            label = form.fields[name].label if name in form.fields else ''
+            problems += [f"{label} : {e}" if label else e for e in errors]
+        problems += services_form.error_summary()
+        messages.error(self.request, "L'entretien n'a pas été enregistré. " + ' '.join(
+            f"• {p}" for p in problems))
         return self.render_to_response(self.get_context_data(form=form, services_form=services_form))
 
     def _save(self, form, services_form):

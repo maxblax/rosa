@@ -22,10 +22,10 @@
             <label class="flex items-center gap-2 text-sm text-gray-700">{{ form.requires_details }} {{ form.requires_details.label }}</label>
         </div>
         <fieldset class="border-t pt-4">
-            <legend class="text-sm font-semibold text-gray-700">Distributions (uniquement pour le fonctionnement « Distribution »)</legend>
+            <legend class="text-sm font-semibold text-gray-700">Distributions (fonctionnement « Distribution » ; les jours et horaires se règlent dans le planning du service)</legend>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 {% for field in form %}
-                {% if field.name in "session_weekday session_start session_end sessions_per_registration scheduling session_capacity capacity_unit max_adults_per_booking max_children_per_booking" %}
+                {% if field.name in "default_tickets max_bookings_per_week session_capacity capacity_unit max_adults_per_booking max_children_per_booking" %}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
                     {{ field }}

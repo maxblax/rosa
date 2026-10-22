@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from decimal import Decimal
 from unittest import mock
 
@@ -11,7 +11,9 @@ from beneficiaries.models import Beneficiary, Child, HouseholdAdult
 from volunteers.models import Volunteer
 from . import logic
 from .forms import InteractionServicesForm
-from .models import Service, ServiceSession, ServiceRegistration, ServiceBooking, FinancialAidRequest
+from .models import (
+    Service, ServiceScheduleSlot, ServiceSession, ServiceRegistration, ServiceBooking, FinancialAidRequest,
+)
 
 # Mardi 21/10/2025 : le mercredi suivant est le 22/10, le jeudi le 23/10.
 TODAY = date(2025, 10, 21)
@@ -42,32 +44,104 @@ class CompositionTests(TestCase):
 
 
 @mock.patch('services.logic.timezone.localdate', return_value=TODAY)
-class GroceryTests(TestCase):
+class ScheduleTests(TestCase):
     def setUp(self):
+        patcher = mock.patch('services.logic.timezone.localdate', return_value=TODAY)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.grocery = Service.objects.get(name__startswith='Épicerie')
+        self.wed = self.grocery.schedule_slots.get()
 
-    def test_three_consecutive_wednesdays(self, _):
+    def test_sessions_generated_from_several_weekly_openings(self, _):
+        ServiceScheduleSlot.objects.create(service=self.grocery, weekday=1, start_time=time(9), capacity=10)
+        ServiceScheduleSlot.objects.create(service=self.grocery, weekday=4, start_time=time(9), capacity=12)
+        logic.ensure_sessions(self.grocery, until=date(2025, 10, 26))
+        days = list(self.grocery.sessions.order_by('date').values_list('date', 'capacity'))
+        self.assertEqual(days, [(date(2025, 10, 21), 10), (date(2025, 10, 22), 18), (date(2025, 10, 24), 12)])
+
+    def test_new_session_copies_previous_capacity(self, _):
+        logic.ensure_sessions(self.grocery, until=date(2025, 10, 22))
+        first = self.grocery.sessions.get(date=date(2025, 10, 22))
+        first.capacity = 25
+        first.save()
+        logic.ensure_sessions(self.grocery, until=date(2025, 10, 29))
+        self.assertEqual(self.grocery.sessions.get(date=date(2025, 10, 29)).capacity, 25)
+
+    def test_capacity_applied_to_following_sessions(self, _):
+        logic.ensure_sessions(self.grocery, until=date(2025, 11, 12))
+        first = self.grocery.sessions.get(date=date(2025, 10, 29))
+        logic.update_session(first, date=first.date, start_time=first.start_time, end_time=first.end_time,
+                             capacity=30, apply_to_following=True)
+        caps = dict(self.grocery.sessions.values_list('date', 'capacity'))
+        self.assertEqual(caps[date(2025, 10, 22)], 18)
+        self.assertEqual(caps[date(2025, 11, 5)], 30)
+        self.wed.refresh_from_db()
+        self.assertEqual(self.wed.capacity, 30)
+
+    def test_moved_session_is_not_regenerated(self, _):
+        logic.ensure_sessions(self.grocery, until=date(2025, 10, 29))
+        session = self.grocery.sessions.get(date=date(2025, 10, 22))
+        logic.update_session(session, date=date(2025, 10, 23), start_time=session.start_time,
+                             end_time=session.end_time, capacity=session.capacity)
+        logic.ensure_sessions(self.grocery, until=date(2025, 10, 29))
+        self.assertFalse(self.grocery.sessions.filter(date=date(2025, 10, 22)).exists())
+        self.assertTrue(self.grocery.sessions.get(date=date(2025, 10, 23)).is_customized)
+
+    def test_slot_weekday_change_moves_empty_future_sessions(self, _):
+        logic.ensure_sessions(self.grocery)
+        previous = ServiceScheduleSlot.objects.get(pk=self.wed.pk)
+        self.wed.weekday = 0
+        logic.save_slot(self.wed, previous=previous)
+        weekdays = set(d.weekday() for d in self.grocery.sessions.values_list('date', flat=True))
+        self.assertEqual(weekdays, {0})
+
+    def test_adhoc_session(self, _):
+        session = logic.add_adhoc_session(self.grocery, date(2025, 10, 25))
+        self.assertEqual(session.capacity, 18)
+        self.assertIsNone(session.schedule_slot)
+
+
+@mock.patch('services.logic.timezone.localdate', return_value=TODAY)
+class GroceryTicketTests(TestCase):
+    def setUp(self):
+        patcher = mock.patch('services.logic.timezone.localdate', return_value=TODAY)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.grocery = Service.objects.get(name__startswith='Épicerie')
+        ServiceScheduleSlot.objects.create(service=self.grocery, weekday=4, start_time=time(9), capacity=18)
+        logic.ensure_sessions(self.grocery)
+
+    def s(self, day):
+        return self.grocery.sessions.filter(date=day).first()
+
+    def test_three_tickets_with_chosen_dates(self, _):
         b = make_beneficiary(adults=1, children_ages=(4,))
-        reg = logic.register_distribution(b, self.grocery)
-        dates = [bk.session.date for bk in reg.bookings.order_by('session__date')]
-        self.assertEqual(dates, [date(2025, 10, 22), date(2025, 10, 29), date(2025, 11, 5)])
-        bk = reg.bookings.first()
-        self.assertEqual((bk.adults, bk.children, bk.babies), (2, 1, 0))
+        reg = logic.register_distribution(b, self.grocery, sessions=[self.s(date(2025, 10, 22))])
+        self.assertEqual((reg.tickets, reg.tickets_used, reg.tickets_left), (3, 1, 2))
+        logic.book(reg, self.s(date(2025, 10, 31)))
+        logic.book(reg, self.s(date(2025, 11, 5)))
+        with self.assertRaises(logic.RegistrationError):
+            logic.book(reg, self.s(date(2025, 11, 12)))
 
-    def test_closed_session_is_skipped(self, _):
-        ServiceSession.objects.create(service=self.grocery, date=date(2025, 10, 29), is_closed=True)
-        reg = logic.register_distribution(make_beneficiary(), self.grocery)
-        dates = [bk.session.date for bk in reg.bookings.order_by('session__date')]
-        self.assertEqual(dates, [date(2025, 10, 22), date(2025, 11, 5), date(2025, 11, 12)])
+    def test_one_visit_per_week(self, _):
+        reg = logic.register_distribution(make_beneficiary(), self.grocery, sessions=[self.s(date(2025, 10, 22))])
+        with self.assertRaises(logic.RegistrationError):
+            logic.book(reg, self.s(date(2025, 10, 24)))
 
-    def test_no_second_registration_while_one_is_pending(self, _):
+    def test_more_dates_than_tickets_refused(self, _):
+        with self.assertRaises(logic.RegistrationError):
+            logic.register_distribution(make_beneficiary(), self.grocery, tickets=1, sessions=[
+                self.s(date(2025, 10, 22)), self.s(date(2025, 10, 29))])
+
+    def test_no_second_registration_while_active(self, _):
         b = make_beneficiary()
         logic.register_distribution(b, self.grocery)
         with self.assertRaises(logic.RegistrationError):
             logic.register_distribution(b, self.grocery)
 
-    def test_registration_done_when_all_sessions_recorded(self, _):
-        reg = logic.register_distribution(make_beneficiary(), self.grocery)
+    def test_done_when_all_tickets_used_and_recorded(self, _):
+        reg = logic.register_distribution(make_beneficiary(), self.grocery, sessions=[
+            self.s(date(2025, 10, 22)), self.s(date(2025, 10, 29)), self.s(date(2025, 11, 5))])
         bookings = list(reg.bookings.all())
         bookings[0].mark(True)
         bookings[1].mark(False)
@@ -77,46 +151,54 @@ class GroceryTests(TestCase):
         reg.refresh_from_db()
         self.assertEqual(reg.status, ServiceRegistration.STATUS_DONE)
 
+    def test_cancelling_session_gives_ticket_back(self, _):
+        reg = logic.register_distribution(make_beneficiary(), self.grocery, sessions=[self.s(date(2025, 10, 22))])
+        self.assertEqual(reg.tickets_left, 2)
+        self.s(date(2025, 10, 22)).bookings.all().delete()
+        self.assertEqual(reg.tickets_left, 3)
+
 
 @mock.patch('services.logic.timezone.localdate', return_value=TODAY)
 class ClothingTests(TestCase):
     def setUp(self):
+        patcher = mock.patch('services.logic.timezone.localdate', return_value=TODAY)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.clothing = Service.objects.get(name__startswith='Vestiaire')
+        logic.ensure_sessions(self.clothing)
 
-    def session(self, day=date(2025, 10, 23)):
-        return logic.get_or_create_session(self.clothing, day)
+    def s(self, day=date(2025, 10, 23)):
+        return self.clothing.sessions.get(date=day)
 
-    def test_small_family_single_date(self, _):
+    def test_single_ticket(self, _):
         b = make_beneficiary(adults=1, children_ages=(6,))
-        reg = logic.register_distribution(b, self.clothing, first_session=self.session())
-        self.assertEqual(reg.bookings.count(), 1)
+        reg = logic.register_distribution(b, self.clothing, sessions=[self.s()])
+        self.assertEqual((reg.tickets, reg.tickets_left), (1, 0))
 
-    def test_large_family_split_over_two_dates(self, _):
+    def test_large_family_gets_two_tickets_split(self, _):
         b = make_beneficiary(adults=2, children_ages=(2, 6, 9, 14))  # 3 adultes, 3 enfants, 1 bébé
-        reg = logic.register_distribution(b, self.clothing, first_session=self.session())
+        reg = logic.register_distribution(b, self.clothing, sessions=[self.s(), self.s(date(2025, 10, 30))])
         bookings = list(reg.bookings.order_by('session__date'))
-        self.assertEqual(len(bookings), 2)
-        self.assertEqual(bookings[0].session.date, date(2025, 10, 23))
-        self.assertEqual(bookings[1].session.date, date(2025, 10, 30))
+        self.assertEqual(reg.tickets, 2)
         self.assertEqual((bookings[0].adults, bookings[0].children + bookings[0].babies), (2, 2))
         self.assertEqual((bookings[1].adults, bookings[1].children + bookings[1].babies), (1, 2))
 
     def test_capacity_in_persons(self, _):
-        session = self.session()
+        session = self.s()
         session.capacity = 5
         session.save()
         logic.register_distribution(make_beneficiary(adults=1, children_ages=(6, 8), name='A'),
-                                    self.clothing, first_session=session)  # 4 personnes
+                                    self.clothing, sessions=[session])  # 4 personnes
         self.assertEqual(session.load, 4)
         with self.assertRaises(logic.RegistrationError):
             logic.register_distribution(make_beneficiary(adults=1, name='B'), self.clothing,
-                                        first_session=session)  # 2 personnes : 6 > 5
+                                        sessions=[session])  # 2 personnes : 6 > 5
 
     def test_no_waiting_period_after_attendance(self, _):
         b = make_beneficiary()
-        reg = logic.register_distribution(b, self.clothing, first_session=self.session())
+        reg = logic.register_distribution(b, self.clothing, sessions=[self.s()])
         reg.bookings.first().mark(True)
-        reg2 = logic.register_distribution(b, self.clothing, first_session=self.session(date(2025, 10, 30)))
+        reg2 = logic.register_distribution(b, self.clothing, sessions=[self.s(date(2025, 10, 30))])
         self.assertEqual(reg2.bookings.count(), 1)
 
 

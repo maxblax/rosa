@@ -21,8 +21,8 @@ def services_overview(user):
         return None
     sessions = []
     for service in Service.objects.filter(is_active=True, kind=Service.KIND_DISTRIBUTION):
-        services_logic.upcoming_sessions(service, count=1)
-        session = ServiceSession.objects.filter(service=service, date__gte=timezone.localdate()).order_by('date').first()
+        services_logic.ensure_sessions(service)
+        session = ServiceSession.objects.filter(service=service, date__gte=timezone.localdate(), is_closed=False).order_by('date', 'start_time').first()
         if session:
             sessions.append(session)
     return {

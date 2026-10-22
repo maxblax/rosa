@@ -1,22 +1,33 @@
-"""Règles métier des services : composition du foyer, sessions, inscriptions."""
+"""Règles métier des services : composition du foyer, planning, sessions, tickets."""
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import time, timedelta
 
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Service, ServiceSession, ServiceRegistration, ServiceBooking
+from .models import (
+    Service, ServiceScheduleSlot, ServiceSession, ServiceRegistration, ServiceBooking,
+)
 
 # Âge en dessous duquel un enfant est compté comme bébé dans les listes.
 BABY_MAX_AGE = 3
 
-# Horizon de recherche des sessions disponibles (en semaines).
-SEARCH_WEEKS = 26
+# Nombre de semaines de sessions générées à l'avance à partir du planning.
+HORIZON_WEEKS = 8
+
+# Nombre de semaines proposées au bénévole pendant l'entretien.
+INTERVIEW_WEEKS = 4
 
 
 class RegistrationError(Exception):
     pass
 
+
+def week_start(day):
+    return day - timedelta(days=day.weekday())
+
+
+# Composition du foyer
 
 @dataclass
 class Composition:
@@ -64,112 +75,186 @@ def split_composition(service, composition):
         adults -= take_adults
         children -= take_children
         babies -= take_babies
-    return parts
+    return parts or [composition]
 
 
-def session_dates(service, from_date=None, weeks=SEARCH_WEEKS):
-    if service.session_weekday is None:
-        return []
-    start = from_date or timezone.localdate()
-    first = start + timedelta(days=(service.session_weekday - start.weekday()) % 7)
-    return [first + timedelta(weeks=i) for i in range(weeks)]
+def default_tickets(service, beneficiary):
+    """Passages accordés par défaut : ceux du service, ou plus si la famille doit être répartie."""
+    parts = split_composition(service, household_composition(beneficiary))
+    return max(service.default_tickets or 1, len(parts))
 
 
-def get_or_create_session(service, day):
-    session, _ = ServiceSession.objects.get_or_create(
-        service=service,
-        date=day,
-        defaults={
-            'start_time': service.session_start,
-            'end_time': service.session_end,
-            'capacity': service.session_capacity,
-        },
-    )
-    return session
+# Planning et sessions
+
+def _previous_capacity(slot, day):
+    previous = (ServiceSession.objects.filter(schedule_slot=slot, original_date__lt=day)
+                .order_by('-original_date').first())
+    if previous is not None:
+        return previous.capacity
+    if slot.capacity is not None:
+        return slot.capacity
+    return slot.service.session_capacity
 
 
-def upcoming_sessions(service, count=4, persons=1, from_date=None):
-    """Prochaines sessions ouvertes pouvant accueillir `persons` personnes."""
-    result = []
-    for day in session_dates(service, from_date):
-        session = get_or_create_session(service, day)
-        if session.can_accept(persons):
-            result.append(session)
-        if len(result) >= count:
-            break
-    return result
-
-
-def sessions_preview(service, count=4):
-    """Sessions à proposer dans l'entretien, y compris complètes (affichées grisées)."""
-    return [get_or_create_session(service, day) for day in session_dates(service)[:count]]
-
-
-def has_pending_bookings(beneficiary, service):
+def ensure_sessions(service, until=None):
+    """Crée les sessions du planning récurrent jusqu'à `until` (par défaut : HORIZON_WEEKS)."""
     today = timezone.localdate()
-    return ServiceBooking.objects.filter(
-        registration__beneficiary=beneficiary,
-        registration__service=service,
-        registration__status=ServiceRegistration.STATUS_ACTIVE,
-        session__date__gte=today,
-        attended__isnull=True,
-    ).exists()
+    until = until or today + timedelta(weeks=HORIZON_WEEKS)
+    for slot in service.schedule_slots.filter(is_active=True):
+        day = today + timedelta(days=(slot.weekday - today.weekday()) % 7)
+        while day <= until:
+            if not ServiceSession.objects.filter(schedule_slot=slot, original_date=day).exists():
+                ServiceSession.objects.create(
+                    service=service, schedule_slot=slot, original_date=day, date=day,
+                    start_time=slot.start_time, end_time=slot.end_time,
+                    capacity=_previous_capacity(slot, day),
+                )
+            day += timedelta(weeks=1)
+
+
+def upcoming_sessions(service, weeks=INTERVIEW_WEEKS, include_closed=False):
+    ensure_sessions(service)
+    today = timezone.localdate()
+    qs = service.sessions.filter(date__gte=today, date__lt=week_start(today) + timedelta(weeks=weeks))
+    if not include_closed:
+        qs = qs.filter(is_closed=False)
+    return list(qs.order_by('date', 'start_time'))
+
+
+def sessions_by_week(sessions):
+    """[(lundi, [sessions...]), ...] dans l'ordre chronologique."""
+    weeks = {}
+    for session in sessions:
+        weeks.setdefault(week_start(session.date), []).append(session)
+    return sorted(weeks.items())
 
 
 @transaction.atomic
-def register_distribution(beneficiary, service, user=None, interaction=None, first_session=None, details=''):
-    """Inscrit une famille à un service de distribution.
+def save_slot(slot, previous=None):
+    """Enregistre un créneau récurrent et met à jour les sessions futures non modifiées à la main.
 
-    - attribution automatique : les N prochaines sessions consécutives ouvertes ;
-    - date choisie : la session choisie, puis, si la famille dépasse les
-      plafonds par date, les sessions suivantes pour le reste de la famille.
+    Les sessions qui ont déjà des réservations ne changent pas de jour : elles
+    restent en place et l'admin les déplace au besoin.
+    """
+    slot.save()
+    today = timezone.localdate()
+    future = slot.sessions.filter(date__gte=today, is_customized=False)
+    if previous is not None and previous.weekday != slot.weekday:
+        future.filter(bookings__isnull=True).delete()
+    else:
+        future.update(start_time=slot.start_time, end_time=slot.end_time, capacity=slot.capacity)
+    if slot.is_active:
+        ensure_sessions(slot.service)
+    else:
+        future.filter(bookings__isnull=True).delete()
+
+
+@transaction.atomic
+def delete_slot(slot):
+    today = timezone.localdate()
+    slot.sessions.filter(date__gte=today, is_customized=False, bookings__isnull=True).delete()
+    slot.is_active = False
+    slot.save(update_fields=['is_active'])
+
+
+def update_session(session, date=None, start_time=None, end_time=None, capacity=None, notes=None,
+                   apply_to_following=False):
+    """Modifie une session. La jauge peut s'appliquer aussi aux sessions suivantes du même créneau."""
+    changed_schedule = (date is not None and date != session.date) or \
+        start_time != session.start_time or end_time != session.end_time
+    if date is not None:
+        session.date = date
+    session.start_time = start_time
+    session.end_time = end_time
+    session.capacity = capacity
+    if notes is not None:
+        session.notes = notes
+    if changed_schedule:
+        session.is_customized = True
+    session.save()
+    if apply_to_following and session.schedule_slot_id:
+        slot = session.schedule_slot
+        slot.capacity = capacity
+        slot.save(update_fields=['capacity'])
+        ServiceSession.objects.filter(
+            schedule_slot=slot, original_date__gt=session.original_date or session.date,
+        ).update(capacity=capacity)
+
+
+def add_adhoc_session(service, date, start_time=None, end_time=None, capacity=None):
+    if capacity is None:
+        previous = service.sessions.filter(date__lte=date).order_by('-date', '-start_time').first()
+        capacity = previous.capacity if previous else service.session_capacity
+    return ServiceSession.objects.create(service=service, date=date, start_time=start_time,
+                                         end_time=end_time, capacity=capacity, is_customized=True)
+
+
+# Inscriptions et tickets
+
+def active_registration(beneficiary, service):
+    return ServiceRegistration.objects.filter(
+        beneficiary=beneficiary, service=service, status=ServiceRegistration.STATUS_ACTIVE,
+    ).first()
+
+
+def _check_booking(registration, session, part):
+    service = registration.service
+    if session.service_id != service.pk:
+        raise RegistrationError("Cette session n'appartient pas au service.")
+    if registration.tickets_left <= 0:
+        raise RegistrationError(f"Plus de passage disponible pour {service.name} : il faut un nouvel entretien.")
+    if registration.bookings.filter(session=session).exists():
+        raise RegistrationError(f"La famille est déjà inscrite le {session.date:%d/%m}.")
+    if session.date < timezone.localdate():
+        raise RegistrationError(f"La session du {session.date:%d/%m} est passée.")
+    if not session.can_accept(part.persons):
+        raise RegistrationError(f"La session du {session.date:%d/%m} est complète ou annulée.")
+    if service.max_bookings_per_week:
+        monday = week_start(session.date)
+        same_week = registration.bookings.filter(
+            session__date__gte=monday, session__date__lt=monday + timedelta(days=7)).count()
+        if same_week >= service.max_bookings_per_week:
+            raise RegistrationError(
+                f"{service.name} : {service.max_bookings_per_week} passage(s) maximum par semaine "
+                f"(semaine du {monday:%d/%m}).")
+
+
+def book(registration, session, user=None):
+    """Utilise un ticket de l'inscription sur une session."""
+    parts = split_composition(registration.service, household_composition(registration.beneficiary))
+    part = parts[registration.bookings.count() % len(parts)]
+    _check_booking(registration, session, part)
+    booking = ServiceBooking.objects.create(
+        registration=registration, session=session,
+        adults=part.adults, children=part.children, babies=part.babies,
+    )
+    registration.refresh_status()
+    return booking
+
+
+@transaction.atomic
+def register_distribution(beneficiary, service, user=None, interaction=None, sessions=(), tickets=None,
+                          details=''):
+    """Inscrit une famille à un service de distribution et réserve les sessions choisies.
+
+    Les passages non placés restent disponibles et se réservent plus tard depuis la fiche.
     """
     if not service.is_distribution:
         raise RegistrationError(f"{service.name} n'est pas un service de distribution.")
-    if has_pending_bookings(beneficiary, service):
-        raise RegistrationError(f"La famille a déjà une inscription en cours pour {service.name}.")
+    if active_registration(beneficiary, service):
+        raise RegistrationError(
+            f"La famille a déjà une inscription en cours pour {service.name} : utilisez ses passages restants.")
+    tickets = tickets or default_tickets(service, beneficiary)
+    sessions = sorted(sessions, key=lambda s: (s.date, s.start_time or time.min))
+    if len(sessions) > tickets:
+        raise RegistrationError(f"{service.name} : {len(sessions)} dates choisies pour {tickets} passage(s).")
 
-    composition = household_composition(beneficiary)
     registration = ServiceRegistration.objects.create(
         beneficiary=beneficiary, service=service, interaction=interaction,
-        created_by=user, details=details,
+        created_by=user, details=details, tickets=tickets,
     )
-
-    if service.is_auto_scheduled:
-        sessions = upcoming_sessions(service, count=service.sessions_per_registration,
-                                     persons=composition.persons)
-        if len(sessions) < service.sessions_per_registration:
-            raise RegistrationError(f"Pas assez de sessions ouvertes pour {service.name}.")
-        for session in sessions:
-            ServiceBooking.objects.create(
-                registration=registration, session=session,
-                adults=composition.adults, children=composition.children, babies=composition.babies,
-            )
-        return registration
-
-    parts = split_composition(service, composition)
-    if first_session is None:
-        raise RegistrationError(f"Choisissez une date pour {service.name}.")
-    if not first_session.can_accept(parts[0].persons):
-        raise RegistrationError(f"La session du {first_session.date:%d/%m/%Y} est complète.")
-
-    used = {first_session.pk}
-    ServiceBooking.objects.create(
-        registration=registration, session=first_session,
-        adults=parts[0].adults, children=parts[0].children, babies=parts[0].babies,
-    )
-    for part in parts[1:]:
-        candidates = [s for s in upcoming_sessions(service, count=10, persons=part.persons,
-                                                   from_date=first_session.date + timedelta(days=1))
-                      if s.pk not in used]
-        if not candidates:
-            raise RegistrationError(f"Pas de date disponible pour répartir la famille sur {service.name}.")
-        session = candidates[0]
-        used.add(session.pk)
-        ServiceBooking.objects.create(
-            registration=registration, session=session,
-            adults=part.adults, children=part.children, babies=part.babies,
-        )
+    for session in sessions:
+        book(registration, session, user)
     return registration
 
 
@@ -178,7 +263,7 @@ def register_simple(beneficiary, service, user=None, interaction=None, details='
         raise RegistrationError(f"Précisez en toutes lettres pour « {service.name} ».")
     return ServiceRegistration.objects.create(
         beneficiary=beneficiary, service=service, interaction=interaction, created_by=user,
-        details=details, partner_name=partner_name,
+        details=details, partner_name=partner_name, tickets=1,
     )
 
 

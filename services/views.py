@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,10 +13,11 @@ from django.views.generic import ListView, CreateView, UpdateView
 
 from . import logic
 from .forms import (
-    AidDecisionForm, AidPaymentForm, ServiceForm, SessionForm, AddFamilyToSessionForm,
+    AidDecisionForm, AidPaymentForm, ServiceForm, SlotForm, SessionEditForm, AdhocSessionForm,
+    AddFamilyToSessionForm,
 )
 from .models import (
-    Service, ServiceSession, ServiceRegistration, ServiceBooking, FinancialAidRequest,
+    Service, ServiceScheduleSlot, ServiceSession, ServiceRegistration, ServiceBooking, FinancialAidRequest,
 )
 from .notifications import notify_decision
 from .permissions import ServicesAdminMixin, can_use_services, is_services_admin
@@ -46,9 +47,9 @@ def services_home(request):
     today = timezone.localdate()
     distributions = []
     for service in Service.objects.filter(is_active=True, kind=Service.KIND_DISTRIBUTION):
-        logic.upcoming_sessions(service, count=1)  # crée la prochaine session si besoin
-        next_sessions = service.sessions.filter(date__gte=today).order_by('date')[:3]
-        last_sessions = service.sessions.filter(date__lt=today).order_by('-date')[:3]
+        logic.ensure_sessions(service)
+        next_sessions = service.sessions.filter(date__gte=today).order_by('date', 'start_time')[:4]
+        last_sessions = service.sessions.filter(date__lt=today).order_by('-date', '-start_time')[:3]
         distributions.append({'service': service, 'next_sessions': next_sessions, 'last_sessions': last_sessions})
     pending = FinancialAidRequest.objects.filter(status=FinancialAidRequest.STATUS_PENDING)
     approved_unpaid = FinancialAidRequest.objects.filter(status=FinancialAidRequest.STATUS_APPROVED)
@@ -56,25 +57,161 @@ def services_home(request):
         'distributions': distributions,
         'pending_count': pending.count(),
         'approved_unpaid_count': approved_unpaid.count(),
-        'recent_pending': pending.select_related('beneficiary', 'requested_by')[:5],
     })
 
 
-# Sessions de distribution
+# Planning d'un service de distribution : vue semaine, créneaux récurrents, sessions
+
+def _parse_week(value, today):
+    try:
+        day = date.fromisoformat(value)
+    except (TypeError, ValueError):
+        day = today
+    return logic.week_start(day)
+
 
 @login_required
-def session_list(request, service_pk):
+def week_view(request, service_pk):
     denied = _admin_required(request)
     if denied:
         return denied
     service = get_object_or_404(Service, pk=service_pk, kind=Service.KIND_DISTRIBUTION)
-    logic.upcoming_sessions(service, count=4)
     today = timezone.localdate()
-    return render(request, 'services/session_list.html', {
+    monday = _parse_week(request.GET.get('week'), today)
+    logic.ensure_sessions(service, until=max(monday + timedelta(days=6), today + timedelta(weeks=logic.HORIZON_WEEKS)))
+    sessions = list(service.sessions.filter(date__gte=monday, date__lt=monday + timedelta(days=7))
+                    .order_by('date', 'start_time'))
+    days = []
+    for i in range(7):
+        day = monday + timedelta(days=i)
+        days.append({'date': day, 'is_today': day == today, 'is_past': day < today,
+                     'sessions': [s for s in sessions if s.date == day]})
+    return render(request, 'services/week.html', {
         'service': service,
-        'upcoming': service.sessions.filter(date__gte=today).order_by('date')[:8],
-        'past': service.sessions.filter(date__lt=today).order_by('-date')[:12],
+        'monday': monday,
+        'sunday': monday + timedelta(days=6),
+        'prev_week': (monday - timedelta(weeks=1)).isoformat(),
+        'next_week': (monday + timedelta(weeks=1)).isoformat(),
+        'this_week': logic.week_start(today).isoformat(),
+        'days': days,
+        'slots': service.schedule_slots.filter(is_active=True),
+        'slot_form': SlotForm(initial={'capacity': service.session_capacity}),
+        'adhoc_form': AdhocSessionForm(initial={'date': monday if monday >= today else today,
+                                                'capacity': service.session_capacity}),
     })
+
+
+def _week_redirect(service, day):
+    return redirect(f"{reverse('services:week', args=[service.pk])}?week={logic.week_start(day).isoformat()}")
+
+
+@login_required
+@require_POST
+def slot_save(request, service_pk, pk=None):
+    denied = _admin_required(request)
+    if denied:
+        return denied
+    service = get_object_or_404(Service, pk=service_pk, kind=Service.KIND_DISTRIBUTION)
+    instance = get_object_or_404(ServiceScheduleSlot, pk=pk, service=service) if pk else None
+    previous = ServiceScheduleSlot.objects.get(pk=pk) if pk else None
+    form = SlotForm(request.POST, instance=instance)
+    if form.is_valid():
+        slot = form.save(commit=False)
+        slot.service = service
+        logic.save_slot(slot, previous=previous)
+        messages.success(request, f"Créneau du {slot.get_weekday_display().lower()} enregistré : "
+                                  f"les sessions à venir sont mises à jour.")
+    else:
+        messages.error(request, 'Créneau invalide : ' + '; '.join(
+            f"{e}" for errors in form.errors.values() for e in errors))
+    return redirect(f"{reverse('services:week', args=[service.pk])}?week={request.POST.get('week', '')}")
+
+
+@login_required
+@require_POST
+def slot_delete(request, service_pk, pk):
+    denied = _admin_required(request)
+    if denied:
+        return denied
+    slot = get_object_or_404(ServiceScheduleSlot, pk=pk, service_id=service_pk)
+    logic.delete_slot(slot)
+    messages.success(request, f"Créneau du {slot.get_weekday_display().lower()} supprimé. "
+                              f"Les sessions qui avaient déjà des inscrits sont conservées.")
+    return redirect(f"{reverse('services:week', args=[service_pk])}?week={request.POST.get('week', '')}")
+
+
+@login_required
+@require_POST
+def session_add(request, service_pk):
+    denied = _admin_required(request)
+    if denied:
+        return denied
+    service = get_object_or_404(Service, pk=service_pk, kind=Service.KIND_DISTRIBUTION)
+    form = AdhocSessionForm(request.POST)
+    if form.is_valid():
+        session = logic.add_adhoc_session(service, form.cleaned_data['date'], form.cleaned_data['start_time'],
+                                          form.cleaned_data['end_time'], form.cleaned_data['capacity'])
+        messages.success(request, f"Session ajoutée le {session.date:%d/%m/%Y}.")
+        return _week_redirect(service, session.date)
+    messages.error(request, 'Session invalide : ' + '; '.join(
+        f"{e}" for errors in form.errors.values() for e in errors))
+    return redirect('services:week', service_pk=service.pk)
+
+
+@login_required
+def session_edit(request, pk):
+    denied = _admin_required(request)
+    if denied:
+        return denied
+    session = get_object_or_404(ServiceSession.objects.select_related('service', 'schedule_slot'), pk=pk)
+    if request.method == 'POST':
+        form = SessionEditForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            logic.update_session(session, date=data['date'], start_time=data['start_time'],
+                                 end_time=data['end_time'], capacity=data['capacity'], notes=data['notes'],
+                                 apply_to_following=data['apply_to_following'])
+            messages.success(request, 'Session modifiée.')
+            return _week_redirect(session.service, session.date)
+    else:
+        form = SessionEditForm(initial={
+            'date': session.date, 'start_time': session.start_time, 'end_time': session.end_time,
+            'capacity': session.capacity, 'notes': session.notes,
+        })
+    return render(request, 'services/session_edit.html', {
+        'session': session, 'service': session.service, 'form': form,
+        'booked': session.active_bookings().count(),
+    })
+
+
+@login_required
+@require_POST
+def session_toggle(request, pk):
+    """Annule une session (les familles inscrites récupèrent leur passage) ou la rétablit."""
+    denied = _admin_required(request)
+    if denied:
+        return denied
+    session = get_object_or_404(ServiceSession.objects.select_related('service'), pk=pk)
+    if session.is_closed:
+        session.is_closed = False
+        session.save(update_fields=['is_closed'])
+        messages.success(request, f"Session du {session.date:%d/%m} rétablie.")
+    else:
+        with transaction.atomic():
+            bookings = list(session.bookings.select_related('registration__beneficiary'))
+            names = [b.registration.beneficiary.full_name for b in bookings]
+            for booking in bookings:
+                registration = booking.registration
+                booking.delete()
+                registration.refresh_status()
+            session.is_closed = True
+            session.is_customized = True
+            session.save(update_fields=['is_closed', 'is_customized'])
+        msg = f"Session du {session.date:%d/%m} annulée."
+        if names:
+            msg += " Familles à prévenir (passage rendu) : " + ', '.join(names) + '.'
+        messages.warning(request, msg)
+    return _week_redirect(session.service, session.date)
 
 
 def _session_rows(session):
@@ -84,12 +221,13 @@ def _session_rows(session):
     rows = []
     for booking in bookings:
         reg = booking.registration
-        all_bookings = list(reg.bookings.order_by('session__date').values_list('session_id', flat=True))
+        ordered = list(reg.bookings.order_by('session__date', 'session__start_time')
+                       .values_list('session_id', flat=True))
         rows.append({
             'booking': booking,
             'beneficiary': reg.beneficiary,
-            'rank': all_bookings.index(session.pk) + 1 if session.pk in all_bookings else None,
-            'total': len(all_bookings),
+            'rank': ordered.index(session.pk) + 1 if session.pk in ordered else None,
+            'total': reg.tickets,
             'interview_date': reg.interaction.created_at if reg.interaction else reg.created_at,
         })
     return rows
@@ -131,35 +269,27 @@ def session_detail(request, pk):
                     if attended != booking.attended:
                         booking.mark(attended, request.user)
             messages.success(request, 'Présences enregistrées.')
-        elif action == 'settings':
-            form = SessionForm(request.POST, instance=session)
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'Session mise à jour.')
         elif action == 'add_family':
             form = AddFamilyToSessionForm(request.POST)
             if form.is_valid():
                 beneficiary = form.cleaned_data['beneficiary']
-                composition = logic.household_composition(beneficiary)
-                if session.bookings.filter(registration__beneficiary=beneficiary).exclude(
-                        registration__status=ServiceRegistration.STATUS_CANCELLED).exists():
-                    messages.warning(request, f'{beneficiary.full_name} est déjà sur cette liste.')
-                else:
-                    reg = ServiceRegistration.objects.create(
-                        beneficiary=beneficiary, service=session.service, created_by=request.user,
-                        details='Ajout manuel sur la liste')
-                    ServiceBooking.objects.create(
-                        registration=reg, session=session, adults=composition.adults,
-                        children=composition.children, babies=composition.babies)
+                try:
+                    with transaction.atomic():
+                        registration = logic.active_registration(beneficiary, session.service)
+                        if registration is None or registration.tickets_left <= 0:
+                            registration = ServiceRegistration.objects.create(
+                                beneficiary=beneficiary, service=session.service, created_by=request.user,
+                                details='Ajout manuel sur la liste', tickets=1)
+                        logic.book(registration, session, request.user)
                     messages.success(request, f'{beneficiary.full_name} ajouté(e) à la liste.')
+                except logic.RegistrationError as exc:
+                    messages.error(request, str(exc))
         elif action == 'remove':
             booking = get_object_or_404(ServiceBooking, pk=request.POST.get('booking'), session=session)
-            reg = booking.registration
+            registration = booking.registration
             booking.delete()
-            if not reg.bookings.exists():
-                reg.status = ServiceRegistration.STATUS_CANCELLED
-                reg.save(update_fields=['status', 'updated_at'])
-            messages.success(request, 'Famille retirée de la liste.')
+            registration.refresh_status()
+            messages.success(request, 'Famille retirée de la liste : son passage est rendu.')
         return redirect('services:session_detail', pk=session.pk)
 
     template = 'services/session_print.html' if request.GET.get('print') else 'services/session_detail.html'
@@ -168,7 +298,6 @@ def session_detail(request, pk):
         'service': session.service,
         'rows': rows,
         'totals': _session_totals(rows),
-        'settings_form': SessionForm(instance=session),
         'add_form': AddFamilyToSessionForm(),
     })
 
@@ -186,6 +315,42 @@ def booking_mark(request, pk):
     booking.mark(True if value == 'yes' else False if value == 'no' else None, request.user)
     messages.success(request, f'Passage {booking.session.service.name} enregistré.')
     return redirect('beneficiaries:detail', pk=booking.registration.beneficiary_id)
+
+
+@login_required
+@require_POST
+def booking_assign(request, pk):
+    """Place un passage restant de l'inscription sur une session (depuis la fiche)."""
+    denied = _access_required(request)
+    if denied:
+        return denied
+    registration = get_object_or_404(ServiceRegistration.objects.select_related('service'), pk=pk)
+    session = get_object_or_404(ServiceSession, pk=request.POST.get('session'), service=registration.service)
+    try:
+        with transaction.atomic():
+            logic.book(registration, session, request.user)
+        messages.success(request, f"{registration.service.name} : réservé le {session.date:%d/%m}.")
+    except logic.RegistrationError as exc:
+        messages.error(request, str(exc))
+    return redirect('beneficiaries:detail', pk=registration.beneficiary_id)
+
+
+@login_required
+@require_POST
+def booking_cancel(request, pk):
+    """Annule une réservation à venir : le passage redevient disponible."""
+    denied = _access_required(request)
+    if denied:
+        return denied
+    booking = get_object_or_404(ServiceBooking.objects.select_related('registration', 'session'), pk=pk)
+    registration = booking.registration
+    if booking.session.date < timezone.localdate() or booking.attended is not None:
+        messages.error(request, 'Ce passage est déjà passé ou pointé.')
+    else:
+        booking.delete()
+        registration.refresh_status()
+        messages.success(request, 'Réservation annulée : le passage est de nouveau disponible.')
+    return redirect('beneficiaries:detail', pk=registration.beneficiary_id)
 
 
 @login_required

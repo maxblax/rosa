@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}{{ service.name }} - planning{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto py-8">
+    <a href="{% url 'services:home' %}" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>Services</a>
+    <h1 class="text-3xl font-bold text-gray-900 mt-2 mb-1">{{ service.name }}</h1>
+    <p class="text-sm text-gray-600 mb-6">
+        {{ service.default_tickets }} passage{{ service.default_tickets|pluralize }} par inscription{% if service.max_bookings_per_week %}, {{ service.max_bookings_per_week }} maximum par semaine{% endif %}
+        · jauge en {{ service.get_capacity_unit_display|lower }}
+    </p>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+            <a href="?week={{ prev_week }}" class="px-3 py-2 rounded-md bg-white border border-gray-300 text-sm hover:bg-gray-50" title="Semaine précédente"><i class="fas fa-chevron-left"></i></a>
+            <a href="?week={{ this_week }}" class="px-3 py-2 rounded-md bg-white border border-gray-300 text-sm hover:bg-gray-50">Cette semaine</a>
+            <a href="?week={{ next_week }}" class="px-3 py-2 rounded-md bg-white border border-gray-300 text-sm hover:bg-gray-50" title="Semaine suivante"><i class="fas fa-chevron-right"></i></a>
+            <span id="week-label" class="ml-2 text-lg font-semibold text-gray-900">Semaine du {{ monday|date:"d F" }} au {{ sunday|date:"d F Y" }}</span>
+        </div>
+    </div>
+
+    <div id="week-grid" class="grid grid-cols-1 md:grid-cols-7 gap-3 mb-10">
+        {% for day in days %}
+        <div class="rounded-lg border {% if day.is_today %}border-blue-400 bg-blue-50{% else %}border-gray-200 bg-white{% endif %} p-3 min-h-[8rem]">
+            <p class="text-xs font-semibold uppercase text-gray-500 mb-2">{{ day.date|date:"l d/m" }}</p>
+            {% for s in day.sessions %}
+            <div class="session-card mb-2 rounded-md border p-2 text-sm {% if s.is_closed %}border-gray-200 bg-gray-100 text-gray-400 line-through{% else %}border-green-300 bg-green-50{% endif %}" data-session="{{ s.pk }}">
+                <a href="{% url 'services:session_detail' s.pk %}" class="font-medium {% if not s.is_closed %}text-green-900 hover:underline{% endif %}">
+                    {% if s.start_time %}{{ s.start_time|time:"H\hi" }}{% if s.end_time %}-{{ s.end_time|time:"H\hi" }}{% endif %}{% else %}Session{% endif %}
+                </a>
+                {% if not s.is_closed %}
+                <p class="text-xs text-gray-700 session-load">{{ s.load }}{% if s.capacity is not None %}/{{ s.capacity }}{% endif %} {{ service.get_capacity_unit_display|lower }}</p>
+                {% endif %}
+                {% if s.is_customized and not s.is_closed %}<p class="text-xs text-orange-700">modifiée</p>{% endif %}
+                {% if not day.is_past %}
+                <div class="mt-1 flex gap-3 text-xs no-underline" style="text-decoration:none">
+                    {% if not s.is_closed %}<a href="{% url 'services:session_edit' s.pk %}" class="text-blue-700 hover:underline">Modifier</a>{% endif %}
+                    <form method="post" action="{% url 'services:session_toggle' s.pk %}" {% if not s.is_closed %}onsubmit="return confirm('Annuler cette session ? Les familles inscrites récupèrent leur passage.');"{% endif %}>
+                        {% csrf_token %}
+                        <button type="submit" class="{% if s.is_closed %}text-green-700{% else %}text-red-600{% endif %} hover:underline">{% if s.is_closed %}Rétablir{% else %}Annuler{% endif %}</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-xs text-gray-400">Fermé</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white shadow sm:rounded-lg p-6">
+            <h2 class="text-lg font-semibold mb-1">Ouvertures habituelles (chaque semaine)</h2>
+            <p class="text-xs text-gray-500 mb-4">Une modification s'applique aux sessions à venir, sauf à celles modifiées à la main. Les sessions qui ont déjà des inscrits ne changent pas de jour.</p>
+            <div class="space-y-3" id="slots">
+                {% for slot in slots %}
+                <form method="post" action="{% url 'services:slot_edit' service.pk slot.pk %}" class="grid grid-cols-2 md:grid-cols-4 gap-2 items-end border-b pb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="week" value="{{ monday|date:'Y-m-d' }}">
+                    <label class="text-xs text-gray-600">Jour
+                        <select name="weekday" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm">
+                            {% for value, label in service.WEEKDAY_CHOICES %}<option value="{{ value }}" {% if value == slot.weekday %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="text-xs text-gray-600">Début<input type="time" name="start_time" value="{{ slot.start_time|time:'H:i' }}" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"></label>
+                    <label class="text-xs text-gray-600">Fin<input type="time" name="end_time" value="{{ slot.end_time|time:'H:i' }}" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"></label>
+                    <label class="text-xs text-gray-600">Jauge<input type="number" min="0" name="capacity" value="{{ slot.capacity|default_if_none:'' }}" placeholder="18" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"></label>
+                    <div class="col-span-2 md:col-span-4 flex gap-2">
+                        <button type="submit" class="px-3 py-2 rounded-md bg-blue-600 text-white text-xs hover:bg-blue-700">Enregistrer</button>
+                        <button type="submit" formaction="{% url 'services:slot_delete' service.pk slot.pk %}" onclick="return confirm('Supprimer cette ouverture hebdomadaire ?');" class="px-3 py-2 rounded-md bg-white border border-red-300 text-red-600 text-xs hover:bg-red-50">Supprimer</button>
+                    </div>
+                </form>
+                {% empty %}
+                <p class="text-sm text-gray-500">Aucune ouverture régulière.</p>
+                {% endfor %}
+            </div>
+            <form method="post" action="{% url 'services:slot_create' service.pk %}" id="new-slot-form" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
+                {% csrf_token %}
+                <input type="hidden" name="week" value="{{ monday|date:'Y-m-d' }}">
+                <label class="text-xs text-gray-600">Jour{{ slot_form.weekday }}</label>
+                <label class="text-xs text-gray-600">Début{{ slot_form.start_time }}</label>
+                <label class="text-xs text-gray-600">Fin{{ slot_form.end_time }}</label>
+                <label class="text-xs text-gray-600">Jauge{{ slot_form.capacity }}</label>
+                <button type="submit" class="col-span-2 md:col-span-4 px-3 py-2 rounded-md bg-green-600 text-white text-sm hover:bg-green-700"><i class="fas fa-plus mr-1"></i>Ajouter une ouverture</button>
+            </form>
+        </div>
+
+        <div class="bg-white shadow sm:rounded-lg p-6">
+            <h2 class="text-lg font-semibold mb-1">Ajouter une session ponctuelle</h2>
+            <p class="text-xs text-gray-500 mb-4">Une ouverture exceptionnelle, en plus des ouvertures habituelles.</p>
+            <form method="post" action="{% url 'services:session_add' service.pk %}" id="adhoc-form" class="grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
+                {% csrf_token %}
+                <label class="text-xs text-gray-600">Date{{ adhoc_form.date }}</label>
+                <label class="text-xs text-gray-600">Début{{ adhoc_form.start_time }}</label>
+                <label class="text-xs text-gray-600">Fin{{ adhoc_form.end_time }}</label>
+                <label class="text-xs text-gray-600">Jauge{{ adhoc_form.capacity }}</label>
+                <button type="submit" class="col-span-2 md:col-span-4 px-3 py-2 rounded-md bg-green-600 text-white text-sm hover:bg-green-700"><i class="fas fa-plus mr-1"></i>Ajouter la session</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

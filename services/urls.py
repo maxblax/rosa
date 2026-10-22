@@ -9,9 +9,17 @@ urlpatterns = [
     path('statistiques/', views.stats, name='stats'),
 
     # Distributions
-    path('distributions/<int:service_pk>/', views.session_list, name='session_list'),
+    path('distributions/<int:service_pk>/', views.week_view, name='week'),
+    path('distributions/<int:service_pk>/creneaux/', views.slot_save, name='slot_create'),
+    path('distributions/<int:service_pk>/creneaux/<int:pk>/', views.slot_save, name='slot_edit'),
+    path('distributions/<int:service_pk>/creneaux/<int:pk>/supprimer/', views.slot_delete, name='slot_delete'),
+    path('distributions/<int:service_pk>/sessions/ajouter/', views.session_add, name='session_add'),
     path('sessions/<int:pk>/', views.session_detail, name='session_detail'),
+    path('sessions/<int:pk>/modifier/', views.session_edit, name='session_edit'),
+    path('sessions/<int:pk>/annuler/', views.session_toggle, name='session_toggle'),
     path('reservations/<int:pk>/pointer/', views.booking_mark, name='booking_mark'),
+    path('reservations/<int:pk>/annuler/', views.booking_cancel, name='booking_cancel'),
+    path('inscriptions/<int:pk>/reserver/', views.booking_assign, name='booking_assign'),
 
     # Inscriptions
     path('inscriptions/<int:pk>/annuler/', views.registration_cancel, name='registration_cancel'),

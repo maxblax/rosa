@@ -4,17 +4,22 @@
 <div class="max-w-7xl mx-auto py-8">
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-            <a href="{% url 'services:session_list' service.pk %}" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>{{ service.name }}</a>
-            <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ service.name }} - {{ session.date|date:"l d F Y" }}</h1>
+            <a href="{% url 'services:week' service.pk %}?week={{ session.date|date:'Y-m-d' }}" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>Planning {{ service.name }}</a>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ service.name }} - {{ session.date|date:"l d F Y" }}{% if session.start_time %} {{ session.start_time|time:"H\hi" }}{% endif %}</h1>
             <p class="text-sm text-gray-600 mt-1">
                 {{ totals.families }} famille{{ totals.families|pluralize }} · {{ totals.adults }} adulte{{ totals.adults|pluralize }} · {{ totals.children }} enfant{{ totals.children|pluralize }} · {{ totals.babies }} bébé{{ totals.babies|pluralize }}
                 {% if session.capacity %} · jauge {{ session.load }}/{{ session.capacity }} {{ service.get_capacity_unit_display|lower }}{% endif %}
-                {% if session.is_closed %} · <span class="text-red-600 font-semibold">session fermée</span>{% endif %}
+                {% if session.is_closed %} · <span class="text-red-600 font-semibold">session annulée</span>{% endif %}
             </p>
         </div>
-        <a href="?print=1" target="_blank" class="inline-flex items-center px-4 py-2 rounded-md bg-white border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-            <i class="fas fa-print mr-2"></i>Imprimer la liste
-        </a>
+        <div class="flex gap-2">
+            <a href="{% url 'services:session_edit' session.pk %}" class="inline-flex items-center px-4 py-2 rounded-md bg-white border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-pen mr-2"></i>Modifier la session
+            </a>
+            <a href="?print=1" target="_blank" class="inline-flex items-center px-4 py-2 rounded-md bg-white border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-print mr-2"></i>Imprimer la liste
+            </a>
+        </div>
     </div>
 
     <form method="post" class="bg-white shadow-lg sm:rounded-lg overflow-hidden">
@@ -76,15 +81,6 @@
             <h2 class="text-lg font-semibold">Ajouter une famille à la liste</h2>
             {{ add_form.beneficiary }}
             <button type="submit" class="px-4 py-2 rounded-md bg-green-600 text-white text-sm hover:bg-green-700">Ajouter</button>
-        </form>
-        <form method="post" class="bg-white shadow sm:rounded-lg p-6 space-y-3">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="settings">
-            <h2 class="text-lg font-semibold">Réglages de la session</h2>
-            <label class="block text-sm text-gray-700">Jauge ({{ service.get_capacity_unit_display|lower }}, vide = pas de limite) {{ settings_form.capacity }}</label>
-            <label class="flex items-center gap-2 text-sm text-gray-700">{{ settings_form.is_closed }} Session fermée (jour férié, absence...)</label>
-            <label class="block text-sm text-gray-700">Notes {{ settings_form.notes }}</label>
-            <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Enregistrer</button>
         </form>
     </div>
 </div>

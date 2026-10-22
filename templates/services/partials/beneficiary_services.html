@@ -74,20 +74,38 @@
                         {{ reg.get_status_display }}
                     </span>
                 </div>
+                {% if reg.service.is_distribution %}
+                <p class="mt-1 text-xs text-gray-700 tickets-info">
+                    <i class="fas fa-ticket-alt mr-1 text-gray-400"></i>{{ reg.tickets_used }}/{{ reg.tickets }} passage{{ reg.tickets|pluralize }} réservé{{ reg.tickets_used|pluralize }}{% if reg.tickets_left and reg.status == 'ACTIVE' %} · <strong>{{ reg.tickets_left }} à placer</strong>{% endif %}
+                </p>
+                {% endif %}
                 {% with bookings=reg.bookings.all %}
                 {% if bookings %}
                 <div class="mt-2 flex flex-wrap gap-2">
                     {% for b in bookings %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs
                         {% if b.attended %}bg-green-100 text-green-800{% elif b.attended is False %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-700{% endif %}"
                         title="{{ b.adults }} adulte(s), {{ b.children }} enfant(s), {{ b.babies }} bébé(s)">
-                        {{ b.session.date|date:"d/m" }}
-                        {% if b.attended %}<i class="fas fa-check ml-1"></i>{% elif b.attended is False %} absent{% endif %}
+                        {{ b.session.date|date:"D d/m" }}{% if b.session.start_time %} {{ b.session.start_time|time:"H\hi" }}{% endif %}
+                        {% if b.attended %}<i class="fas fa-check"></i>{% elif b.attended is False %} absent{% elif b.session.date >= today %}
+                        <form method="post" action="{% url 'services:booking_cancel' b.pk %}" class="inline" onsubmit="return confirm('Annuler cette réservation ? Le passage redevient disponible.');">{% csrf_token %}<button type="submit" class="text-gray-400 hover:text-red-600" title="Annuler cette réservation">&times;</button></form>
+                        {% endif %}
                     </span>
                     {% endfor %}
                 </div>
                 {% endif %}
                 {% endwith %}
+                {% if reg.assignable_sessions %}
+                <form method="post" action="{% url 'services:booking_assign' reg.pk %}" class="mt-2 flex flex-wrap items-center gap-2 assign-form">
+                    {% csrf_token %}
+                    <select name="session" class="px-2 py-1 border border-gray-300 rounded-md text-xs">
+                        {% for s in reg.assignable_sessions %}
+                        <option value="{{ s.pk }}">{{ s.date|date:"D d/m" }}{% if s.start_time %} {{ s.start_time|time:"H\hi" }}{% endif %}{% if s.capacity is not None %} ({{ s.load }}/{{ s.capacity }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="px-2 py-1 rounded-md bg-blue-600 text-white text-xs hover:bg-blue-700">Réserver un passage</button>
+                </form>
+                {% endif %}
                 {% if reg.status == 'ACTIVE' %}
                 <div class="mt-2 flex flex-wrap gap-3">
                     {% if reg.service.is_simple %}

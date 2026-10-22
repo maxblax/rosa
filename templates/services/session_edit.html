@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Modifier la session{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+    <a href="{% url 'services:week' service.pk %}?week={{ session.date|date:'Y-m-d' }}" class="text-sm text-gray-500 hover:text-gray-700"><i class="fas fa-arrow-left mr-1"></i>Planning {{ service.name }}</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-2 mb-1">Modifier la session du {{ session.date|date:"l d F Y" }}</h1>
+    <p class="text-sm text-gray-600 mb-6">
+        Seule cette session est modifiée (date, horaires). {% if booked %}{{ booked }} famille{{ booked|pluralize }} inscrite{{ booked|pluralize }} : pensez à les prévenir en cas de déplacement.{% endif %}
+    </p>
+    <form method="post" class="bg-white shadow sm:rounded-lg p-6 space-y-4">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="block text-sm text-gray-700">Date {{ form.date }}{% if form.date.errors %}<span class="text-red-600 text-xs">{{ form.date.errors.0 }}</span>{% endif %}</label>
+            <label class="block text-sm text-gray-700">Début {{ form.start_time }}</label>
+            <label class="block text-sm text-gray-700">Fin {{ form.end_time }}</label>
+        </div>
+        <label class="block text-sm text-gray-700">Jauge ({{ service.get_capacity_unit_display|lower }}, vide = pas de limite) {{ form.capacity }}</label>
+        {% if session.schedule_slot %}
+        <label class="flex items-center gap-2 text-sm text-gray-700">{{ form.apply_to_following }} {{ form.apply_to_following.label }}</label>
+        {% endif %}
+        <label class="block text-sm text-gray-700">Notes {{ form.notes }}</label>
+        <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Enregistrer</button>
+    </form>
+</div>
+{% endblock %}
