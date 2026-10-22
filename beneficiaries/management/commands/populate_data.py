@@ -129,7 +129,7 @@ class Command(BaseCommand):
         Partner.objects.all().delete()
         News.objects.all().delete()
         ChartConfig.objects.all().delete()
-        Volunteer.objects.all().delete()
+        Volunteer.objects.filter(user__is_superuser=False).delete()
         User.objects.filter(is_superuser=False).delete()
 
         self.stdout.write(self.style.WARNING('⚠️  Données existantes supprimées'))
